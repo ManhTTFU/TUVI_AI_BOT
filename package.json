@@ -1,0 +1,25 @@
+{
+  "name": "tuvi-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tử Vi Đẩu Số – Telegram Bot + API + SSR Website",
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "postinstall": "tsx scripts/download-fonts.ts",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:bot": "pnpm --filter @tuvi/bot dev",
+    "dev:api": "pnpm --filter @tuvi/api dev",
+    "dev:web": "pnpm --filter @tuvi/web dev",
+    "build": "pnpm -r run build",
+    "start": "pnpm --filter @tuvi/api start & pnpm --filter @tuvi/web start & pnpm --filter @tuvi/bot start",
+    "download-fonts": "tsx scripts/download-fonts.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "@types/node": "^22.9.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

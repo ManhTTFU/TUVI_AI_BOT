@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '=== SESSION RESUME ===' && echo '' && echo '[Session log gần nhất]' && (tail -40 .claude/memory/session-log.md 2>/dev/null | grep -A 20 '^### ' | head -25) || echo '(chưa có log)' && echo '' && echo '[Commits gần nhất]' && (git log --oneline -5 2>/dev/null || echo '(không phải git repo)')"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '' && echo '>> Nhắc: /log để cập nhật session log trước khi tắt'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{const j=JSON.parse(d);const f=j.tool_input&&j.tool_input.file_path;const t=j.tool_name||'';if(f){const ts=new Date().toTimeString().slice(0,5);const dir=require('path').join(process.env.CLAUDE_PROJECT_DIR||'.','.claude/memory');require('fs').mkdirSync(dir,{recursive:true});require('fs').appendFileSync(require('path').join(dir,'today-changes.tmp'),'['+ts+'] '+t+': '+f+String.fromCharCode(10))}}catch(e){}})\""
+          }
+        ]
+      }
+    ]
+  }
+}

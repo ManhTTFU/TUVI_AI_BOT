@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.turbo
+.env
+.env.local
+.env.*.local
+*.log
+output/pdfs/*.pdf
+output/charts/*.json
+fonts/*.ttf
+!fonts/.gitkeep
+.DS_Store
+coverage

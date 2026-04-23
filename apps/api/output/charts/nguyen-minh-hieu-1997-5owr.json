@@ -1,0 +1,849 @@
+{
+  "slug": "nguyen-minh-hieu-1997-5owr",
+  "createdAt": "2026-04-23T07:52:29.116Z",
+  "info": {
+    "name": "Nguyễn Minh Hiếu",
+    "gender": "male",
+    "birthDate": "25/08/1997",
+    "timeIndex": 2,
+    "timeName": "Dần",
+    "birthPlace": "Hà Nội"
+  },
+  "chart": {
+    "info": {
+      "name": "Nguyễn Minh Hiếu",
+      "gender": "male",
+      "birthDate": "25/08/1997",
+      "timeIndex": 2,
+      "timeName": "Dần",
+      "birthPlace": "Hà Nội"
+    },
+    "solarDate": "1997-08-25",
+    "lunarDate": "一九九七年七月廿三",
+    "chineseDate": "Đinh Sửu - Mậu Thân - Kỷ Hợi - Bính Dần",
+    "time": "Giờ dần",
+    "timeRange": "03:00~05:00",
+    "sign": "Cung Xử Nữ",
+    "zodiac": "Trâu",
+    "earthlyBranchOfSoulPalace": "Ngọ",
+    "earthlyBranchOfBodyPalace": "Tuất",
+    "soul": "Phá Quân",
+    "body": "Thiên Tướng",
+    "fiveElementsClass": "Thủy Nhị Cục",
+    "palaces": [
+      {
+        "index": 0,
+        "name": "Tài Bạch",
+        "heavenlyStem": "Nhâm",
+        "earthlyBranch": "Dần",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Phá Quân",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Đắc"
+          }
+        ],
+        "minorStars": [],
+        "adjectiveStars": [
+          {
+            "name": "Hồng Loan",
+            "type": "flower",
+            "scope": "origin"
+          },
+          {
+            "name": "Giải Thần",
+            "type": "helper",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Vu",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Quan",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Không",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Triệt Lộ",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Cô Thần",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Âm Sát",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Bệnh",
+        "boshi12": "Tướng Quân",
+        "jiangqian12": "Kiếp Sát",
+        "suiqian12": "Hối Khí",
+        "decadal": {
+          "range": [
+            42,
+            51
+          ],
+          "heavenlyStem": "Nhâm",
+          "earthlyBranch": "Dần"
+        },
+        "ages": [
+          8,
+          20,
+          32,
+          44,
+          56,
+          68,
+          80,
+          92,
+          104,
+          116
+        ]
+      },
+      {
+        "index": 1,
+        "name": "Tử Nữ",
+        "heavenlyStem": "Quý",
+        "earthlyBranch": "Mão",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [],
+        "minorStars": [],
+        "adjectiveStars": [
+          {
+            "name": "Thiên Quý",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Không Vong",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Hình",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Suy",
+        "boshi12": "Tiểu Hao",
+        "jiangqian12": "Tai Sát",
+        "suiqian12": "Tang Môn",
+        "decadal": {
+          "range": [
+            32,
+            41
+          ],
+          "heavenlyStem": "Quý",
+          "earthlyBranch": "Mão"
+        },
+        "ages": [
+          9,
+          21,
+          33,
+          45,
+          57,
+          69,
+          81,
+          93,
+          105,
+          117
+        ]
+      },
+      {
+        "index": 2,
+        "name": "Phu Thê",
+        "heavenlyStem": "Giáp",
+        "earthlyBranch": "Thìn",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Liêm Trinh",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Lợi"
+          },
+          {
+            "name": "Thiên Phủ",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Miếu"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Hữu Bật",
+            "type": "soft",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Phong Cáo",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Đế Vượng",
+        "boshi12": "Thanh Long",
+        "jiangqian12": "Thiên Sát",
+        "suiqian12": "Quán Tác",
+        "decadal": {
+          "range": [
+            22,
+            31
+          ],
+          "heavenlyStem": "Giáp",
+          "earthlyBranch": "Thìn"
+        },
+        "ages": [
+          10,
+          22,
+          34,
+          46,
+          58,
+          70,
+          82,
+          94,
+          106,
+          118
+        ]
+      },
+      {
+        "index": 3,
+        "name": "Huynh Đệ",
+        "heavenlyStem": "Ất",
+        "earthlyBranch": "Tỵ",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Thái Âm",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Hạn",
+            "mutagen": "Lộc"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Hỏa Tinh",
+            "type": "tough",
+            "scope": "origin",
+            "brightness": "Đắc"
+          },
+          {
+            "name": "Đà La",
+            "type": "tough",
+            "scope": "origin",
+            "brightness": "Hạn"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Ân Quang",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Long Trì",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Trù",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Khốc",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Lâm Quan",
+        "boshi12": "Lực Sỹ",
+        "jiangqian12": "Chỉ Bối",
+        "suiqian12": "Quan Phù",
+        "decadal": {
+          "range": [
+            12,
+            21
+          ],
+          "heavenlyStem": "Ất",
+          "earthlyBranch": "Tỵ"
+        },
+        "ages": [
+          11,
+          23,
+          35,
+          47,
+          59,
+          71,
+          83,
+          95,
+          107,
+          119
+        ]
+      },
+      {
+        "index": 4,
+        "name": "Mệnh",
+        "heavenlyStem": "Bính",
+        "earthlyBranch": "Ngọ",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Tham Lang",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Vượng"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Văn Khúc",
+            "type": "soft",
+            "scope": "origin",
+            "brightness": "Hạn"
+          },
+          {
+            "name": "Lộc Tồn",
+            "type": "lucun",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Hàm Trì",
+            "type": "flower",
+            "scope": "origin"
+          },
+          {
+            "name": "Bát Tọa",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Nguyệt Đức",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Quan Đới",
+        "boshi12": "Bác Sỹ",
+        "jiangqian12": "Hàm Trì",
+        "suiqian12": "Tiểu Hao",
+        "decadal": {
+          "range": [
+            2,
+            11
+          ],
+          "heavenlyStem": "Bính",
+          "earthlyBranch": "Ngọ"
+        },
+        "ages": [
+          12,
+          24,
+          36,
+          48,
+          60,
+          72,
+          84,
+          96,
+          108,
+          120
+        ]
+      },
+      {
+        "index": 5,
+        "name": "Phụ Mẫu",
+        "heavenlyStem": "Đinh",
+        "earthlyBranch": "Mùi",
+        "isBodyPalace": false,
+        "isOriginalPalace": true,
+        "majorStars": [
+          {
+            "name": "Thiên Đồng",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Bất",
+            "mutagen": "Quyền"
+          },
+          {
+            "name": "Cự Môn",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Bất",
+            "mutagen": "Kỵ"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Kình Dương",
+            "type": "tough",
+            "scope": "origin",
+            "brightness": "Miếu"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Thiên Diêu",
+            "type": "flower",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Tài",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Hư",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Mục Dục",
+        "boshi12": "Quan Phủ",
+        "jiangqian12": "Nguyệt Sát",
+        "suiqian12": "Đại Hao",
+        "decadal": {
+          "range": [
+            112,
+            121
+          ],
+          "heavenlyStem": "Đinh",
+          "earthlyBranch": "Mùi"
+        },
+        "ages": [
+          1,
+          13,
+          25,
+          37,
+          49,
+          61,
+          73,
+          85,
+          97,
+          109
+        ]
+      },
+      {
+        "index": 6,
+        "name": "Phúc Đức",
+        "heavenlyStem": "Mậu",
+        "earthlyBranch": "Thân",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Vũ Khúc",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Đắc"
+          },
+          {
+            "name": "Thiên Tướng",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Miếu"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Văn Xương",
+            "type": "soft",
+            "scope": "origin",
+            "brightness": "Đắc"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Thiên Hỷ",
+            "type": "flower",
+            "scope": "origin"
+          },
+          {
+            "name": "Tam Thai",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Đài Phụ",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Trường Sinh",
+        "boshi12": "Phục Binh",
+        "jiangqian12": "Vong Thần",
+        "suiqian12": "Long Đức",
+        "decadal": {
+          "range": [
+            102,
+            111
+          ],
+          "heavenlyStem": "Mậu",
+          "earthlyBranch": "Thân"
+        },
+        "ages": [
+          2,
+          14,
+          26,
+          38,
+          50,
+          62,
+          74,
+          86,
+          98,
+          110
+        ]
+      },
+      {
+        "index": 7,
+        "name": "Điền Trạch",
+        "heavenlyStem": "Kỷ",
+        "earthlyBranch": "Dậu",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Thái Dương",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Hạn"
+          },
+          {
+            "name": "Thiên Lương",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Đắc"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Thiên Việt",
+            "type": "soft",
+            "scope": "origin"
+          },
+          {
+            "name": "Địa Không",
+            "type": "tough",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Phụng Các",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Tuần Không",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Phi Liêm",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Niên Giải",
+            "type": "helper",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Dưỡng",
+        "boshi12": "Đại Hao",
+        "jiangqian12": "Tướng Tinh",
+        "suiqian12": "Bạch Hổ",
+        "decadal": {
+          "range": [
+            92,
+            101
+          ],
+          "heavenlyStem": "Kỷ",
+          "earthlyBranch": "Dậu"
+        },
+        "ages": [
+          3,
+          15,
+          27,
+          39,
+          51,
+          63,
+          75,
+          87,
+          99,
+          111
+        ]
+      },
+      {
+        "index": 8,
+        "name": "Quan Lộc",
+        "heavenlyStem": "Canh",
+        "earthlyBranch": "Tuất",
+        "isBodyPalace": true,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Thất Sát",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Miếu"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Tả Phù",
+            "type": "soft",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Thiên Đức",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Quả Tú",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Thai",
+        "boshi12": "Bệnh Phù",
+        "jiangqian12": "Phan Án",
+        "suiqian12": "Thiên Đức",
+        "decadal": {
+          "range": [
+            82,
+            91
+          ],
+          "heavenlyStem": "Canh",
+          "earthlyBranch": "Tuất"
+        },
+        "ages": [
+          4,
+          16,
+          28,
+          40,
+          52,
+          64,
+          76,
+          88,
+          100,
+          112
+        ]
+      },
+      {
+        "index": 9,
+        "name": "Nô Bộc",
+        "heavenlyStem": "Tân",
+        "earthlyBranch": "Hợi",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Thiên Cơ",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Bình",
+            "mutagen": "Khoa"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Thiên Khôi",
+            "type": "soft",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Mã",
+            "type": "tianma",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Thiên Thọ",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Phúc",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Nguyệt",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Thương",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Tuyệt",
+        "boshi12": "Hỷ Thần",
+        "jiangqian12": "Tuế Dịch",
+        "suiqian12": "Điếu Khách",
+        "decadal": {
+          "range": [
+            72,
+            81
+          ],
+          "heavenlyStem": "Tân",
+          "earthlyBranch": "Hợi"
+        },
+        "ages": [
+          5,
+          17,
+          29,
+          41,
+          53,
+          65,
+          77,
+          89,
+          101,
+          113
+        ]
+      },
+      {
+        "index": 10,
+        "name": "Thiên Di",
+        "heavenlyStem": "Nhâm",
+        "earthlyBranch": "Tý",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [
+          {
+            "name": "Tử Vi",
+            "type": "major",
+            "scope": "origin",
+            "brightness": "Bình"
+          }
+        ],
+        "minorStars": [
+          {
+            "name": "Linh Tinh",
+            "type": "tough",
+            "scope": "origin",
+            "brightness": "Hạn"
+          }
+        ],
+        "adjectiveStars": [],
+        "changsheng12": "Mộ",
+        "boshi12": "Phi Liêm",
+        "jiangqian12": "Tức Thần",
+        "suiqian12": "Bệnh Phù",
+        "decadal": {
+          "range": [
+            62,
+            71
+          ],
+          "heavenlyStem": "Nhâm",
+          "earthlyBranch": "Tý"
+        },
+        "ages": [
+          6,
+          18,
+          30,
+          42,
+          54,
+          66,
+          78,
+          90,
+          102,
+          114
+        ]
+      },
+      {
+        "index": 11,
+        "name": "Tật Ách",
+        "heavenlyStem": "Quý",
+        "earthlyBranch": "Sửu",
+        "isBodyPalace": false,
+        "isOriginalPalace": false,
+        "majorStars": [],
+        "minorStars": [
+          {
+            "name": "Địa Kiếp",
+            "type": "tough",
+            "scope": "origin"
+          }
+        ],
+        "adjectiveStars": [
+          {
+            "name": "Hoa Cái",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Phá Toái",
+            "type": "adjective",
+            "scope": "origin"
+          },
+          {
+            "name": "Thiên Sứ",
+            "type": "adjective",
+            "scope": "origin"
+          }
+        ],
+        "changsheng12": "Tử",
+        "boshi12": "Tấu Thư",
+        "jiangqian12": "Hoa Cái",
+        "suiqian12": "Tuế Kiện",
+        "decadal": {
+          "range": [
+            52,
+            61
+          ],
+          "heavenlyStem": "Quý",
+          "earthlyBranch": "Sửu"
+        },
+        "ages": [
+          7,
+          19,
+          31,
+          43,
+          55,
+          67,
+          79,
+          91,
+          103,
+          115
+        ]
+      }
+    ]
+  },
+  "analysis": {
+    "overview": "## **Tổng Quan Cách Cục: Mệnh Phá Quân, Thân Thiên Tướng**\nLá số của bạn mang **Mệnh chủ là Phá Quân** và **Thân chủ là Thiên Tướng**, một sự kết hợp thú vị giữa tính cách năng động, phá cách và bản chất thủ vững, trọng nguyên tắc. Anh đặt tại cung Ngọ thuộc Hỏa, nơi **Tham Lang (Vượng)** tọa thủ, tạo thành cách **\"Tham Lang ngộ Hỏa tướng\"** (Tham Lang gặp Hỏa tinh đồng cung), biểu thị cho trí tuệ sắc sảo, khả năng biến hóa linh hoạt và sự quyết đoán. **Ngũ hành cục Thủy Nhị Cục** cho thấy nội tâm sâu sắc, tư duy nhiều tầng lớp, nhưng đôi khi cũng dễ có những biến động về cảm xúc và tinh thần. Mệnh và Thân tương trợ, trong đó Thiên Tướng ở cung Phúc Đức gia tăng tính ổn định, cân bằng và khả năng quản lý cho bản tính Tham Lang nơi Mệnh.\n\n## **Phân Tích Trung Tâm: Cung Mệnh & Cung Thân**\nCung Mệnh tại **Ngọ** có chính tinh **Tham Lang (Vượng)** hội hợp với **Văn Khúc (Hạn)** và **Lộc Tồn**. Đây là bộ sao của sự thông minh, mưu trí, tài hoa và khát vọng rất lớn về vật chất, danh vọng. Tham Lang ở thế Vượng địa biểu hiện một cá tính mạnh mẽ, quyết đoán, thích cạnh tranh và chinh phục. Tuy nhiên, sự hiện diện của **Hàm Trì** và **Bát Tọa** cũng cho thấy những suy tư, tính toán kín đáo bên trong. **Cung Thân** nằm tại cung Quan Lộc (Tuất) với chính tinh **Thất Sát (Miếu)** và **Tả Phù**. Điều này cho thấy vận thế và hình ảnh xã hội của bạn gắn liền với quyền lực, kỷ luật và sự nghiệp. Bạn có khả năng đảm đương trách nhiệm lớn, làm việc độc lập và giải quyết vấn đề một cách quyết liệt, mạnh mẽ.\n\nMối quan hệ Mệnh – Thân là sự bổ sung: **Tham Lang** ở Mệnh mang đến tham vọng, sự nhạy bén và cơ hội; **Thất Sát** ở Thân cung cung cấp năng lực hành động, ý chí sắt đá để hiện thực hóa những tham vọng đó. Tuy nhiên, cần lưu ý sự căng thẳng tiềm ẩn giữa tính phóng khoáng, đa nghi của Tham Lang và sự cứng nhắc, nghiêm khắc của Thất Sát, đòi hỏi bạn phải biết cân bằng giữa mưu lược và hành động.\n\n## **Tính Cách & Tiềm Năng Bẩm Sinh**\nTừ cách cục trên, có thể khái quát một số nét tính cách chủ đạo. **Điểm mạnh** nổi bật là trí tuệ nhạy bén, khả năng nắm bắt thời cơ và xoay chuyển tình thế rất linh hoạt (**Tham Lang Vượng**). Bạn có ý chí tiến thủ mạnh mẽ, không ngại khó khăn và có năng lực lãnh đạo, tổ chức (**Thất Sát miếu địa + Tả Phù**). Sự hỗ trợ của **Thiên Tướng** tại Phúc Đức giúp bạn có lòng trắc ẩn, biết giữ chữ tín và có khả năng hòa giải, tạo dựng mối quan hệ.\n\n• **Về điểm cần lưu ý**, bản tính Tham Lang dễ dẫn đến sự ham muốn nhiều mặt, đôi khi thiếu kiên nhẫn, muốn đạt mục tiêu nhanh chóng. **Văn Khúc** bị Hãm có thể khiến cho những kế hoạch, văn chương đôi chỗ chưa được trọn vẹn, cần thận trọng hơn trong giao tiếp, văn bản. Sự phối hợp với **Thất Sát** cũng dễ tạo nên tính cách cương quyết thái quá, nóng nảy, cần học cách kiềm chế cảm xúc để tránh tổn hại các mối quan hệ công việc. Tóm lại, đây là lá số của một người có tố chất làm nên chuyện lớn, nhưng thành công vững vàng đòi hỏi sự rèn giũa bản thân và chọn đúng môi trường để phát huy thế mạnh.",
+    "career": "## **Tổng Quan Cách Cục Sự Nghiệp & Tài Lộc**\n\nLá số của bạn mang **Mệnh chủ Phá Quân, Thân chủ Thiên Tướng**, là mẫu người có tư duy đột phá, thích sáng tạo và dám làm, nhưng cũng cần sự ổn định và nguyên tắc từ **Thiên Tướng** để điều tiết. Cung **Mệnh** an tại Ngọ có **Tham Lang (Vượng)** hội **Văn Khúc**, tạo thành \"**Cơ mưu đa đoan**\" – trí tuệ sắc sảo, nhiều mưu lược và tham vọng lớn trong sự nghiệp. Điểm then chốt nằm ở việc chuyển hóa năng lượng của **Tham Lang** – vốn ham muốn, đa nghiệp – thành một chuyên môn sâu và tinh tế. **Thân cung** an tại **Quan Lộc** với **Thất Sát (Miếu)** và **Tả Phù**, cho thấy bạn có năng lực quyết đoán, dám đương đầu với áp lực và thách thức để xây dựng sự nghiệp, đồng thời có quý nhân hỗ trợ bên cạnh.\n\n## **Phân Tích Trung Tâm: Cung Quan Lộc & Cung Tài Bạch**\n\n**Cung Quan Lộc (Thân cung) tại Tuất** có chính tinh là **Thất Sát (Miếu)** đắc địa, được **Tả Phù** hỗ trợ và **Thiên Đức** chiếu cố. Đây là một thế trận mạnh mẽ:\n• **Thất Sát miếu địa** biểu thị cho tài năng quản lý, tổ chức, khả năng chịu đựng áp lực cao và quyết đoán trong công việc. Bạn thích hợp với các vị trí đòi hỏi sự cạnh tranh, tính kỷ luật và có thể phát triển rất tốt trong môi trường có cấu trúc rõ ràng hoặc mang tính kỹ thuật, chuyên môn hóa.\n• **Tả Phù** là sao trợ lực quan trọng, cho thấy bạn có được sự giúp đỡ của cấp trên, đồng nghiệp hoặc đối tác, đặc biệt khi làm việc theo nhóm. **Thiên Đức** mang lại sự hóa giải những rủi ro, tranh chấp trong nghề nghiệp.\n• Tuy nhiên, **Thất Sát** cô độc tại cung này cũng đòi hỏi bạn phải tự lực cánh sinh là chính, thành công thường đến từ nỗ lực cá nhân và sự dám nghĩ dám làm.\n\n**Cung Tài Bạch tại Dần** là nơi an **Mệnh chủ Phá Quân (Đắc)**, điều này cho thấy cách kiếm tiền và quản lý tài chính của bạn rất linh hoạt, không theo lối mòn.\n• **Phá Quân** chủ về phá rồi lập, thích đầu tư mạo hiểm, kinh doanh đột phá hoặc kiếm tiền từ những lĩnh vực mới, công nghệ. Có **Lộc Tồn** tại Mệnh hỗ trợ, là dấu hiệu có khả năng tích lũy.\n• Tuy nhiên, cục diện này cũng đi kèm **Thiên Không** và **Triệt Lộ**, là những yếu tố dễ gây nên sự đứt gãy, hao tán bất ngờ trong dòng tiền. **Hồng Loan** tại đây cũng cho thấy tiền bạc có thể đến/từ các mối quan hệ duyên tình.\n• **Thời điểm tích lũy quan trọng nhất** là đại hạn 42-51 tuổi (Nhâm Dần) ngay tại cung Tài Bạch này, khi **Phá Quân** được kích hoạt mạnh mẽ. Đây là giai đoạn bạn có thể tạo ra bước ngoặt lớn về tài chính, nhưng cũng cần cực kỳ thận trọng với các khoản đầu tư quá mới lạ hoặc rủi ro cao.\n\n## **Cơ Hội Bên Ngoài & Định Hướng Nghề Nghiệp**\n\n**Cung Thiên Di tại Tý** có **Tử Vi (Bình)** và **Linh Tinh (Hạn)**. Điều này cho thấy môi trường bên ngoài, xã hội của bạn có phẩm chất tốt, bạn được nhìn nhận là người đàng hoàng, có phong thái.\n• **Tử Vi** tại Thiên Di mang lại sự quý khí, dễ được người khác nể trọng và tin tưởng khi ra ngoài giao thiệp. Tuy nhiên, **Linh Tinh** đi cùng khiến cho các mối quan hệ đôi khi có sự đố kỵ, tranh cạnh ngầm, cần khéo léo ứng xử.\n• Sự nghiệp của bạn có thể phát triển tốt khi biết kết hợp **Thất Sát** quyết đoán bên trong với **Tử Vi** đường hoàng bên ngoài. Việc đi xa, làm việc với các đối tác lớn hoặc trong các tổ chức có danh tiếng sẽ có lợi.\n\nDựa trên tổng thể các cung, bạn có thể cân nhắc các hướng nghề nghiệp sau:\n• **Quản lý, Giám sát trong các ngành kỹ thuật, xây dựng, sản xuất hoặc an ninh**: Phù hợp với tính chất kỷ luật và chuyên môn hóa của **Thất Sát**.\n• **Tư vấn, Phân tích chiến lược hoặc Nghiên cứu thị trường**: Tận dụng tư duy **Tham Lang + Văn Khúc** lanh lợi, nhiều mưu lược và khả năng nắm bắt xu hướng.\n• **Kinh doanh tự do, Khởi nghiệp trong lĩnh vực công nghệ, dịch vụ sáng tạo**: Phát huy tinh thần **Phá Quân** tại Tài Bạch, dám đổi mới và chấp nhận rủi ro có tính toán.\n• **Nghề nghiệp liên quan đến nghệ thuật, thiết kế có ứng dụng thực tế cao**: Kết hợp tính thẩm mỹ của **Tham Lang** với sự tỉ mỉ, nguyên tắc của **Thiên Tướng**.\n• **Các vị trí trong cơ quan nhà nước, tổ chức lớn có cấu trúc rõ ràng**: Tận dụng được **Tử Vi** tại Thiên Di và **Thất Sát** tại Quan Lộc để thăng tiến theo thứ bậc.\n\n## **Lưu Ý Quan Trọng Trên Con Đường Sự Nghiệp**\n\nSự nghiệp của bạn có tiềm năng phát triển mạnh mẽ nhờ vào bản lĩnh và trí tuệ. Tuy nhiên, cần lưu ý một số điểm then chốt để hành trình được vững chắc hơn:\n• **Tránh ôm đồm quá nhiều việc**: Bản tính **Tham Lang** tại Mệnh dễ khiến bạn bị thu hút bởi nhiều cơ hội cùng lúc. Hãy tập trung chuyên sâu vào một lĩnh vực để tạo dựng thương hiệu cá nhân.\n• **Quản lý tài chính thận trọng**: Với **Phá Quân** tại Tài Bạch và **Thiên Không, Triệt Lộ**, bạn cần có kế hoạch tài chính rõ ràng, dự phòng rủi ro, tránh đầu tư tất tay theo cảm hứng.\n• **Xây dựng mối quan hệ lâu dài**: Dù có **Tả Phù** hỗ trợ, nhưng **Thất Sát** tại Quan Lộc vẫn thiếu đi sự hòa đồng rộng rãi. Việc xây dựng lòng tin và các mối quan hệ chất lượng sẽ là tài sản vô hình lớn cho sự nghiệp.\n\nTóm lại, con đường sự nghiệp của bạn là hành trình của sự dám nghĩ, dám làm và không ngừng hoàn thiện bản thân. Thành công sẽ đến từ năng lực chuyên môn sắc bén, tinh thần kỷ luật cao và những bước đi táo bạo nhưng có tính toán trong từng giai đoạn cụ thể của đại hạn.",
+    "love": "## Tổng Quan Về Gia Đạo Và Nhân Duyên\n\nLá số của bạn Nguyễn Minh Hiếu cho thấy một cấu trúc gia đạo và nhân duyên có nhiều điểm thú vị, với sự hiện diện của các chính tinh mạnh mẽ tại các cung liên quan. **Thiên Phủ** và **Liêm Trinh** tại cung Phu Thê là dấu hiệu chính, trong khi cung Phụ Mẫu có sự can dự mạnh của **Cự Môn hóa Kỵ** và **Thiên Đồng hóa Quyền**. Điều này vẽ nên một bức tranh về mối quan hệ gia đình sâu sắc, nhiều gắn kết nhưng cũng không tránh khỏi những giai đoạn thử thách về giao tiếp và tâm lý. Phần phân tích dưới đây sẽ đi sâu vào từng khía cạnh cụ thể.\n\n## Phân Tích Cung Phu Thê: Đối Tượng Và Thời Vận Hôn Nhân\n\nCung Phu Thê của bạn an tại **Giáp Thìn**, có sự hiện diện của bộ đôi **Liêm Trinh (Lợi)** và **Thiên Phủ (Miếu)**, cùng **Hữu Bật** và **Phong Cáo**. Đây là một thế cung khá đẹp và ổn định.\n\n• **Đặc điểm người bạn đời**: Người phối ngẫu của bạn có tính cách chính trực, nguyên tắc (**Liêm Trinh**) nhưng cũng rất bao dung, rộng lượng và có khả năng quản lý, nội trợ giỏi (**Thiên Phủ**). Họ có thể là người có địa vị xã hội khá, phong thái đĩnh đạc và được sự hỗ trợ tốt từ bạn bè, người xung quanh (**Hữu Bật**). Sao **Phong Cáo** thêm vào cho thấy họ có thể là người ăn nói khéo léo, hoặc công việc có liên quan đến giao tiếp, văn thư.\n\n• **Thời điểm hôn nhân**: Đại hạn **22–31 tuổi (Giáp Thìn)** chính là đại hạn trùng với cung Phu Thê. Đây là thời kỳ vận số chính về hôn nhân rất rõ ràng. Việc kết hôn trong giai đoạn này, đặc biệt là khi có các sao tốt của đại hạn kích hoạt, là rất thuận lợi. Tuy nhiên, **Liêm Trinh** cũng mang tính chất thăm dò, thử thách, nên có thể có những trải nghiệm tình cảm sâu sắc trước khi đi đến hôn nhân chính thức. Việc lựa chọn đối tượng cần sự thận trọng và thấu hiểu lẫn nhau.\n\n## Cung Tử Tức Và Cung Huynh Đệ: Mối Quan Hệ Máu Mủ\n\nHai cung này phản ánh mối quan hệ với con cái và anh chị em, bạn bè thân thiết.\n\n**Cung Tử Nữ (Quý Mão)** không có chính tinh, có **Thiên Quý**, **Thiên Hình** và **Không Vong**. Điều này cho thấy:\n• **Về con cái**: Số con cái có thể không nhiều, hoặc việc sinh con đòi hỏi sự chủ động và có kế hoạch (**Không Vong**). Tuy nhiên, **Thiên Quý** là sao quý nhân nhỏ, cho thấy con cái có thể là niềm vui, là quý nhân của bạn, mang lại may mắn cho bạn. **Thiên Hình** nhắc nhở cần chú ý đến sức khỏe của con và cách giáo dục, tránh quá khắt khe hoặc tạo áp lực. Mối quan hệ cha con có sự tôn trọng và khoảng cách nhất định.\n\n**Cung Huynh Đệ (Ất Tỵ)** có **Thái Âm hóa Lộc** nhưng lại ở cung Hãm, cùng với **Hỏa Tinh** và **Đà La**.\n• **Về anh chị em, bạn bè**: Đây là một thế \"**Hỏa Linh Đà La**\" tại cung Huynh Đệ, cho thấy mối quan hệ với anh chị em hoặc bạn thân có lúc nóng nảy, tranh cãi, dễ có hiểu lầm hoặc khoảng cách (**Đà La**). Tuy nhiên, **Thái Âm hóa Lộc** chỉ ra rằng về mặt vật chất, kinh tế, bạn và anh chị em/bạn bè vẫn có thể hỗ trợ, cho mượn món nhau. Số lượng anh chị em có thể không nhiều, hoặc tình cảm không quá thân thiết, gắn bó.\n\n## Cung Phụ Mẫu: Nền Tảng Gia Đình Và Ân Phần\n\nCung Phụ Mẫu (Đinh Mùi) là cung gốc, chứa **Thiên Đồng hóa Quyền** và **Cự Môn hóa Kỵ**, cùng **Kình Dương**.\n\n• **Quan hệ với cha mẹ**: Sự hiện diện của **Cự Môn hóa Kỵ** là điểm then chốt. Điều này cho thấy trong giao tiếp giữa bạn và cha mẹ, đặc biệt là người được xem là ứng với sao Cự Môn (thường là mẹ), dễ có những lời nói vô tình gây tổn thương, hiểu lầm khó giải tỏa. Có thể có những khoảng cách về quan điểm, tư tưởng. **Thiên Đồng hóa Quyền** lại cho thấy cha mẹ, đặc biệt là người ứng với sao Thiên Đồng (thường là cha), có tính cách phóng khoáng, thích tự do, và có uy quyền, sức ảnh hưởng trong phạm vi gia đình.\n\n• **Phúc phần từ cha mẹ**: Sự kết hợp này tạo nên một môi trường gia đình không phải lúc nào cũng yên ả, nhưng cha mẹ vẫn để lại cho bạn sự chở che nhất định và một nền tảng (có thể là tính cách độc lập, mạnh mẽ) để bạn bước vào đời. **Kình Dương** và **Cự Môn hóa Kỵ** cũng nhắc nhở cần chú ý đến sức khỏe của cha mẹ, đặc biệt liên quan đến các vấn đề về đầu óc, tâm lý hoặc tai nạn nhỏ.\n\n**Lưu ý chung**: Phân tích trên dựa trên các nguyên tắc của Tử Vi Đẩu Số. Mọi dự báo đều mang tính chất tham khảo, giúp ta hiểu rõ bản thân và các mối quan hệ để sống chủ động và hài hòa hơn. Hạnh phúc gia đình và nhân duyên luôn nằm ở sự vun đắp, thấu hiểu và bao dung từ chính bản thân mỗi người.",
+    "health": "## Phân Tích Tổng Quan Về Sức Khỏe\n\nLá số của bạn có **Mệnh chủ Phá Quân**, **Thân chủ Thiên Tướng** và thuộc **Thủy Nhị Cục**. Điều này cho thấy nền tảng thể chất khá tốt, sức chịu đựng cao, nhưng cũng dễ bị ảnh hưởng bởi sự căng thẳng, lo nghĩ tích tụ. Sức khỏe không chỉ nhìn vào cung Tật Ách, mà còn phải xem xét sự hỗ trợ từ **cung Phúc Đức** (tinh thần, phúc khí) và **cung Điền Trạch** (môi trường sống). Phân tích dưới đây sẽ làm rõ những điểm mạnh, điểm cần lưu ý và hướng cải thiện dựa trên cấu trúc lá số.\n\n## Điểm Nhấn Từ Cung Tật Ách & Ngũ Hành\n\nCung **Tật Ách** của bạn an tại cung Sửu, không có chính tinh, chủ tinh là **Địa Kiếp** cùng các tạp diệu **Hoa Cái, Phá Toái, Thiên Sứ**. Cấu trúc này mang đến một số đặc điểm về sức khỏe:\n\n• **Tính chất chung**: Cung Tật Ách không có chính tinh thường biểu thị thể trạng không có bệnh mãn tính nghiêm trọng bẩm sinh, nhưng lại dễ chịu tác động từ các cung khác và các đại hạn. **Địa Kiếp** chủ về hao tổn, rối loạn, dễ có những chứng bệnh khó chẩn đoán rõ ràng hoặc bất ngờ.\n• **Ngũ hành tạng phủ**: Vì cung Tật Ách tại Sửu (thổ), lại có **Địa Kiếp** (hỏa), cần lưu ý đến hệ tiêu hóa (tỳ vị, dạ dày - thuộc thổ) và khả năng hấp thu dinh dưỡng. Hỏa sinh thổ có thể gây nóng trong, nhiệt miệng, hoặc các vấn đề về da.\n• **Ảnh hưởng từ sao**: **Hoa Cái** và **Phá Toái** là những sao mang tính cô lập, dễ khiến tâm trạng u uất, ảnh hưởng gián tiếp đến sức khỏe tinh thần. **Thiên Sứ** ám chỉ bệnh tật có thể đến từ các tác nhân bên ngoài, môi trường hoặc do ăn uống.\n\nTuy nhiên, điểm then chốt lại nằm ở cung **Phụ Mẫu** (cung gốc) có **Thiên Đồng hóa Quyền** và **Cự Môn hóa Kỵ** đi cùng **Kình Dương**. Sự kết hợp này cho thấy cần đặc biệt chú ý đến các vấn đề về đầu, tai mũi họng, và răng miệng (Kình Dương). **Cự Môn hóa Kỵ** dễ gây ra uất khí, trầm tư, lâu ngày ảnh hưởng đến hệ tiêu hóa và giấc ngủ.\n\n## Nền Tảng Tinh Thần & Phúc Khí Từ Cung Phúc Đức\n\nCung **Phúc Đức** của bạn rất đẹp, là nền tảng vững chắc cho sức khỏe tổng thể. Cung này có bộ đôi **Vũ Khúc (Đắc)** và **Thiên Tướng (Miếu)** – thân chủ của bạn – cùng **Văn Xương**, **Thiên Hỷ**, **Tam Thai**, **Đài Phụ**.\n\n• **Sức chịu đựng và tinh thần**: **Vũ Khúc** và **Thiên Tướng** tạo nên một tinh thần ổn định, biết cân nhắc, có khả năng chịu đựng áp lực tốt. Đây là điểm mạnh lớn giúp bạn vượt qua bệnh tật hoặc các giai đoạn căng thẳng.\n• **Phúc khí dồi dào**: Sự hiện diện của **Thiên Hỷ**, **Tam Thai**, **Đài Phụ** cho thấy bạn có phúc khí tốt, được quý nhân hỗ trợ ngầm, gặp hung hóa cát trong nhiều tình huống liên quan đến sức khỏe. Khi gặp vấn đề, thường tìm được phương án giải quyết hoặc lương y phù hợp.\n• **Hướng tu dưỡng**: **Văn Xương** trong cung Phúc Đức khuyến khích bạn tu dưỡng tinh thần qua việc đọc sách, học hỏi, hoặc các thú vui thanh nhã. Điều này giúp giải tỏa những u uất tiềm ẩn từ **Hoa Cái**, **Phá Toái** ở cung Tật, biến năng lượng tinh thần thành sự minh mẫn.\n\nChính nhờ cung Phúc Đức mạnh mẽ, những điểm cần lưu ý ở cung Tật Ách sẽ được giảm nhẹ đáng kể. Sức khỏe của bạn phụ thuộc nhiều vào trạng thái tinh thần: khi tâm an, thân thể sẽ khỏe mạnh.\n\n## Tác Động Của Môi Trường Sống (Cung Điền Trạch)\n\nCung **Điền Trạch** của bạn an tại Dậu, có **Thái Dương (Hạn)** và **Thiên Lương (Đắc)**. Tuy nhiên, đi kèm là **Địa Không**, **Tuần Không**, **Phi Liêm** và **Niên Giải**. Đây là một cung có nhiều mâu thuẫn:\n\n• **Ánh sáng và thông thoáng**: **Thái Dương** (dương hỏa) ở trạng thái hãm địa cần được “bổ khuyết”. Môi trường sống lý tưởng là nơi có nhiều ánh sáng mặt trời, thông thoáng khí trời. Ở nơi tối tăm, ẩm thấp lâu ngày sẽ ảnh hưởng xấu đến tinh thần và sức khỏe.\n• **Yếu tố “Không”**: **Địa Không** và **Tuần Không** tại đây khiến cho việc an cư có thể không ổn định lâu dài, hoặc bản thân ngôi nhà có những khuyết điểm khó sửa chữa (thiếu ánh sáng, hướng xấu). **Phi Liêm** và **Niên Giải** cảnh báo các nguy cơ từ vật sắc nhọn, điện, lửa, hoặc trộm cắp trong nhà.\n• **Lời khuyên thực tế**: Khi chọn nơi ở, cần ưu tiên yếu tố ánh sáng và sự an toàn. Nên có các biện pháp phòng chống cháy, đảm bảo hệ thống điện an toàn. Trồng cây xanh nhưng tránh để cây cối um tùm che hết ánh sáng vào nhà.\n\nMôi trường sống có ảnh hưởng trực tiếp đến khí chất **Thái Dương hãm** và **Thiên Lương** (sao chủ về phúc thọ, y dược) của bạn. Một nơi ở sáng sủa, an toàn sẽ là liều thuốc bổ hỗ trợ rất lớn cho sức khỏe tổng thể.\n\n## Lời Khuyên Dưỡng Sinh Theo Ngũ Hành Cục\n\nLá số thuộc **Thủy Nhị Cục** (hành Thủy), Mệnh an tại Ngọ (hỏa). Sự tương tác Thủy – Hỏa này cần được cân bằng để cơ thể khỏe mạnh.\n\n• **Chế độ ăn uống**: Hành Thủy chủ về thận, hệ bài tiết và xương khớp. Nên bổ sung các thực phẩm tốt cho thận, đen (màu của thủy) như đậu đen, mè đen, gạo lứt đen. Uống đủ nước là điều tối quan trọng. Hạn chế các thực phẩm quá nóng (hỏa vượng) như đồ chiên rán, thức ăn nhiều gia vị cay, rượu bia mạnh để tránh hao tổn thủy.\n• **Sinh hoạt và vận động**: Thủy cục hợp với các bài tập nhẹ nhàng, uyển chuyển như đi bộ, bơi lội, yoga, thái cực quyền. Tránh các môn thể thao mạo hiểm hoặc cường độ quá cao dễ gây chấn thương (ứng với **Địa Kiếp**, **Kình Dương**). Chú ý giữ ấm vùng thận và lưng.\n• **Chăm sóc tinh thần**: Điểm yếu lớn nhất là tâm trạng dễ u uất (**Cự Môn hóa Kỵ**, **Hoa Cái**). Cần chủ động tìm niềm vui, giao lưu bạn bè, tránh ở một mình suy nghĩ tiêu cực quá lâu. Thiền định, nghe nhạc nhẹ, hoặc một sở thích nghệ thuật sẽ giúp khí thủy lưu thông, tâm thái an hòa.\n\n**Lưu ý quan trọng**: Những phân tích trên đây dựa trên thuật Tử Vi, mang tính chất tham khảo để hiểu thêm về xu hướng sức khỏe theo cổ học phương Đông. Chúng hoàn toàn không thay thế cho chẩn đoán hay tư vấn từ các bác sĩ, chuyên gia y tế có chuyên môn. Bạn nên khám sức khỏe định kỳ và tuân thủ phác đồ điều trị nếu có bất kỳ vấn đề sức khỏe cụ thể nào.",
+    "decade": "## Tổng Quan Đại Hạn 10 Năm Tới (2025 – 2035)\n\nTrong 10 năm sắp tới, đương số sẽ bước vào **đại hạn 32–41 tuổi**, thuộc cung **Tử Nữ (Quý Mão)**. Đây là một đại hạn đặc biệt khi cung đại hạn này không có chính tinh, chỉ có các tạp diệu: **Thiên Quý**, **Không Vong** và **Thiên Hình**. Việc không có chính tinh chủ quản khiến vận trình trong 10 năm này chịu ảnh hưởng rất lớn từ **cung tam hợp xung chiếu** và **tứ hóa** của các sao trong lá số. Cung Tử Nữ vốn chủ về con cái, sự sáng tạo, đầu tư và niềm vui, nhưng với cấu trúc này, nó sẽ mở rộng ý nghĩa ra toàn bộ cuộc sống, đòi hỏi sự linh hoạt và thích ứng cao.\n\nVì cung đại hạn tại Tử Nữ, nên **cung tam hợp** gồm cung **Thiên Di (Nhâm Tý)** có **Tử Vi, Linh Tinh** và cung **Quan Lộc/Thân (Canh Tuất)** có **Thất Sát, Tả Phù** sẽ đóng vai trò then chốt. Đồng thời, **tứ hóa** trong đại hạn này sẽ kích hoạt các sao trong lá số, tạo nên những biến động cụ thể. Đại hạn này mang tính chất của sự thay đổi, thử thách từ môi trường bên ngoài (Thiên Di) và áp lực cạnh tranh trong công việc (Quan Lộc), nhưng cũng ẩn chứa cơ hội vươn lên nếu biết tận dụng.\n\n## Phân Tích Chi Tiết Từng Giai Đoạn\n\n### Giai Đoạn 2025 – 2027: Khởi Động & Những Thử Thách Ban Đầu\nĐây là những năm đầu của đại hạn, năng lượng từ cung đại hạn **Tử Nữ** bắt đầu phát huy tác dụng. **Thiên Quý** mang đến sự quý nhân âm thầm hỗ trợ, nhưng **Không Vong** dễ khiến cảm thấy cô đơn, kế hoạch khó thành như ý, hoặc đầu tư thua lỗ. **Thiên Hình** cảnh báo về tranh chấp, kiện tụng nhỏ hoặc những vấn đề pháp lý, hợp đồng cần hết sức thận trọng.\n\n•   **Tài lộc & Sự nghiệp**: Cung Tài Bạch đại hạn nằm tại **Phu Thê (Giáp Thìn)** với **Liêm Trinh, Thiên Phủ** và **Hữu Bật**. Đây là dấu hiệu tốt cho việc hợp tác làm ăn, kinh doanh dựa trên đối tác (vợ/chồng) hoặc các mối quan hệ chính thức. Tuy nhiên, cần đề phòng **Liêm Trinh** dễ gây tranh cãi về lợi ích. Năm 2025 (Ất Tỵ) có **Thái Âm hóa Lộc** tại cung Huynh Đệ, có thể có lợi từ bạn bè, đồng nghiệp hoặc các dự án hợp tác.\n•   **Tình duyên**: Cung Phu Thê vừa là cung tài lộc của đại hạn, nên tình cảm và tiền bạc gắn liền nhau. Với **Thiên Phủ** và **Hữu Bật**, nếu đã kết hôn thì vợ/chồng là trợ lực đắc lực; nếu độc thân, đây là thời điểm gặp gỡ người có điều kiện kinh tế ổn định.\n•   **Sức khỏe**: Cung Tật Ách đại hạn tại **Huynh Đệ (Ất Tỵ)** với **Thái Âm hóa Lộc** kèm **Hỏa Tinh, Đà La**. Cần lưu ý các vấn đề về gan, hệ thần kinh căng thẳng, dễ mất ngủ và đề phòng tai nạn, bỏng nhẹ.\n\n### Giai Đoạn 2028 – 2031: Trọng Tâm Công Danh & Áp Lực Cạnh Tranh\nGiai đoạn này, ảnh hưởng từ cung **Quan Lộc/Thân (Canh Tuất)** – một trong ba cung tam hợp của đại hạn – sẽ thể hiện rõ nét nhất. **Thất Sát** tại đây mang đến quyết tâm lớn, khát vọng thăng tiến mạnh mẽ, nhưng đi kèm áp lực và cạnh tranh khốc liệt. **Tả Phù** hỗ trợ, nhưng một mình khó hóa giải hết tính sát phạt của Thất Sát.\n\n•   **Sự nghiệp**: Đây là giai đoạn nên **bứt phá** về sự nghiệp. **Thất Sát** thủ Quan Lộc đại hạn thúc đẩy bạn đảm nhận trọng trách, chấp nhận thử thách để tạo dựng thành tựu. Công việc có thể liên quan đến kỹ thuật, quản lý cấp cao, hoặc các ngành nghề đòi hỏi sự quyết đoán. Năm 2028 (Mậu Thân) kích hoạt cung Phúc Đức có **Vũ Khúc, Thiên Tướng**, là năm vững vàng để khởi động dự án lớn.\n•   **Tài lộc**: Tài lộc đi theo thành công trong sự nghiệp, là dạng chính tài từ lương, thưởng, chức vụ. Tránh đầu tư mạo hiểm vì cung Tài Bạch đại hạn vẫn chịu ảnh hưởng của **Liêm Trinh** dễ hao tổn.\n•   **Tình cảm & Gia đạo**: Áp lực công việc lớn có thể ảnh hưởng đến đời sống riêng tư. Cần cân bằng thời gian. Cung Tử Nữ đại hạn có **Không Vong**, nếu đã có con cái, cần quan tâm, trò chuyện với con nhiều hơn.\n•   **Sức khỏe**: Áp lực dồn nén dễ sinh bệnh. Cần chú ý đến hệ tiêu hóa (Thất Sát) và giải tỏa stress đúng cách.\n\n### Giai Đoạn 2032 – 2035: Mở Rộng Tầm Ảnh Hưởng & Kết Thúc Một Chu Kỳ\nGiai đoạn cuối của đại hạn, ảnh hưởng từ cung **Thiên Di (Nhâm Tý)** với **Tử Vi** và **Linh Tinh** sẽ nổi bật. Bạn có cơ hội mở rộng phạm vi hoạt động, đi xa, hoặc nâng cao vị thế xã hội. **Tử Vi** mang đến sự quý khí, được nể trọng, nhưng đi với **Linh Tinh** dễ có những biến động, thay đổi bất ngờ từ môi trường bên ngoài.\n\n•   **Thiên di & Quan hệ xã hội**: Đây là thời điểm thuận lợi để **mở rộng quan hệ**, hợp tác với các đối tác có tiếng tăm. Các cơ hội có thể đến từ việc đi công tác, học hỏi ở nước ngoài, hoặc tham gia vào các tổ chức lớn. Năm 2034 (Giáp Dần) cần thận trọng vì xung chiếu với cung Mệnh có **Tham Lang, Văn Khúc**, dễ có những quyết định liều lĩnh về đầu tư hoặc tình cảm.\n•   **Sự nghiệp**: Vận thế vẫn tốt nhờ dư địa của **Thất Sát** từ giai đoạn trước và sự hỗ trợ của **Tử Vi** ở Thiên Di. Bạn có thể đạt được những thành tựu được công nhận rộng rãi. Tuy nhiên, **Linh Tinh** cảnh báo đừng chủ quan với đối thủ hoặc những rủi ro pháp lý tiềm ẩn.\n•   **Tài lộc**: Ổn định và tăng trưởng nhờ danh tiếng và vị thế. Có thể có nguồn thu từ xa.\n•   **Tổng kết sức khỏe**: Cung Tật Ách đại hạn giai đoạn này tại **Phụ Mẫu (Đinh Mùi)** với **Thiên Đồng hóa Quyền** và **Cự Môn hóa Kỵ**. Cần đặc biệt lưu ý sức khỏe của bản thân và cha mẹ. **Cự Môn hóa Kỵ** dễ gây bệnh từ đường ăn uống, tiêu hóa, hoặc các khối u bướu cần tầm soát.\n\n## Những Điểm Cốt Lõi Cần Ghi Nhớ\n\n## Lời Khuyên Tổng Hợp & Những Năm Điểm Cần Thận Trọng\nXuyên suốt đại hạn, tinh thần **\"hợp tác, kiên trì và giữ mình\"** là then chốt. Cơ hội lớn thường đến từ các mối quan hệ đối tác (qua cung Phu Thê) và môi trường bên ngoài (qua cung Thiên Di), trong khi thách thức lại đến từ áp lực nội tại và những rủi ro pháp lý, tranh chấp (Thiên Hình, Linh Tinh).\n\n•   **Năm cần thận trọng cao độ**: **Năm 2030 (Canh Tuất)** – Đây là năm trùng với cung Quan Lộc/Thân của đại hạn, kích hoạt trực tiếp **Thất Sát**. Áp lực công việc lên đến đỉnh điểm, dễ dẫn đến quyết định sai lầm hoặc xung đột lớn với cấp trên, đối thủ. Hãy giữ bình tĩnh, làm việc có kế hoạch và tránh những cuộc đối đầu không cần thiết.\n•   **Năm thuận đà nên bứt phá**: **Năm 2029 (Kỷ Dậu)** và **Năm 2033 (Quý Sửu)**. Năm 2029, tứ hóa có thể tạo thuận lợi cho kế hoạch dài hạn. Năm 2033, mặc dù cung Tật Ách có **Địa Kiếp**, nhưng đây là năm chuẩn bị chuyển giao đại hạn, thích hợp để hoàn tất các dự án còn dang dở, củng cố thành quả, và ổn định tài chính cho chu kỳ mới.\n•   **Lời khuyên về tài chính**: Ưu tiên tích lũy và đầu tư vào bản thân (học hỏi, nâng cao năng lực) và các tài sản thực (nhà cửa, đất đai). Hạn chế tối đa đầu cơ, đầu tư theo phong trào vì ảnh hưởng của **Không Vong** và **Thiên Hình**.\n•   **Lời khuyên về sức khỏe**: Xây dựng thói quen sinh hoạt điều độ, kiểm tra sức khỏe định kỳ, đặc biệt chú ý hệ tiêu hóa và thần kinh. Biết cách giải tỏa áp lực là chìa khóa then chốt để vượt qua đại hạn này một cách trọn vẹn.\n\nMười năm tới là một chặng đường của sự trưởng thành vượt bậc về chuyên môn và vị thế, nhưng đòi hỏi sự bền bỉ, khéo léo trong ứng xử và một tinh thần thép để đối mặt với thử thách. Hãy xem những khó khăn như bàn đạp để hoàn thiện bản thân.",
+    "advice": "## Tổng Luận Cát Hung\n\nLá số của bạn Nguyễn Minh Hiếu có cấu trúc khá đặc biệt, tạo nên một tính cách và vận mệnh nhiều biến động nhưng cũng đầy tiềm năng. **Mệnh chủ Phá Quân** và **Thân chủ Thiên Tướng** kết hợp tạo nên một con người có tư tưởng phá cách, thích đổi mới, nhưng lại mang thân phận của người phụ tá, quân sư, cần học cách phối hợp và xây dựng hệ thống. Cung **Mệnh an tại Ngọ** có **Tham Lang hội Văn Khúc** là bộ \"Tham Văn Đồng Cung\", thiên về nghệ thuật, sắc đẹp và trí tuệ, nhưng cũng dễ đa đoan, tham vọng. Cung **Thân tại Quan Lộc** có **Thất Sát miếu địa** được **Tả Phù** hỗ trợ, cho thấy khả năng quyết đoán, dám nghĩ dám làm trong sự nghiệp, có tài lãnh đạo và chịu được áp lực.\n\nTứ Hóa **Kỷ Hợi** (Thiên Can năm sinh) tập trung mạnh: **Hóa Lộc tại Huynh Đệ** (Thái Âm), **Hóa Quyền và Hóa Kỵ tại Phụ Mẫu** (Thiên Đồng, Cự Môn), **Hóa Khoa tại Nô Bộc** (Thiên Cơ). Điều này cho thấy nguồn lực và may mắn về tài chính thông qua bạn bè, đồng nghiệp (Lộc tại Huynh Đệ), nhưng gia đình, nội tâm hoặc gốc rễ có những vấn đề về giao tiếp, dễ tích tụ oán giận (Quyền và Kỵ tại Phụ Mẫu). Bản thân được **Hóa Khoa** tọa thủ, là người thông minh, khéo léo, biết cách giải quyết vấn đề một cách ôn hòa, được người khác tin tưởng.\n\n## Điểm Mạnh Cốt Lõi Cần Phát Huy\n\n**• Tư duy sắc bén và tài ngoại giao:** Bộ **Tham Lang + Văn Khúc** tại Mệnh tạo nên trí tuệ linh hoạt, khả năng học hỏi nhanh, đặc biệt trong các lĩnh vực nghệ thuật, thẩm mỹ, giao tiếp. **Thiên Cơ hóa Khoa** tại Nô Bộc giúp bạn xử lý tình huống khéo léo, có duyên với cấp dưới, đối tác, dễ nhận được sự giúp đỡ.\n\n**• Tinh thần chịu đựng và quyết đoán trong công việc:** **Thân cung Thất Sát miếu địa** với **Tả Phù** là tổ hợp rất mạnh cho lãnh đạo, quản lý. Bạn có khí phách, dám đương đầu với thử thách, chịu được áp lực cao và có khả năng tổ chức, chỉ huy. Đây là nền tảng vững chắc cho sự nghiệp.\n\n**• Khả năng tài chính từ nhiều nguồn:** Cung **Tài Bạch** có **Phá Quân** (tài chính biến động nhưng có thể tạo đột phá) đi cùng **Lộc Tồn** tại Mệnh và **Thái Âm hóa Lộc** tại Huynh Đệ. Điều này chỉ ra bạn có cơ hội kiếm tiền từ nhiều kênh, đặc biệt thông qua hợp tác, đầu tư theo nhóm hoặc các dự án mới mẻ. **Thiên Phủ** tại Phu Thê cũng có thể mang lại nguồn lực từ đối tác.\n\n**• Phúc khí dày, có quý nhân:** Cung **Phúc Đức** rất đẹp với **Vũ Khúc + Thiên Tướng + Văn Xương**, cho thấy tư chất đứng đắn, có phúc phần về tinh thần lẫn vật chất, gặp khó khăn thường có lối thoát và được người tốt giúp đỡ ngầm.\n\n## Điểm Cần Tu Dưỡng Và Đề Phòng\n\n**• Tính cách dễ cực đoan và đa nghi:** **Cự Môn hóa Kỵ** tại Phụ Mẫu ảnh hưởng sâu đến tâm lý, dễ khiến bạn có lời nói sắc bén, hay nghi ngờ, dễ tích tụ những hiểu lầm không cần thiết, đặc biệt trong môi trường gia đình hoặc nơi làm việc thân thuộc. Cần ý thức kiểm soát ngôn từ và suy nghĩ tiêu cực.\n\n**• Tài chính không ổn định, dễ hao tán:** **Phá Quân** tại Tài Bạch đi cùng **Thiên Không, Triệt Lộ** là dấu hiệu của \"được rồi lại mất\", tiền bạc đến nhanh nhưng đi cũng nhanh, dễ đầu tư mạo hiểm hoặc chi tiêu phung phí vào những thứ không bền vững. **Hỏa Tinh, Đà La** tại Huynh Đệ cũng cảnh báo tranh chấp, thị phi liên quan đến tiền bạc với bạn bè, đối tác.\n\n**• Vấn đề về các mối quan hệ thân thiết:** Cung Phu Thê có **Liêm Trinh** (tính cách cương trực, nguyên tắc) dù có **Thiên Phủ** tốt, nhưng cần sự kiên nhẫn trong hôn nhân. Cung Huynh Đệ có **Hỏa Đà** và **Thái Âm hạn** hóa Lộc, cho thấy mối quan hệ anh em, bạn bè có lúc thân lúc sơ, dễ vì lợi ích mà phát sinh mâu thuẫn.\n\n**• Sức khỏe cần lưu ý:** Cung Tật Ách không có chính tinh nhưng có **Địa Kiếp, Hoa Cái, Phá Toái**, cần chú ý các bệnh vặt, rối loạn nhẹ, dễ bị thương tích nhỏ ngoài da. **Thiên Đồng, Cự Môn** tại Phụ Mẫu cũng nhắc nhở về các vấn đề tiêu hóa, dạ dày hoặc bệnh từ miệng mà ra.\n\n## Phương Hướng Hành Động Trong 12 Tháng Tới\n\nHiện bạn đang trong **đại hạn 22-31 tuổi (Giáp Thìn)** tại cung **Phu Thê**, với chính tinh **Liêm Trinh, Thiên Phủ** và **Hữu Bật**. Đây là thập kỷ trọng tâm vào việc xây dựng các mối quan hệ hợp tác chính thức, hôn nhân và sự ổn định. Dựa trên tổng quan lá số, trong 12 tháng tới, bạn nên:\n\n**• Tập trung vào việc xây dựng uy tín và hệ thống:** Thay vì những kế hoạch đột phá ngắn hạn, hãy dùng tinh thần **Thiên Tướng** (Thân chủ) để xây dựng nền tảng vững chắc cho công việc. Hợp tác với những người có tư cách đứng đắn, có hệ thống (**Thiên Phủ**). **Hữu Bật** trong hạn cho thấy sự trợ giúp đắc lực từ đồng nghiệp hoặc đối tác.\n\n**• Quản lý tài chính một cách kỷ luật:** Đặt ra nguyên tắc rõ ràng về tiết kiệm và đầu tư. Tránh các khoản vay mượn hay đầu tư chung thiếu minh bạch với bạn bè (ứng với **Hỏa Đà** tại Huynh Đệ). Hãy biến **Thái Âm hóa Lộc** thành lợi thế bằng cách tham gia các dự án đầu tư dài hạn, an toàn.\n\n**• Tu dưỡng khẩu đức và tâm tính:** Ý thức mỗi ngày về ảnh hưởng của **Cự Môn hóa Kỵ**. Trước khi phát ngôn, nên suy nghĩ thấu đáo. Tìm đến các hoạt động giúp tĩnh tâm, như đọc sách, học hỏi thêm (**Văn Xương** tại Phúc). Điều này sẽ cải thiện đáng kể các mối quan hệ và giảm thiểu thị phi.\n\n**• Chăm sóc sức khỏe chủ động:** Thiết lập chế độ ăn uống điều độ, tránh đồ sống lạnh, rượu bia quá độ để bảo vệ hệ tiêu hóa. Tập thể dục đều đặn nhưng cẩn thận tránh các chấn thương nhỏ do bất cẩn.\n\nLá số của bạn là một bản nhạc với nhiều cung bậc: lúc mạnh mẽ quyết liệt, lúc trầm tư sâu sắc. Hãy dùng trí tuệ của **Tham Văn** và **Thiên Cơ Khoa** để điều phối, dùng ý chí của **Thất Sát** để hành động, và dùng tấm lòng của **Thiên Tướng** để dung hòa. Con đường thành công bền vững nằm ở sự cân bằng giữa phá lập và xây dựng, giữa cá nhân và tập thể. Chúc bạn bình tâm để thấu hiểu chính mình, vững bước để kiến tạo những giá trị lâu dài."
+  }
+}
