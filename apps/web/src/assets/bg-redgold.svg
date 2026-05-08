@@ -1,0 +1,271 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    
+    <radialGradient id="paper" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#fbf3e2"></stop>
+      <stop offset="55%" stop-color="#f6e9cf"></stop>
+      <stop offset="100%" stop-color="#ead8b4"></stop>
+    </radialGradient>
+
+    
+    <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f5c873" stop-opacity="1"></stop>
+      <stop offset="35%" stop-color="#d97a4a" stop-opacity="0.85"></stop>
+      <stop offset="70%" stop-color="#a73c2c" stop-opacity="0.4"></stop>
+      <stop offset="100%" stop-color="#a73c2c" stop-opacity="0"></stop>
+    </radialGradient>
+
+    <radialGradient id="sunDisc" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f8d98a"></stop>
+      <stop offset="50%" stop-color="#e09545"></stop>
+      <stop offset="100%" stop-color="#a73c2c"></stop>
+    </radialGradient>
+
+    
+    <linearGradient id="mtnFar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d4af6a" stop-opacity="0.55"></stop>
+      <stop offset="100%" stop-color="#b58a4a" stop-opacity="0.25"></stop>
+    </linearGradient>
+
+    <linearGradient id="mtnMid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a73c2c" stop-opacity="0.55"></stop>
+      <stop offset="100%" stop-color="#7a1d1d" stop-opacity="0.35"></stop>
+    </linearGradient>
+
+    <linearGradient id="mtnNear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a1414" stop-opacity="0.85"></stop>
+      <stop offset="100%" stop-color="#3a0c0c" stop-opacity="0.6"></stop>
+    </linearGradient>
+
+    <linearGradient id="branchInk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3a1a0e"></stop>
+      <stop offset="100%" stop-color="#1f0a04"></stop>
+    </linearGradient>
+
+    <radialGradient id="plum" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#fce8d4"></stop>
+      <stop offset="40%" stop-color="#e6a06a"></stop>
+      <stop offset="100%" stop-color="#a73c2c"></stop>
+    </radialGradient>
+
+    <radialGradient id="plumDark" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7a1d1d" stop-opacity="0.9"></stop>
+      <stop offset="100%" stop-color="#7a1d1d" stop-opacity="0"></stop>
+    </radialGradient>
+
+    
+    <pattern id="waves" x="0" y="0" width="60" height="30" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#a73c2c" stroke-width="0.6" opacity="0.15">
+        <path d="M0,30 Q15,15 30,30 T60,30"></path>
+        <path d="M0,22 Q15,7 30,22 T60,22"></path>
+      </g>
+    </pattern>
+
+    
+    <symbol id="plumBlossom" viewBox="-20 -20 40 40">
+      <g>
+        <circle r="9" cx="0" cy="-10" fill="url(#plum)"></circle>
+        <circle r="9" cx="9.5" cy="-3.1" fill="url(#plum)"></circle>
+        <circle r="9" cx="5.9" cy="8.1" fill="url(#plum)"></circle>
+        <circle r="9" cx="-5.9" cy="8.1" fill="url(#plum)"></circle>
+        <circle r="9" cx="-9.5" cy="-3.1" fill="url(#plum)"></circle>
+        <circle r="3" fill="url(#plumDark)"></circle>
+        <g stroke="#5a1414" stroke-width="0.6" fill="none" opacity="0.7">
+          <line x1="0" y1="0" x2="0" y2="-4"></line>
+          <line x1="0" y1="0" x2="3.8" y2="-1.2"></line>
+          <line x1="0" y1="0" x2="2.4" y2="3.2"></line>
+          <line x1="0" y1="0" x2="-2.4" y2="3.2"></line>
+          <line x1="0" y1="0" x2="-3.8" y2="-1.2"></line>
+        </g>
+      </g>
+    </symbol>
+
+    <symbol id="plumBud" viewBox="-6 -6 12 12">
+      <circle r="4" fill="url(#plum)"></circle>
+      <circle r="1.5" fill="#7a1d1d" opacity="0.6"></circle>
+    </symbol>
+
+    
+    <symbol id="driftPetal" viewBox="-8 -8 16 16">
+      <path d="M0,-7 C4,-5 5,-1 2,2 C0,4 -2,4 -3,2 C-5,-1 -4,-5 0,-7 Z" fill="url(#plum)"></path>
+    </symbol>
+
+    
+    <symbol id="cloud" viewBox="0 0 200 60">
+      <path d="M10,40 C0,30 10,15 25,18 C30,8 50,8 55,18 C70,10 90,18 90,30 C110,28 120,40 110,48 C100,55 80,52 70,48 C55,55 35,55 25,50 C15,52 5,48 10,40 Z" fill="#d4af6a" opacity="0.35"></path>
+    </symbol>
+  </defs>
+
+  
+  <rect width="1920" height="1080" fill="url(#paper)"></rect>
+
+  
+  <circle cx="1380" cy="380" r="520" fill="url(#sunGlow)" opacity="0.7"></circle>
+
+  
+  <circle cx="1380" cy="380" r="135" fill="url(#sunDisc)"></circle>
+  <circle cx="1380" cy="380" r="135" fill="none" stroke="#7a1d1d" stroke-width="1" opacity="0.35"></circle>
+
+  
+  <g transform="translate(1380,380)" opacity="0.35" stroke="#d4af6a" stroke-width="0.8" fill="none">
+    <circle r="170"></circle>
+    <circle r="200"></circle>
+    <circle r="240"></circle>
+  </g>
+
+  
+  <g opacity="0.55">
+    <use href="#cloud" x="100" y="220" width="320" height="96"></use>
+    <use href="#cloud" x="540" y="160" width="280" height="84"></use>
+    <use href="#cloud" x="1080" y="240" width="260" height="78"></use>
+    <use href="#cloud" x="1500" y="180" width="240" height="72" transform="scale(-1,1) translate(-3500,0)"></use>
+    <use href="#cloud" x="700" y="320" width="320" height="96" opacity="0.7"></use>
+  </g>
+
+  
+  <g>
+    <path d="M0,720 L0,560 C140,500 240,540 360,500 C480,460 540,520 660,495 C780,470 880,520 1020,490 C1180,460 1280,520 1420,500 C1560,485 1680,520 1800,500 C1880,490 1920,510 1920,510 L1920,720 Z" fill="url(#mtnFar)"></path>
+    
+    <g fill="#d4af6a" opacity="0.25">
+      <path d="M340,505 L380,540 L420,510 Z"></path>
+      <path d="M1000,495 L1050,535 L1090,505 Z"></path>
+      <path d="M1400,505 L1440,540 L1480,510 Z"></path>
+    </g>
+  </g>
+
+  
+  <g>
+    <path d="M0,720 L0,650 C100,610 180,640 280,610 C380,580 460,640 580,620 C700,600 780,650 920,625 C1060,600 1160,650 1300,625 C1440,600 1560,640 1700,620 C1820,605 1920,620 1920,620 L1920,720 Z" fill="url(#mtnMid)"></path>
+    
+    <g stroke="#5a1414" stroke-width="1" fill="none" opacity="0.4">
+      <path d="M260,615 L300,640 L340,615"></path>
+      <path d="M580,620 L620,650 L660,620"></path>
+      <path d="M920,625 L965,660 L1005,625"></path>
+      <path d="M1300,625 L1345,660 L1385,625"></path>
+      <path d="M1700,620 L1745,650 L1785,620"></path>
+    </g>
+  </g>
+
+  
+  <rect x="0" y="640" width="1920" height="120" fill="#fbf3e2" opacity="0.55"></rect>
+  <rect x="0" y="660" width="1920" height="80" fill="#fbf3e2" opacity="0.6"></rect>
+
+  
+  <g>
+    <path d="M0,820 L0,680 C80,650 200,690 320,720 C420,745 480,770 540,790 C580,802 620,810 650,820 Z" fill="url(#mtnNear)"></path>
+    <g stroke="#1f0606" stroke-width="1.2" fill="none" opacity="0.4">
+      <path d="M40,690 L120,750 L200,705"></path>
+      <path d="M260,720 L340,765 L420,735"></path>
+    </g>
+  </g>
+
+  
+  <g>
+    <path d="M1920,820 L1920,720 C1820,680 1700,710 1580,740 C1480,765 1400,790 1320,810 C1280,818 1240,824 1200,820 Z" fill="url(#mtnNear)" opacity="0.85"></path>
+  </g>
+
+  
+  <rect x="0" y="780" width="1920" height="300" fill="url(#paper)" opacity="0.7"></rect>
+  <rect x="0" y="800" width="1920" height="280" fill="url(#waves)"></rect>
+  
+  <ellipse cx="1380" cy="900" rx="180" ry="20" fill="#d4af6a" opacity="0.35"></ellipse>
+  <ellipse cx="1380" cy="930" rx="140" ry="12" fill="#d4af6a" opacity="0.25"></ellipse>
+  <ellipse cx="1380" cy="960" rx="100" ry="8" fill="#d4af6a" opacity="0.18"></ellipse>
+
+  
+  <g transform="translate(540,920)">
+    <path d="M-30,8 C-25,16 25,16 30,8 L25,4 L-25,4 Z" fill="#3a1a0e"></path>
+    <line x1="0" y1="4" x2="0" y2="-22" stroke="#3a1a0e" stroke-width="1.2"></line>
+    <path d="M0,-22 C8,-20 12,-12 8,-8 L0,-8 Z" fill="#7a1d1d" opacity="0.85"></path>
+    <ellipse cx="0" cy="14" rx="38" ry="3" fill="#3a1a0e" opacity="0.2"></ellipse>
+  </g>
+
+  
+  <g>
+    
+    <path d="M-30,40 C40,80 100,100 160,140 C220,178 260,220 290,250 C310,272 330,292 340,310" stroke="url(#branchInk)" stroke-width="9" fill="none" stroke-linecap="round"></path>
+    
+    <path d="M160,140 C150,110 140,80 145,50" stroke="url(#branchInk)" stroke-width="5" fill="none" stroke-linecap="round"></path>
+    
+    <path d="M220,178 C215,210 218,238 230,260" stroke="url(#branchInk)" stroke-width="4.5" fill="none" stroke-linecap="round"></path>
+    
+    <path d="M145,50 C152,32 165,22 180,20" stroke="url(#branchInk)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+    <path d="M260,220 C272,210 290,205 305,210" stroke="url(#branchInk)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+    <path d="M290,250 C310,242 330,242 348,250" stroke="url(#branchInk)" stroke-width="2.8" fill="none" stroke-linecap="round"></path>
+
+    
+    <use href="#plumBlossom" x="135" y="35" width="44" height="44"></use>
+    <use href="#plumBlossom" x="160" y="20" width="36" height="36"></use>
+    <use href="#plumBlossom" x="183" y="32" width="40" height="40"></use>
+    <use href="#plumBlossom" x="200" y="14" width="32" height="32"></use>
+
+    <use href="#plumBlossom" x="245" y="200" width="42" height="42"></use>
+    <use href="#plumBlossom" x="278" y="195" width="36" height="36"></use>
+    <use href="#plumBlossom" x="305" y="208" width="40" height="40"></use>
+    <use href="#plumBlossom" x="320" y="240" width="34" height="34"></use>
+
+    <use href="#plumBlossom" x="115" y="120" width="34" height="34"></use>
+    <use href="#plumBlossom" x="195" y="155" width="38" height="38"></use>
+    <use href="#plumBlossom" x="232" y="252" width="36" height="36"></use>
+
+    
+    <use href="#plumBud" x="172" y="62" width="14" height="14"></use>
+    <use href="#plumBud" x="220" y="40" width="12" height="12"></use>
+    <use href="#plumBud" x="298" y="232" width="14" height="14"></use>
+    <use href="#plumBud" x="345" y="262" width="12" height="12"></use>
+  </g>
+
+  
+  <g transform="translate(1920,30) scale(-1,1)">
+    <path d="M0,30 C70,70 140,90 210,140 C260,178 300,210 320,240" stroke="url(#branchInk)" stroke-width="8" fill="none" stroke-linecap="round"></path>
+    <path d="M210,140 C200,110 195,80 200,55" stroke="url(#branchInk)" stroke-width="5" fill="none" stroke-linecap="round"></path>
+    <path d="M260,178 C275,210 280,240 285,265" stroke="url(#branchInk)" stroke-width="4" fill="none" stroke-linecap="round"></path>
+
+    <use href="#plumBlossom" x="180" y="40" width="42" height="42"></use>
+    <use href="#plumBlossom" x="210" y="22" width="36" height="36"></use>
+    <use href="#plumBlossom" x="232" y="40" width="38" height="38"></use>
+    <use href="#plumBlossom" x="265" y="220" width="40" height="40"></use>
+    <use href="#plumBlossom" x="290" y="248" width="36" height="36"></use>
+    <use href="#plumBlossom" x="148" y="115" width="34" height="34"></use>
+
+    <use href="#plumBud" x="218" y="60" width="14" height="14"></use>
+    <use href="#plumBud" x="305" y="270" width="12" height="12"></use>
+  </g>
+
+  
+  <g opacity="0.85">
+    <use href="#driftPetal" x="380" y="180" width="20" height="20" transform="rotate(20 390 190)"></use>
+    <use href="#driftPetal" x="500" y="320" width="16" height="16" transform="rotate(-15 508 328)"></use>
+    <use href="#driftPetal" x="660" y="260" width="18" height="18" transform="rotate(40 669 269)"></use>
+    <use href="#driftPetal" x="820" y="380" width="14" height="14" transform="rotate(-30 827 387)"></use>
+    <use href="#driftPetal" x="980" y="280" width="20" height="20" transform="rotate(60 990 290)"></use>
+    <use href="#driftPetal" x="1180" y="420" width="16" height="16" transform="rotate(10 1188 428)"></use>
+    <use href="#driftPetal" x="1280" y="540" width="18" height="18" transform="rotate(-45 1289 549)"></use>
+    <use href="#driftPetal" x="430" y="540" width="16" height="16" transform="rotate(25 438 548)"></use>
+    <use href="#driftPetal" x="700" y="640" width="14" height="14" transform="rotate(-20 707 647)"></use>
+    <use href="#driftPetal" x="900" y="750" width="20" height="20" transform="rotate(35 910 760)"></use>
+    <use href="#driftPetal" x="1100" y="680" width="16" height="16" transform="rotate(-10 1108 688)"></use>
+    <use href="#driftPetal" x="1500" y="600" width="14" height="14" transform="rotate(50 1507 607)"></use>
+    <use href="#driftPetal" x="1680" y="430" width="18" height="18" transform="rotate(-25 1689 439)"></use>
+    <use href="#driftPetal" x="1750" y="700" width="16" height="16" transform="rotate(15 1758 708)"></use>
+  </g>
+
+  
+  <g fill="#d4af6a" opacity="0.65">
+    <circle cx="1240" cy="280" r="2"></circle>
+    <circle cx="1180" cy="340" r="1.5"></circle>
+    <circle cx="1500" cy="240" r="1.8"></circle>
+    <circle cx="1560" cy="320" r="1.4"></circle>
+    <circle cx="1300" cy="200" r="1.6"></circle>
+    <circle cx="1620" cy="420" r="1.4"></circle>
+    <circle cx="1180" cy="460" r="1.4"></circle>
+    <circle cx="1100" cy="380" r="1.2"></circle>
+  </g>
+
+  
+  <radialGradient id="vignette" cx="50%" cy="50%" r="70%">
+    <stop offset="60%" stop-color="#000" stop-opacity="0"></stop>
+    <stop offset="100%" stop-color="#3a1a0e" stop-opacity="0.3"></stop>
+  </radialGradient>
+  <rect width="1920" height="1080" fill="url(#vignette)"></rect>
+</svg>

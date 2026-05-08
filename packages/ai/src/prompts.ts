@@ -78,3 +78,83 @@ export const SECTION_ORDER: SectionKey[] = [
   'decade',
   'advice',
 ];
+
+// ============================================================================
+// Deep readings — 3 prompts trả về JSON cho UI panel chi tiết:
+//   - Toàn bộ Đại Hạn (12 vận)
+//   - Tiểu Hạn theo năm (6 năm gần)
+//   - Luận giải 12 cung
+// Tách khỏi SECTION_PROMPTS vì format khác (JSON object, không markdown ##/**).
+// ============================================================================
+
+export const DAI_HAN_JSON_PROMPT = `Phân tích TOÀN BỘ ĐẠI HẠN (12 vận, mỗi vận 10 năm).
+
+Bám sát đại hạn (decadal) đã cho trong dữ liệu lá số. Xếp 12 vận theo thứ tự tuổi tăng dần (vận đầu đời → vận cuối đời), không theo thứ tự palaces[].
+
+Trả về JSON object chính xác theo schema sau:
+{
+  "periods": [
+    {
+      "index": 0,
+      "ageStart": 2,
+      "ageEnd": 11,
+      "palaceName": "Mệnh",
+      "earthlyBranch": "Dậu",
+      "reading": "Đoạn văn 4-5 câu luận giải vận này — bám vào sao tọa thủ, cung gốc, đặc trưng tuổi đó. Văn xuôi liền mạch, không dùng markdown."
+    },
+    ... (đủ 12 mục, ageStart tăng dần)
+  ]
+}
+
+Yêu cầu nội dung mỗi reading:
+- Trỏ rõ tên sao chính tinh và phụ tinh có trong vận đó.
+- Đặc trưng giai đoạn (tuổi học hành, lập nghiệp, an cư, hưu trí...).
+- Cát hung trọng tâm (sự nghiệp/tài/duyên/sức khỏe nào nổi bật).
+- 4-5 câu, không lặp tiêu đề, không markdown.`;
+
+export const TIEU_HAN_JSON_PROMPT = `Phân tích TIỂU HẠN cho 6 năm liên tiếp (đã liệt kê cụ thể trong dữ liệu).
+
+Mỗi năm có cung tiểu hạn riêng (đã chỉ rõ palace.ages chứa tuổi của năm đó).
+
+Trả về JSON object chính xác theo schema:
+{
+  "years": [
+    {
+      "year": 2025,
+      "age": 35,
+      "palaceName": "Tài Bạch",
+      "earthlyBranch": "Tỵ",
+      "reading": "Đoạn 4-5 câu về vận trình năm đó — sự nghiệp, tài, duyên, sức khỏe, kèm cảnh báo nếu có sát tinh. Không markdown."
+    },
+    ... (đủ 6 năm)
+  ]
+}
+
+Bám sát:
+- Sao trong cung tiểu hạn năm đó.
+- Tuổi đời tương ứng (giai đoạn cuộc đời).
+- Lưu ý các sao xấu (Hỏa Linh, Kình Đà, Không Kiếp) hoặc sao tốt (Tử Phủ, Lộc Tồn).
+- 4-5 câu mỗi năm, văn xuôi, không markdown.`;
+
+export const TWELVE_PALACES_JSON_PROMPT = `Phân tích chi tiết 12 CUNG của lá số.
+
+Dựa vào sao chính tinh + phụ tinh + tạp diệu trong từng cung, viết một đoạn luận giải riêng cho mỗi cung.
+
+Trả về JSON object chính xác theo schema:
+{
+  "palaces": [
+    {
+      "name": "Mệnh",
+      "earthlyBranch": "Dậu",
+      "reading": "Đoạn văn 5-7 câu: tính cách / xu hướng vận / đặc điểm sao tọa thủ. Không markdown, văn xuôi liền mạch."
+    },
+    ... (đủ 12 cung)
+  ]
+}
+
+Yêu cầu:
+- Tên cung phải khớp chính xác với palaces[].name (vd: "Mệnh", "Phụ Mẫu", "Phúc Đức", "Điền Trạch", "Quan Lộc", "Nô Bộc", "Thiên Di", "Tật Ách", "Tài Bạch", "Tử Nữ"/"Tử Tức", "Phu Thê", "Huynh Đệ").
+- Mỗi reading 5-7 câu, đề cập tên sao cụ thể.
+- Cung Mệnh và Phu Thê viết kỹ hơn (ảnh hưởng cốt lõi).
+- Không markdown.`;
+

@@ -16,8 +16,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        serif: ['"Noto Serif"', 'Georgia', 'serif'],
+        sans: ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        serif: ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         soft: '0 10px 30px -15px rgba(107, 29, 94, 0.25)',

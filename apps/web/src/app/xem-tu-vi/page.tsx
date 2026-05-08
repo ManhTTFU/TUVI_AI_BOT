@@ -1,29 +1,13 @@
 import type { Metadata } from 'next';
-import TuviForm from '@/components/TuviForm';
+import TuviClient from '@/components/tu-vi/TuviClient';
 
 export const metadata: Metadata = {
-  title: 'Xem tử vi — Nhập ngày giờ sinh',
+  title: 'Xem Tử Vi — Lập lá số 14 chính tinh',
   description:
-    'Form nhập ngày giờ sinh để lập lá số Tử Vi Đẩu Số và nhận bản luận giải 6 phần chi tiết bằng AI.',
+    'Lập lá số tử vi 14 chính tinh — luận giải 12 cung, sự nghiệp, tình duyên, tài lộc theo Can Chi và mệnh nạp âm.',
   alternates: { canonical: '/xem-tu-vi' },
 };
 
-export default function XemTuViPage() {
-  return (
-    <section className="mx-auto max-w-3xl px-6 py-12">
-      <header className="text-center">
-        <span className="chip">BƯỚC 1 TRÊN 1</span>
-        <h1 className="mt-3 font-serif text-3xl font-bold text-brand-purple md:text-4xl">
-          Nhập thông tin để xem tử vi
-        </h1>
-        <p className="mt-3 text-brand-mute">
-          Điền chính xác các trường bên dưới. Dữ liệu chỉ dùng để lập lá số, không lưu trữ công khai.
-        </p>
-      </header>
-
-      <div className="mt-8 card">
-        <TuviForm />
-      </div>
-    </section>
-  );
+export default function Page() {
+  return <TuviClient />;
 }

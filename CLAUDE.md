@@ -24,7 +24,7 @@ pnpm --filter @tuvi/web exec tsc --noEmit
 
 # Web only
 pnpm --filter @tuvi/web build
-pnpm --filter @tuvi/web dev   # Next.js on :3000
+pnpm --filter @tuvi/web dev   # Next.js on :3100
 ```
 
 There is no test suite and no linter wired into CI. `next lint` exists in `apps/web` but no ESLint config is committed.
@@ -48,6 +48,8 @@ packages/
   astrology/  thin wrapper over iztro → normalized ChartData; summarizeChartForAI
   ai/         Deepseek client + 6-section prompt pipeline (analyzeChart)
   pdf/        PDFKit builder with Noto Sans fonts, brand palette
+  lichvannien/ Vietnamese lunar calendar (web-only): Hồ Ngọc Đức solar↔lunar,
+              can chi, 12 sao Ngọc Hạp (hoàng/hắc đạo), giờ hoàng đạo, advice tables
 scripts/download-fonts.ts   # postinstall — fetches Noto Sans TTF into ./fonts
 output/charts/*.json        # persisted FullResult per slug
 output/pdfs/*.pdf           # persisted rendered PDF per slug
@@ -89,11 +91,11 @@ In-memory `Session` map keyed by chat id (not persisted — process restart lose
 ## TypeScript + build conventions
 
 - Backend packages (`core`, `astrology`, `ai`, `pdf`, `api`, `bot`) use **NodeNext** module resolution and write **`.js` extensions in imports of `.ts` files** (e.g., `export * from './types.js';`). This is intentional — don't "fix" the extensions.
-- The Next.js web app does not use NodeNext. When `apps/web` imports from `@tuvi/core` (which uses `.js` imports internally), webpack resolves them via `next.config.js`:
+- The Next.js web app does not use NodeNext. When `apps/web` imports from `@tuvi/core` or `@tuvi/lichvannien` (which use `.js` imports internally), webpack resolves them via `next.config.js`:
   ```js
   config.resolve.extensionAlias = { '.js': ['.ts', '.tsx', '.js', '.jsx'] };
   ```
-  and `transpilePackages: ['@tuvi/core']`. If you add another `@tuvi/*` package to the web's import graph, add it to `transpilePackages` too.
+  and `transpilePackages: ['@tuvi/core', '@tuvi/lichvannien']`. If you add another `@tuvi/*` package to the web's import graph, add it to `transpilePackages` too.
 - All workspace packages expose source directly: `"main": "./src/index.ts"`, `"exports": { ".": "./src/index.ts" }`. Consumers run TS source via `tsx` (bot/api) or Next's bundler (web). The `tsc` builds emit into `dist/` but nothing imports from `dist/`.
 
 ## AI package (`@tuvi/ai`)

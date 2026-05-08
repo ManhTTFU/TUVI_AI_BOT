@@ -64,6 +64,38 @@ export interface AnalysisSections {
   advice: string;
 }
 
+export interface DaiHanReading {
+  /** Thứ tự vận theo tuổi tăng dần (0..11) */
+  index: number;
+  ageStart: number;
+  ageEnd: number;
+  yearStart: number;
+  yearEnd: number;
+  palaceName: string;
+  earthlyBranch: string;
+  reading: string;
+}
+
+export interface TieuHanReading {
+  year: number;
+  age: number;
+  palaceName: string;
+  earthlyBranch: string;
+  reading: string;
+}
+
+export interface TwelvePalaceReading {
+  name: string;
+  earthlyBranch: string;
+  reading: string;
+}
+
+export interface DeepReadingsData {
+  daiHan: DaiHanReading[];
+  tieuHan: TieuHanReading[];
+  twelvePalaces: TwelvePalaceReading[];
+}
+
 export interface FullResult {
   slug: string;
   createdAt: string;

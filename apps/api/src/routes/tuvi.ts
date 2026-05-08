@@ -1,6 +1,6 @@
-import { Router, type Request, type Response } from 'express';
+import { Router, type Request, type Response, type Router as ExpressRouter } from 'express';
 import { calculateChart } from '@tuvi/astrology';
-import { analyzeChart } from '@tuvi/ai';
+import { analyzeChart, analyzeDeepReadings } from '@tuvi/ai';
 import { buildPdf } from '@tuvi/pdf';
 import { makeChartSlug, CANH_GIO, validateBirthDate } from '@tuvi/core';
 import type { BirthInfo, Gender, FullResult } from '@tuvi/core';
@@ -8,7 +8,7 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { loadFullResult, pdfPath, savePdf, saveFullResult } from '../store.js';
 
-export const tuviRouter = Router();
+export const tuviRouter: ExpressRouter = Router();
 
 function parseInfo(body: any): BirthInfo {
   const name = String(body?.name ?? '').trim();
@@ -104,6 +104,19 @@ tuviRouter.get('/pdf/:slug', async (req: Request, res: Response) => {
     .setHeader('Content-Type', 'application/pdf')
     .setHeader('Content-Disposition', `inline; filename="${slug}.pdf"`)
     .end(buf);
+});
+
+tuviRouter.post('/deep-readings', async (req: Request, res: Response) => {
+  try {
+    const info = parseInfo(req.body);
+    const chart = calculateChart(info);
+    const birthYear = Number(info.birthDate.split('/')[2]);
+    const currentYear = new Date().getFullYear();
+    const deep = await analyzeDeepReadings(chart, birthYear, currentYear);
+    res.json({ ok: true, deep });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: (e as Error).message });
+  }
 });
 
 tuviRouter.get('/canh-gio', (_req, res) => {

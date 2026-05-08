@@ -1,3 +1,6 @@
+@import url('https://fonts.cdnfonts.com/css/sf-pro-display');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,6 +10,7 @@
   --brand-gold: #D4A843;
   --brand-cream: #FDF8F0;
   --brand-ink: #2C1729;
+  --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
 }
 
 html {
@@ -14,10 +18,11 @@ html {
 }
 
 body {
-  background: var(--brand-cream);
+  background: #fbf3e2;
   color: var(--brand-ink);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer components {

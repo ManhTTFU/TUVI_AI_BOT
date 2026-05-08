@@ -1,0 +1,288 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    
+    <pattern id="seigaiha" x="0" y="0" width="80" height="40" patternUnits="userSpaceOnUse">
+      <rect width="80" height="40" fill="#f6efe1"></rect>
+      <g fill="none" stroke="#e6c8a6" stroke-width="1.1" opacity="0.55">
+        <circle cx="0" cy="40" r="36"></circle>
+        <circle cx="0" cy="40" r="28"></circle>
+        <circle cx="0" cy="40" r="20"></circle>
+        <circle cx="0" cy="40" r="12"></circle>
+        <circle cx="80" cy="40" r="36"></circle>
+        <circle cx="80" cy="40" r="28"></circle>
+        <circle cx="80" cy="40" r="20"></circle>
+        <circle cx="80" cy="40" r="12"></circle>
+        <circle cx="40" cy="0" r="36"></circle>
+        <circle cx="40" cy="0" r="28"></circle>
+        <circle cx="40" cy="0" r="20"></circle>
+        <circle cx="40" cy="0" r="12"></circle>
+      </g>
+    </pattern>
+
+    <radialGradient id="warmth" cx="50%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="#fff7e6" stop-opacity="0.6"></stop>
+      <stop offset="60%" stop-color="#fbf3e2" stop-opacity="0"></stop>
+      <stop offset="100%" stop-color="#e9d4b6" stop-opacity="0.35"></stop>
+    </radialGradient>
+
+    <linearGradient id="koiBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5b6a7"></stop>
+      <stop offset="55%" stop-color="#e98978"></stop>
+      <stop offset="100%" stop-color="#c95a4a"></stop>
+    </linearGradient>
+
+    <linearGradient id="koiBelly" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde4d8"></stop>
+      <stop offset="100%" stop-color="#f0b8a4"></stop>
+    </linearGradient>
+
+    <linearGradient id="splash" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f7c8b9" stop-opacity="0.85"></stop>
+      <stop offset="100%" stop-color="#e89f8a" stop-opacity="0.55"></stop>
+    </linearGradient>
+
+    <linearGradient id="goldDragon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5d585"></stop>
+      <stop offset="50%" stop-color="#c89a4f"></stop>
+      <stop offset="100%" stop-color="#8a6526"></stop>
+    </linearGradient>
+
+    <linearGradient id="branch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a3a25"></stop>
+      <stop offset="100%" stop-color="#3a2418"></stop>
+    </linearGradient>
+
+    <radialGradient id="petal" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#fde6ea"></stop>
+      <stop offset="60%" stop-color="#f4b4c3"></stop>
+      <stop offset="100%" stop-color="#d97891"></stop>
+    </radialGradient>
+
+    <radialGradient id="petalCenter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a83a52" stop-opacity="0.9"></stop>
+      <stop offset="100%" stop-color="#a83a52" stop-opacity="0"></stop>
+    </radialGradient>
+
+    
+    <symbol id="sakura" viewBox="-20 -20 40 40">
+      <g>
+        <g>
+          <path d="M0,-14 C5,-12 7,-7 4,-2 C2,1 -2,1 -4,-2 C-7,-7 -5,-12 0,-14 Z" fill="url(#petal)"></path>
+        </g>
+        <g transform="rotate(72)">
+          <path d="M0,-14 C5,-12 7,-7 4,-2 C2,1 -2,1 -4,-2 C-7,-7 -5,-12 0,-14 Z" fill="url(#petal)"></path>
+        </g>
+        <g transform="rotate(144)">
+          <path d="M0,-14 C5,-12 7,-7 4,-2 C2,1 -2,1 -4,-2 C-7,-7 -5,-12 0,-14 Z" fill="url(#petal)"></path>
+        </g>
+        <g transform="rotate(216)">
+          <path d="M0,-14 C5,-12 7,-7 4,-2 C2,1 -2,1 -4,-2 C-7,-7 -5,-12 0,-14 Z" fill="url(#petal)"></path>
+        </g>
+        <g transform="rotate(288)">
+          <path d="M0,-14 C5,-12 7,-7 4,-2 C2,1 -2,1 -4,-2 C-7,-7 -5,-12 0,-14 Z" fill="url(#petal)"></path>
+        </g>
+        <circle r="3" fill="url(#petalCenter)"></circle>
+        <g stroke="#a83a52" stroke-width="0.4" opacity="0.7">
+          <line x1="0" y1="0" x2="0" y2="-3"></line>
+          <line x1="0" y1="0" x2="2.85" y2="-0.92" transform="rotate(72)"></line>
+          <line x1="0" y1="0" x2="0" y2="-3" transform="rotate(144)"></line>
+          <line x1="0" y1="0" x2="0" y2="-3" transform="rotate(216)"></line>
+          <line x1="0" y1="0" x2="0" y2="-3" transform="rotate(288)"></line>
+        </g>
+      </g>
+    </symbol>
+
+    
+    <symbol id="petalOnly" viewBox="-10 -10 20 20">
+      <path d="M0,-9 C4,-7 5,-3 2,1 C0,3 -2,3 -3,1 C-5,-3 -4,-7 0,-9 Z" fill="url(#petal)"></path>
+    </symbol>
+  </defs>
+
+  
+  <rect width="1920" height="1080" fill="url(#seigaiha)"></rect>
+  <rect width="1920" height="1080" fill="url(#warmth)"></rect>
+
+  
+  <g opacity="0.18">
+    <path d="M0,720 L0,560 C60,540 120,580 180,560 C260,535 300,600 380,580 C460,560 520,610 600,600 L600,720 Z" fill="#7a6244"></path>
+    <path d="M0,720 L0,640 C100,610 200,650 320,640 C420,635 500,670 600,660 L600,720 Z" fill="#8a7858" opacity="0.7"></path>
+  </g>
+
+  
+  <g transform="translate(1500,90) scale(1.1)">
+    
+    <g fill="#e8d8b8" opacity="0.45">
+      <path d="M-40,40 C-60,30 -50,10 -30,15 C-25,5 -10,5 -5,15 C5,5 25,15 20,30 C35,28 40,45 25,50 C15,60 -5,55 -15,50 C-30,55 -45,50 -40,40 Z"></path>
+      <path d="M120,80 C100,70 110,55 130,60 C140,50 160,55 165,70 C180,68 185,85 170,90 C160,100 140,95 130,90 C115,95 110,85 120,80 Z" opacity="0.7"></path>
+    </g>
+    
+    <g fill="url(#goldDragon)">
+      <path d="M30,90 C70,70 110,80 140,100 C170,120 200,115 220,95 C240,75 270,70 290,85 C310,100 320,130 305,150 C290,170 260,170 240,155 C220,140 200,145 195,165 C190,185 165,195 145,180 C125,165 130,140 145,125 C160,110 155,90 130,90 C100,90 70,110 50,115 C40,118 25,110 30,90 Z" opacity="0.92"></path>
+      
+      <path d="M295,82 C310,72 322,80 320,95 C326,90 335,95 330,108 C326,120 312,122 302,116 C295,112 290,100 295,82 Z"></path>
+      <path d="M315,75 C320,60 312,55 305,65 M325,80 C335,68 330,60 322,68" stroke="url(#goldDragon)" stroke-width="2.5" fill="none"></path>
+      
+      <path d="M300,108 C290,120 280,130 268,138 M306,112 C300,125 296,140 290,152" stroke="url(#goldDragon)" stroke-width="1.5" fill="none" opacity="0.7"></path>
+      
+      <path d="M30,90 C15,85 5,75 0,60 C8,68 18,75 25,82 Z" opacity="0.85"></path>
+    </g>
+    
+    <g fill="#a87b30" opacity="0.55">
+      <circle cx="120" cy="95" r="1.5"></circle>
+      <circle cx="160" cy="105" r="1.5"></circle>
+      <circle cx="200" cy="105" r="1.5"></circle>
+      <circle cx="240" cy="120" r="1.5"></circle>
+      <circle cx="180" cy="145" r="1.5"></circle>
+      <circle cx="220" cy="155" r="1.5"></circle>
+      <circle cx="270" cy="145" r="1.5"></circle>
+    </g>
+    
+    <g fill="#d4af6a" opacity="0.7">
+      <circle cx="-20" cy="80" r="2"></circle>
+      <circle cx="-50" cy="95" r="1.6"></circle>
+      <circle cx="-80" cy="85" r="1.3"></circle>
+      <circle cx="-110" cy="100" r="1.1"></circle>
+      <circle cx="-140" cy="92" r="0.9"></circle>
+      <circle cx="-30" cy="105" r="1.4"></circle>
+      <circle cx="-65" cy="115" r="1.1"></circle>
+    </g>
+  </g>
+
+  
+  <g transform="translate(80,720)">
+    
+    <g>
+      <path d="M-20,200 C-40,160 -20,100 30,80 C80,60 130,90 140,140 C148,180 130,220 80,230 C40,238 0,225 -20,200 Z" fill="url(#splash)" opacity="0.9"></path>
+      <path d="M-40,260 C-60,230 -50,180 -10,170 C30,165 60,200 55,240 C50,275 10,290 -20,280 C-35,275 -45,270 -40,260 Z" fill="url(#splash)" opacity="0.75"></path>
+      <path d="M60,260 C70,230 110,210 150,225 C190,240 200,290 170,310 C140,328 90,320 70,295 C58,282 55,272 60,260 Z" fill="url(#splash)" opacity="0.7"></path>
+      
+      <g fill="none" stroke="#d97891" stroke-width="1" opacity="0.55">
+        <path d="M-10,200 C20,180 60,180 90,200"></path>
+        <path d="M0,220 C30,210 70,215 100,230"></path>
+        <path d="M-30,250 C0,245 30,255 50,270"></path>
+      </g>
+    </g>
+
+    
+    <g transform="translate(150,160) rotate(-22)">
+      
+      <g fill="url(#koiBody)" opacity="0.92">
+        <path d="M-180,0 C-220,-30 -240,-10 -235,15 C-225,30 -200,25 -180,5 Z"></path>
+        <path d="M-180,0 C-225,30 -240,40 -230,55 C-215,60 -195,45 -175,15 Z" opacity="0.85"></path>
+      </g>
+      
+      <ellipse cx="0" cy="0" rx="170" ry="45" fill="url(#koiBody)"></ellipse>
+      
+      <ellipse cx="-10" cy="15" rx="140" ry="22" fill="url(#koiBelly)" opacity="0.7"></ellipse>
+      
+      <path d="M-30,30 C-20,55 10,70 30,55 C20,45 0,40 -10,30 Z" fill="url(#koiBody)" opacity="0.85"></path>
+      
+      <path d="M-50,-30 C-35,-55 -10,-60 5,-45 C-5,-38 -20,-32 -40,-30 Z" fill="url(#koiBody)" opacity="0.85"></path>
+      
+      <ellipse cx="140" cy="0" rx="40" ry="35" fill="url(#koiBody)"></ellipse>
+      <circle cx="155" cy="-8" r="5" fill="#3a1818"></circle>
+      <circle cx="156.5" cy="-9.5" r="1.5" fill="#fde6ea"></circle>
+      
+      <path d="M170,8 C175,12 178,18 173,20" stroke="#7a2828" stroke-width="1.4" fill="none"></path>
+      
+      <g fill="none" stroke="#a83a52" stroke-width="0.7" opacity="0.45">
+        <path d="M-130,-10 Q-115,-22 -100,-10"></path>
+        <path d="M-100,-10 Q-85,-22 -70,-10"></path>
+        <path d="M-70,-10 Q-55,-22 -40,-10"></path>
+        <path d="M-40,-10 Q-25,-22 -10,-10"></path>
+        <path d="M-10,-10 Q5,-22 20,-10"></path>
+        <path d="M20,-10 Q35,-22 50,-10"></path>
+        <path d="M50,-10 Q65,-22 80,-10"></path>
+        <path d="M80,-10 Q95,-22 110,-10"></path>
+        <path d="M-115,5 Q-100,-7 -85,5"></path>
+        <path d="M-85,5 Q-70,-7 -55,5"></path>
+        <path d="M-55,5 Q-40,-7 -25,5"></path>
+        <path d="M-25,5 Q-10,-7 5,5"></path>
+        <path d="M5,5 Q20,-7 35,5"></path>
+        <path d="M35,5 Q50,-7 65,5"></path>
+        <path d="M65,5 Q80,-7 95,5"></path>
+        <path d="M95,5 Q110,-7 125,5"></path>
+      </g>
+      
+      <g fill="#a83a52" opacity="0.7">
+        <ellipse cx="-50" cy="-12" rx="14" ry="6"></ellipse>
+        <ellipse cx="60" cy="-8" rx="10" ry="5"></ellipse>
+        <ellipse cx="120" cy="0" rx="8" ry="4"></ellipse>
+      </g>
+    </g>
+
+    
+    <g transform="translate(-30,90)">
+      <g fill="url(#splash)" opacity="0.85">
+        <ellipse cx="0" cy="0" rx="18" ry="34" transform="rotate(-30)"></ellipse>
+        <ellipse cx="0" cy="0" rx="18" ry="34" transform="rotate(0)"></ellipse>
+        <ellipse cx="0" cy="0" rx="18" ry="34" transform="rotate(30)"></ellipse>
+        <ellipse cx="0" cy="0" rx="14" ry="26" transform="rotate(-15)" fill="#fde4d8"></ellipse>
+        <ellipse cx="0" cy="0" rx="14" ry="26" transform="rotate(15)" fill="#fde4d8"></ellipse>
+      </g>
+      <circle r="6" fill="#e89f8a"></circle>
+    </g>
+
+    
+    <g transform="translate(70,260)">
+      <ellipse cx="0" cy="0" rx="55" ry="18" fill="#b8d49a" opacity="0.5"></ellipse>
+      <g stroke="#7a9a5a" stroke-width="0.7" opacity="0.5" fill="none">
+        <line x1="-50" y1="0" x2="50" y2="0"></line>
+        <line x1="0" y1="-15" x2="0" y2="15"></line>
+      </g>
+    </g>
+  </g>
+
+  
+  <g transform="translate(-20,-20)">
+    <path d="M0,80 C40,100 80,90 120,120 C150,142 175,165 200,180 C220,192 235,200 250,210" stroke="url(#branch)" stroke-width="3.5" fill="none" stroke-linecap="round"></path>
+    <path d="M120,120 C140,105 165,100 185,90" stroke="url(#branch)" stroke-width="2.5" fill="none" stroke-linecap="round"></path>
+    <path d="M180,160 C195,150 215,150 230,142" stroke="url(#branch)" stroke-width="2" fill="none" stroke-linecap="round"></path>
+    
+    <g>
+      <use href="#sakura" x="180" y="86" width="36" height="36"></use>
+      <use href="#sakura" x="148" y="118" width="30" height="30"></use>
+      <use href="#sakura" x="225" y="135" width="32" height="32"></use>
+      <use href="#sakura" x="252" y="205" width="38" height="38"></use>
+      <use href="#sakura" x="200" y="178" width="28" height="28"></use>
+      <use href="#sakura" x="100" y="105" width="26" height="26"></use>
+    </g>
+  </g>
+
+  
+  <g transform="translate(1820,200)">
+    <path d="M0,0 C-20,80 -40,160 -30,260 C-22,330 -10,400 0,470" stroke="url(#branch)" stroke-width="3" fill="none" stroke-linecap="round"></path>
+    <path d="M-25,150 C-50,160 -75,170 -95,180" stroke="url(#branch)" stroke-width="2" fill="none" stroke-linecap="round"></path>
+    <path d="M-30,300 C-55,310 -80,320 -100,335" stroke="url(#branch)" stroke-width="2" fill="none" stroke-linecap="round"></path>
+    <use href="#sakura" x="-110" y="170" width="34" height="34"></use>
+    <use href="#sakura" x="-80" y="155" width="28" height="28"></use>
+    <use href="#sakura" x="-55" y="150" width="26" height="26"></use>
+    <use href="#sakura" x="-115" y="325" width="36" height="36"></use>
+    <use href="#sakura" x="-85" y="315" width="30" height="30"></use>
+    <use href="#sakura" x="-55" y="305" width="26" height="26"></use>
+    <use href="#sakura" x="-25" y="240" width="24" height="24"></use>
+    <use href="#sakura" x="-10" y="450" width="32" height="32"></use>
+  </g>
+
+  
+  <g opacity="0.85">
+    <use href="#petalOnly" x="350" y="120" width="22" height="22" transform="rotate(20 361 131)"></use>
+    <use href="#petalOnly" x="520" y="240" width="18" height="18" transform="rotate(-15 529 249)"></use>
+    <use href="#petalOnly" x="720" y="160" width="20" height="20" transform="rotate(40 730 170)"></use>
+    <use href="#petalOnly" x="900" y="320" width="16" height="16" transform="rotate(-30 908 328)"></use>
+    <use href="#petalOnly" x="1080" y="200" width="22" height="22" transform="rotate(60 1091 211)"></use>
+    <use href="#petalOnly" x="1280" y="380" width="18" height="18" transform="rotate(10 1289 389)"></use>
+    <use href="#petalOnly" x="450" y="500" width="20" height="20" transform="rotate(-45 460 510)"></use>
+    <use href="#petalOnly" x="650" y="640" width="16" height="16" transform="rotate(25 658 648)"></use>
+    <use href="#petalOnly" x="820" y="780" width="22" height="22" transform="rotate(-20 831 791)"></use>
+    <use href="#petalOnly" x="1100" y="560" width="18" height="18" transform="rotate(35 1109 569)"></use>
+    <use href="#petalOnly" x="1340" y="700" width="20" height="20" transform="rotate(-10 1350 710)"></use>
+    <use href="#petalOnly" x="1500" y="500" width="16" height="16" transform="rotate(50 1508 508)"></use>
+    <use href="#petalOnly" x="280" y="380" width="14" height="14" transform="rotate(-25 287 387)"></use>
+    <use href="#petalOnly" x="980" y="480" width="14" height="14" transform="rotate(15 987 487)"></use>
+    <use href="#petalOnly" x="1200" y="900" width="20" height="20" transform="rotate(-40 1210 910)"></use>
+  </g>
+
+  
+  <rect width="1920" height="1080" fill="url(#warmth)" opacity="0.4"></rect>
+</svg>
