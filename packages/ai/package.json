@@ -14,9 +14,10 @@
   },
   "//": "Gói 'openai' được dùng làm HTTP client cho Deepseek (OpenAI-compatible API). Xem src/client.ts để rõ — baseURL được trỏ sang https://api.deepseek.com, không gọi về api.openai.com.",
   "dependencies": {
-    "openai": "^4.77.0",
+    "@tuvi/astrology": "workspace:*",
     "@tuvi/core": "workspace:*",
-    "@tuvi/astrology": "workspace:*"
+    "openai": "^4.77.0",
+    "p-limit": "^7.3.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

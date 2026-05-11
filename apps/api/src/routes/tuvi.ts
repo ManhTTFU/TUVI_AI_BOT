@@ -6,7 +6,18 @@ import { makeChartSlug, CANH_GIO, validateBirthDate } from '@tuvi/core';
 import type { BirthInfo, Gender, FullResult } from '@tuvi/core';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { loadFullResult, pdfPath, savePdf, saveFullResult } from '../store.js';
+import {
+  birthCacheKey,
+  deepCacheKey,
+  loadCachedAnalysis,
+  loadCachedDeep,
+  loadFullResult,
+  pdfPath,
+  saveCachedAnalysis,
+  saveCachedDeep,
+  savePdf,
+  saveFullResult,
+} from '../store.js';
 
 export const tuviRouter: ExpressRouter = Router();
 
@@ -42,8 +53,14 @@ tuviRouter.post('/analyze', async (req: Request, res: Response) => {
   try {
     const info = parseInfo(req.body);
     const chart = calculateChart(info);
-    const analysis = await analyzeChart(chart);
-    res.json({ ok: true, chart, analysis });
+    const key = birthCacheKey(info);
+    let analysis = await loadCachedAnalysis(key);
+    let cached = !!analysis;
+    if (!analysis) {
+      analysis = await analyzeChart(chart);
+      await saveCachedAnalysis(key, analysis);
+    }
+    res.json({ ok: true, chart, analysis, cached });
   } catch (e) {
     res.status(500).json({ ok: false, error: (e as Error).message });
   }
@@ -70,7 +87,12 @@ tuviRouter.post('/full', async (req: Request, res: Response) => {
     const info = parseInfo(req.body);
     const slug = makeChartSlug(info.name, info.birthDate);
     const chart = calculateChart(info);
-    const analysis = await analyzeChart(chart);
+    const key = birthCacheKey(info);
+    let analysis = await loadCachedAnalysis(key);
+    if (!analysis) {
+      analysis = await analyzeChart(chart);
+      await saveCachedAnalysis(key, analysis);
+    }
     const full: FullResult = {
       slug,
       createdAt: new Date().toISOString(),
@@ -112,8 +134,14 @@ tuviRouter.post('/deep-readings', async (req: Request, res: Response) => {
     const chart = calculateChart(info);
     const birthYear = Number(info.birthDate.split('/')[2]);
     const currentYear = new Date().getFullYear();
-    const deep = await analyzeDeepReadings(chart, birthYear, currentYear);
-    res.json({ ok: true, deep });
+    const key = deepCacheKey(info, currentYear);
+    let deep = await loadCachedDeep(key);
+    let cached = !!deep;
+    if (!deep) {
+      deep = await analyzeDeepReadings(chart, birthYear, currentYear);
+      await saveCachedDeep(key, deep);
+    }
+    res.json({ ok: true, deep, cached });
   } catch (e) {
     res.status(500).json({ ok: false, error: (e as Error).message });
   }

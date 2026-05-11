@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useSession, signOut } from 'next-auth/react';
+import UserMenu from './UserMenu';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -26,6 +28,7 @@ function isActive(href: string, pathname: string): boolean {
 export default function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname() ?? '/';
+  const { data: session } = useSession();
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-[#fbf3e2]/92 border-b border-[#c89146]/45">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -67,12 +70,7 @@ export default function Header() {
           })}
         </nav>
         <div className="flex items-center gap-3">
-          <Link
-            href="/#tarot"
-            className="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[13px] hover:bg-[#4a6c7a] transition"
-          >
-            Trải bài ngay
-          </Link>
+          <UserMenu />
           <button
             type="button"
             onClick={() => setOpen(!open)}
@@ -96,6 +94,61 @@ export default function Header() {
               {link.label}
             </Link>
           ))}
+          <div className="my-1 border-t border-[#4a6c7a]/20" />
+          {session?.user ? (
+            <>
+              <Link
+                href="/vi-cua-toi"
+                onClick={() => setOpen(false)}
+                className="text-[#0f0a08] hover:text-[#4a6c7a]"
+              >
+                💰 Ví của tôi
+              </Link>
+              <Link
+                href="/lich-su"
+                onClick={() => setOpen(false)}
+                className="text-[#0f0a08] hover:text-[#4a6c7a]"
+              >
+                📜 Lịch sử của tôi
+              </Link>
+              {session.user.role === 'admin' && (
+                <>
+                  <Link
+                    href="/admin/users"
+                    onClick={() => setOpen(false)}
+                    className="text-[#c8361d] hover:text-[#5a3a1a] font-medium"
+                  >
+                    ⚙ Admin · Người dùng
+                  </Link>
+                  <Link
+                    href="/admin/transactions"
+                    onClick={() => setOpen(false)}
+                    className="text-[#c8361d] hover:text-[#5a3a1a] font-medium"
+                  >
+                    💳 Admin · Giao dịch
+                  </Link>
+                </>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  signOut({ callbackUrl: '/' });
+                }}
+                className="text-left text-[#4a3a30] hover:text-[#5a3a1a]"
+              >
+                ↩ Đăng xuất
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/dang-nhap"
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-[#5a3a1a] to-[#c89146] text-[#fbf3e2] font-semibold text-[13px] w-fit"
+            >
+              ✦ Đăng nhập
+            </Link>
+          )}
         </div>
       )}
     </header>

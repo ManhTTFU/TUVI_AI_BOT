@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/env';
 import { BodyBackground, Header, Footer } from '@/components/layout';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,10 +45,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi">
       <body className="min-h-screen text-[#0f0a08]">
-        <BodyBackground />
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <AuthProvider>
+          <BodyBackground />
+          <Header />
+          <main>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

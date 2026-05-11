@@ -90,10 +90,51 @@ export interface TwelvePalaceReading {
   reading: string;
 }
 
+export type NamCategory = 'Đại Cát' | 'Tiểu Cát' | 'Bình Hòa' | 'Cẩn Trọng';
+export type MonthLabel = 'Tốt' | 'Bình' | 'Cẩn trọng';
+
+export interface NamHienTaiAspect {
+  /** 1..5 sao đánh giá */
+  rating: number;
+  /** 3-5 câu luận giải khía cạnh trong năm */
+  text: string;
+}
+
+export interface NamHienTaiMonth {
+  month: number;
+  label: MonthLabel;
+  text: string;
+}
+
+export interface NamHienTaiReading {
+  year: number;
+  age: number;
+  yearCanChi: string;
+  palaceName: string;
+  earthlyBranch: string;
+  category: NamCategory;
+  /** 4-6 câu tổng quan năm, cá nhân hóa theo cung tiểu hạn + đại hạn + năm Can Chi */
+  overview: string;
+  aspects: {
+    career: NamHienTaiAspect;
+    wealth: NamHienTaiAspect;
+    love: NamHienTaiAspect;
+    health: NamHienTaiAspect;
+  };
+  months: NamHienTaiMonth[];
+  /**
+   * 3-5 lời khuyên cá nhân hóa cho năm, mỗi câu kèm 1 tục ngữ/ca dao Việt Nam
+   * có thật và HỢP NGỮ CẢNH (không gượng ép). AI có thể trả về câu không tục ngữ
+   * nếu không có câu phù hợp.
+   */
+  advice: string[];
+}
+
 export interface DeepReadingsData {
   daiHan: DaiHanReading[];
   tieuHan: TieuHanReading[];
   twelvePalaces: TwelvePalaceReading[];
+  namHienTai: NamHienTaiReading;
 }
 
 export interface FullResult {

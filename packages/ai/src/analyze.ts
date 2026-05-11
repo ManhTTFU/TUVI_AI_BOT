@@ -3,11 +3,13 @@ import type {
   ChartData,
   DaiHanReading,
   DeepReadingsData,
+  NamHienTaiReading,
   TieuHanReading,
   TwelvePalaceReading,
 } from '@tuvi/core';
 import { summarizeChartForAI } from '@tuvi/astrology';
 import { getDeepseekClient, getDeepseekModel } from './client.js';
+import { aiCall } from './limit.js';
 import {
   SYSTEM_PROMPT,
   SECTION_PROMPTS,
@@ -15,8 +17,23 @@ import {
   DAI_HAN_JSON_PROMPT,
   TIEU_HAN_JSON_PROMPT,
   TWELVE_PALACES_JSON_PROMPT,
+  NAM_HIEN_TAI_JSON_PROMPT,
   type SectionKey,
 } from './prompts.js';
+
+const CAN_AI = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý'];
+const CHI_AI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
+
+function canChiYearStr(y: number): string {
+  const c = ((y + 6) % 10 + 10) % 10;
+  const ch = ((y + 8) % 12 + 12) % 12;
+  return `${CAN_AI[c]} ${CHI_AI[ch]}`;
+}
+
+function chiOfYear(y: number): string {
+  const ch = ((y + 8) % 12 + 12) % 12;
+  return CHI_AI[ch];
+}
 
 export interface AnalyzeOptions {
   onProgress?: (step: number, total: number, key: SectionKey) => void;
@@ -48,14 +65,23 @@ export async function analyzeChart(
   opts: AnalyzeOptions = {},
 ): Promise<AnalysisSections> {
   const chartSummary = summarizeChartForAI(chart);
+  let done = 0;
+  const total = SECTION_ORDER.length;
+
+  // Parallel: 6 section gọi đồng thời, mỗi cái qua aiCall (limit + retry).
+  // Progress emit theo thứ tự hoàn thành, không theo thứ tự gọi.
+  const texts = await Promise.all(
+    SECTION_ORDER.map((key) =>
+      aiCall(() => callOneSection(key, chartSummary), `analyze:${key}`).then((text) => {
+        done++;
+        opts.onProgress?.(done, total, key);
+        return [key, text] as const;
+      }),
+    ),
+  );
+
   const result: Partial<AnalysisSections> = {};
-
-  for (let i = 0; i < SECTION_ORDER.length; i++) {
-    const key = SECTION_ORDER[i];
-    opts.onProgress?.(i + 1, SECTION_ORDER.length, key);
-    result[key] = await callOneSection(key, chartSummary);
-  }
-
+  for (const [k, t] of texts) result[k] = t;
   return result as AnalysisSections;
 }
 
@@ -67,32 +93,35 @@ async function callJsonSection<T>(
   prompt: string,
   chartSummary: string,
   extraContext?: string,
+  label = 'json',
 ): Promise<T> {
-  const client = getDeepseekClient();
-  const model = getDeepseekModel();
+  return aiCall(async () => {
+    const client = getDeepseekClient();
+    const model = getDeepseekModel();
 
-  const userContent =
-    `DỮ LIỆU LÁ SỐ (bắt buộc bám sát):\n\n${chartSummary}` +
-    (extraContext ? `\n\n${extraContext}` : '') +
-    `\n\n---\n\n${prompt}`;
+    const userContent =
+      `DỮ LIỆU LÁ SỐ (bắt buộc bám sát):\n\n${chartSummary}` +
+      (extraContext ? `\n\n${extraContext}` : '') +
+      `\n\n---\n\n${prompt}`;
 
-  const completion = await client.chat.completions.create({
-    model,
-    temperature: 0.7,
-    response_format: { type: 'json_object' },
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent },
-    ],
-  });
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+    });
 
-  const text = completion.choices[0]?.message?.content?.trim();
-  if (!text) throw new Error('Deepseek không trả lời (JSON)');
-  try {
-    return JSON.parse(text) as T;
-  } catch (e) {
-    throw new Error(`Deepseek trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 500)}`);
-  }
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) throw new Error('Deepseek không trả lời (JSON)');
+    try {
+      return JSON.parse(text) as T;
+    } catch (e) {
+      throw new Error(`Deepseek trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 500)}`);
+    }
+  }, label);
 }
 
 /** Sắp 12 đại hạn theo tuổi tăng dần và trả meta để AI tham chiếu. */
@@ -161,6 +190,7 @@ export async function analyzeDaiHan(
     DAI_HAN_JSON_PROMPT,
     summary,
     ctx,
+    'daiHan',
   );
 
   // Merge AI readings vào meta tự build (đảm bảo đủ 12 mục, đúng năm sinh).
@@ -195,6 +225,7 @@ export async function analyzeTieuHan(
     TIEU_HAN_JSON_PROMPT,
     summary,
     context,
+    'tieuHan',
   );
 
   return meta.map((m) => {
@@ -210,6 +241,8 @@ export async function analyzeTwelvePalaces(
   const out = await callJsonSection<{ palaces: TwelvePalaceReading[] }>(
     TWELVE_PALACES_JSON_PROMPT,
     summary,
+    undefined,
+    'twelvePalaces',
   );
 
   // Match theo name; fallback theo earthlyBranch nếu name lệch (Tử Nữ vs Tử Tức)
@@ -226,6 +259,137 @@ export async function analyzeTwelvePalaces(
   });
 }
 
+function buildNamHienTaiContext(
+  chart: ChartData,
+  birthYear: number,
+  currentYear: number,
+): { context: string; tieuHanPalaceName: string; tieuHanBranch: string } {
+  const age = currentYear - birthYear;
+  const yearCanChi = canChiYearStr(currentYear);
+  const birthYearCanChi = canChiYearStr(birthYear);
+
+  const tieuHanPalace =
+    chart.palaces.find((p) => Array.isArray(p.ages) && p.ages.includes(age)) ?? null;
+  const daiHanPalace =
+    chart.palaces.find(
+      (p) => p.decadal && age >= p.decadal.range[0] && age <= p.decadal.range[1],
+    ) ?? null;
+  const menh = chart.palaces.find((p) => p.name === 'Mệnh') ?? null;
+
+  const fmtPalace = (p: typeof tieuHanPalace, label: string) => {
+    if (!p) return `${label}: không xác định`;
+    const major = p.majorStars.map((s) => s.name).join(', ') || '(không chính tinh)';
+    const minor = p.minorStars.map((s) => s.name).join(', ') || '(không phụ tinh)';
+    return `${label}: cung ${p.name} ${p.heavenlyStem}${p.earthlyBranch}; chính: ${major}; phụ: ${minor}`;
+  };
+
+  // 12 tháng năm hiện tại — mỗi tháng có chi riêng (tháng giêng âm = Dần, ...).
+  // Đây là chi tháng âm để AI tham chiếu xung khắc với cung tiểu hạn.
+  const monthChis: string[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const chiIdx = (m + 1) % 12; // tháng 1 → Dần (idx 2)
+    monthChis.push(`Tháng ${m}: chi ${CHI_AI[chiIdx]}`);
+  }
+
+  const lines: string[] = [
+    '=== BỐI CẢNH NĂM HIỆN TẠI (CÁ NHÂN HÓA) ===',
+    `Đương số sinh năm ${birthYearCanChi} (${birthYear}), năm nay ${age} tuổi.`,
+    `Năm hiện tại: ${yearCanChi} ${currentYear}.`,
+    `Tương quan: chi năm sinh ${chiOfYear(birthYear)} — chi năm hiện tại ${chiOfYear(currentYear)}.`,
+    fmtPalace(tieuHanPalace, 'Cung TIỂU HẠN năm hiện tại'),
+    fmtPalace(daiHanPalace, 'Cung ĐẠI HẠN đang chạy'),
+    fmtPalace(menh, 'Cung MỆNH gốc'),
+    `Mệnh chủ: ${chart.soul} · Thân chủ: ${chart.body}; Ngũ hành cục: ${chart.fiveElementsClass}.`,
+    '',
+    'Chi 12 tháng năm hiện tại (để xét xung khắc với cung tiểu hạn):',
+    ...monthChis,
+  ];
+
+  return {
+    context: lines.join('\n'),
+    tieuHanPalaceName: tieuHanPalace?.name ?? '—',
+    tieuHanBranch: tieuHanPalace?.earthlyBranch ?? '—',
+  };
+}
+
+type RawNamHienTai = Omit<NamHienTaiReading, 'year' | 'age' | 'yearCanChi' | 'palaceName' | 'earthlyBranch'>;
+
+export async function analyzeNamHienTai(
+  chart: ChartData,
+  birthYear: number,
+  currentYear: number,
+): Promise<NamHienTaiReading> {
+  const summary = summarizeChartForAI(chart);
+  const { context, tieuHanPalaceName, tieuHanBranch } = buildNamHienTaiContext(
+    chart,
+    birthYear,
+    currentYear,
+  );
+  const raw = await callJsonSection<RawNamHienTai>(
+    NAM_HIEN_TAI_JSON_PROMPT,
+    summary,
+    context,
+    'namHienTai',
+  );
+
+  // Đảm bảo 12 tháng đủ và đúng thứ tự — fallback nếu AI lệch.
+  const monthsMap = new Map<number, RawNamHienTai['months'][number]>();
+  (raw.months ?? []).forEach((m) => {
+    if (m && typeof m.month === 'number') monthsMap.set(m.month, m);
+  });
+  const months: NamHienTaiReading['months'] = [];
+  for (let m = 1; m <= 12; m++) {
+    const found = monthsMap.get(m);
+    months.push({
+      month: m,
+      label: found?.label ?? 'Bình',
+      text: found?.text?.trim() || '(AI không trả lời tháng này)',
+    });
+  }
+
+  const clampRating = (n: unknown): number => {
+    const v = Number(n);
+    if (!Number.isFinite(v)) return 3;
+    return Math.max(1, Math.min(5, Math.round(v)));
+  };
+
+  const advice = Array.isArray(raw.advice)
+    ? raw.advice
+        .map((s) => (typeof s === 'string' ? s.trim() : ''))
+        .filter((s) => s.length > 0)
+    : [];
+
+  return {
+    year: currentYear,
+    age: currentYear - birthYear,
+    yearCanChi: canChiYearStr(currentYear),
+    palaceName: tieuHanPalaceName,
+    earthlyBranch: tieuHanBranch,
+    category: raw.category ?? 'Bình Hòa',
+    overview: raw.overview?.trim() || '(AI không trả lời tổng quan năm)',
+    aspects: {
+      career: {
+        rating: clampRating(raw.aspects?.career?.rating),
+        text: raw.aspects?.career?.text?.trim() || '(AI không trả lời)',
+      },
+      wealth: {
+        rating: clampRating(raw.aspects?.wealth?.rating),
+        text: raw.aspects?.wealth?.text?.trim() || '(AI không trả lời)',
+      },
+      love: {
+        rating: clampRating(raw.aspects?.love?.rating),
+        text: raw.aspects?.love?.text?.trim() || '(AI không trả lời)',
+      },
+      health: {
+        rating: clampRating(raw.aspects?.health?.rating),
+        text: raw.aspects?.health?.text?.trim() || '(AI không trả lời)',
+      },
+    },
+    months,
+    advice,
+  };
+}
+
 export interface DeepAnalyzeOptions {
   onProgress?: (step: number, total: number, label: string) => void;
 }
@@ -236,11 +400,17 @@ export async function analyzeDeepReadings(
   currentYear: number,
   opts: DeepAnalyzeOptions = {},
 ): Promise<DeepReadingsData> {
-  opts.onProgress?.(1, 3, 'daiHan');
-  const daiHan = await analyzeDaiHan(chart, birthYear);
-  opts.onProgress?.(2, 3, 'tieuHan');
-  const tieuHan = await analyzeTieuHan(chart, birthYear, currentYear);
-  opts.onProgress?.(3, 3, 'twelvePalaces');
-  const twelvePalaces = await analyzeTwelvePalaces(chart);
-  return { daiHan, tieuHan, twelvePalaces };
+  // 4 deep section gọi đồng thời. Mỗi call đã wrap aiCall (limit + retry) trong callJsonSection.
+  let done = 0;
+  const tick = (label: string) => {
+    done++;
+    opts.onProgress?.(done, 4, label);
+  };
+  const [daiHan, tieuHan, twelvePalaces, namHienTai] = await Promise.all([
+    analyzeDaiHan(chart, birthYear).then((r) => { tick('daiHan'); return r; }),
+    analyzeTieuHan(chart, birthYear, currentYear).then((r) => { tick('tieuHan'); return r; }),
+    analyzeTwelvePalaces(chart).then((r) => { tick('twelvePalaces'); return r; }),
+    analyzeNamHienTai(chart, birthYear, currentYear).then((r) => { tick('namHienTai'); return r; }),
+  ]);
+  return { daiHan, tieuHan, twelvePalaces, namHienTai };
 }

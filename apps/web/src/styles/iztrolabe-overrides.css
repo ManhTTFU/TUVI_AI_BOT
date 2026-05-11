@@ -1,0 +1,103 @@
+/* Override react-iztro theme để khớp brand "Diễn Cầm Tam Thế":
+   mực tàu / mực xám / xanh núi / chu sa / vàng đồng / cream washi. */
+.iztro-astrolabe-theme-default {
+  --iztro-star-font-size-big: 13px;
+  --iztro-star-font-size-small: 12px;
+
+  /* Sao chính + tên cung = đồng cổ */
+  --iztro-color-major: #5a3a1a;
+  /* Focus text = mực tàu */
+  --iztro-color-focus: #0f0a08;
+  /* Hóa Quyền + tiêu đề phụ + thiên mã = xanh núi */
+  --iztro-color-quan: #4a6c7a;
+  --iztro-color-active: #4a6c7a;
+  /* Sát tinh (tough) = chu sa */
+  --iztro-color-tough: #c8361d;
+  /* Hóa Lộc + Lộc Tồn = chu sa đỏ */
+  --iztro-color-awesome: #c8361d;
+  /* Hóa Khoa + sao trợ + sao tốt = lục */
+  --iztro-color-nice: #3a8a5e;
+  /* Hoa đào / sao tình duyên = hồng đào ấm */
+  --iztro-color-happy: #b85e7a;
+  /* Decorator 1 (border + 24 lft) = vàng đồng */
+  --iztro-color-decorator-1: #c89146;
+  /* Decorator 2 (24 rgt) = tím trầm */
+  --iztro-color-decorator-2: #813359;
+  /* Subtext = mực tàu (đen) cho dễ đọc, không dùng xám */
+  --iztro-color-text: #0f0a08;
+  /* Border các cung = xanh núi rất nhạt */
+  --iztro-color-border: rgba(74, 108, 122, 0.35);
+}
+
+/* Đồng bộ font với toàn site (SF Pro Display qua CSS var --font-sans).
+   Iztro tự đặt font-family stack cứng → đè lại bằng inherit. */
+.iztro-astrolabe {
+  font-family: inherit;
+}
+
+/* Nền các cung — cream washi nhạt, viền xanh núi mềm. */
+.iztro-palace {
+  background-color: rgba(251, 243, 226, 0.85);
+  border: 1px solid var(--iztro-color-border);
+  border-radius: 6px;
+  color: #0f0a08;
+}
+
+/* Cung có sao tốt / cung Mệnh đánh dấu — viền chu sa.
+   react-iztro thêm class .iztro-palace-fate cho cung Mệnh. */
+.iztro-palace-fate span {
+  background-color: #c8361d;
+  color: #fbf3e2;
+  font-weight: 600;
+}
+
+/* Center palace của react-iztro hardcode label tiếng Trung
+   (五行局, 四柱, 阳历, 农历, 命主, 身主, 基本信息, 运限信息, ◀年, 月▶, ...).
+   Ẩn toàn bộ, ta render center riêng tiếng Việt overlay phía trên. */
+.iztro-center-palace {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Đường nối tam hợp (mũi tên cung Mệnh) — giữ chu sa nhưng mờ hơn. */
+#palace-line {
+  stroke: #c8361d;
+  opacity: 0.45;
+}
+
+/* Brightness sao (廟旺得利平不) — đen đậm, không mờ. */
+.iztro-star-brightness {
+  color: #0f0a08;
+  opacity: 1;
+}
+
+/* Bỏ hover/focus đổi màu card khi click vào tên cung — react-iztro mặc định
+   highlight "tam phương tứ chính" bằng bg xanh/lục/vàng, gây nhòe brand. */
+.iztro-palace,
+.iztro-palace.focused-palace,
+.iztro-palace.opposite-palace,
+.iztro-palace.surrounded-palace {
+  background-color: rgba(251, 243, 226, 0.85) !important;
+  transition: none;
+}
+
+/* Khử pointer/cursor pointer ở tên cung + can chi (không click được nữa). */
+.iztro-palace-name,
+.iztro-palace-gz {
+  cursor: default;
+}
+
+/* Đường nối tam hợp (line mũi tên) cũng tắt khi không focus —
+   react-iztro chỉ vẽ khi có arrowIndex; vẫn hiển thị mũi tên gốc của Mệnh. */
+.iztro-palace-name-wrapper {
+  pointer-events: none;
+}
+
+/* Mutagen badges (Hóa Lộc/Quyền/Khoa/Kỵ) — giữ contrast với cream bg. */
+.iztro-star-mutagen,
+.iztro-star-mutagen-0,
+.iztro-star-mutagen-1,
+.iztro-star-mutagen-2,
+.iztro-star-mutagen-3 {
+  color: #fbf3e2;
+}

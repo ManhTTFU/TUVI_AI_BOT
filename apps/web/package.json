@@ -9,14 +9,23 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/drizzle-adapter": "^1.11.2",
     "@tsparticles/engine": "^3.9.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.0",
+    "@tuvi/ai": "workspace:*",
+    "@tuvi/astrology": "workspace:*",
     "@tuvi/core": "workspace:*",
+    "@tuvi/db": "workspace:*",
     "@tuvi/lichvannien": "workspace:*",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.36.4",
     "next": "14.2.18",
+    "next-auth": "5.0.0-beta.31",
+    "nodemailer": "^8.0.7",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-iztro": "^1.4.2"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",

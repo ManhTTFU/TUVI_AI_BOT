@@ -23,6 +23,60 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-11
+
+**Đang làm:** Session rất dài (gần 8 tiếng), gộp 4 giai đoạn lớn: (1) Polish AI/UI tử vi — gộp Diễn Cầm Luận Giải vào tab Tổng Quan, thêm prompt năm hiện tại cá nhân hóa + tục ngữ VN, replace chart vẽ tay bằng `react-iztro` + CSS overrides theme brand. (2) Performance — parallel hoá AI calls + p-limit semaphore + retry exponential backoff + cache theo birth-hash trên đĩa, tổng thời gian từ ~50s xuống ~12s. (3) **Loại bỏ Telegram bot** + dọn dẹp. (4) **Database + Auth + Payment foundation** (cực lớn) — Neon Postgres + Drizzle ORM (12 bảng), Auth.js v5 với Google + Facebook OAuth + Email magic link, hệ thống ví/topup/admin với SSE realtime, sau đó **refactor sang subscription PRO/NORMAL** (4 gói: 20k/tháng, 50k/nửa năm, 100k/năm, 500k/trọn đời) thay model per-chart cũ.
+
+**Đến đâu rồi:**
+- Xong AI personalization năm hiện tại: prompt JSON-mode `NAM_HIEN_TAI_JSON_PROMPT` với 5 yếu tố cá nhân (năm Can Chi vs năm sinh / cung tiểu hạn / đại hạn đang chạy / Mệnh+chủ / nạp âm + ngũ hành cục). Schema: category + overview + 4 aspects + 12 tháng + 3-5 lời khuyên (KÈM tục ngữ VN có thật trong ngoặc kép, không bịa câu mới).
+- Xong react-iztro: install package, dynamic import (ssr:false), bỏ `LaSo/PalaceCell/CenterCard/CELL_POS` (~140 dòng), thay bằng `<Iztrolabe>` + overlay center tiếng Việt riêng (vì center palace của react-iztro hardcode tiếng Trung 五行局/四柱/...). CSS overrides ở `iztrolabe-overrides.css`: map vars iztro → palette brand (mực tàu/xanh núi/chu sa/vàng đồng), ẩn center palace gốc, bỏ hover focus đổi màu card, text xám → đen (`--iztro-color-text:#0f0a08`).
+- Xong parallel AI: `Promise.all` 6 section + 4 deep, `pLimit(8)` semaphore (override qua env `AI_CONCURRENCY`), `withRetry` 4 lần exponential backoff 600ms→8s + jitter cho 429/5xx + network. Cache đĩa trong `output/cache/<hash>.{analysis,deep}.json` theo hash `sha256(gender|birthDate|timeIndex).slice(0,16)`.
+- Xong remove bot: kill background process, xoá `apps/bot/{src,package.json,tsconfig.json}` (dir rỗng Windows lock chưa xoá được), gỡ scripts `dev:bot/start:bot` khỏi root package.json, update CLAUDE.md + skill `run-dev` (3 terminal → 2 terminal), gỡ 112 npm package liên quan bot.
+- Xong DB + Auth foundation: package `@tuvi/db` mới (Drizzle + postgres-js), schema 12 bảng (Auth.js core: users/accounts/sessions/verificationTokens; domain: charts/analyses/deepReadings; payment: transactions/bankConfig/prices; subscription mới: subscriptionPlans/subscriptionPurchases). Migration 0000 + 0001 đã apply lên Neon (ap-southeast-1 Singapore). Auth.js v5 với Drizzle adapter, session strategy `database`, callback inject `role`/`balanceVnd`/`proUntil`/`tier` mỗi request. Google OAuth + Facebook OAuth + Email magic link tự bật/tắt theo env.
+- Xong UI ví + admin: `/dang-nhap` (Google + Facebook buttons), `/vi-cua-toi` (picker 4 gói + QR + bank ref + history), `/lich-su` (chart history user), `/admin/users` (list + toggle role + tặng gói modal), `/admin/transactions` (duyệt/từ chối topup), `/admin/bank-config` (form bank + upload QR). UserMenu trong Header show tier `PRO·{days}d` hoặc `NORMAL`.
+- Xong charge logic: `/api/tuvi/submit` check `isProActive(proUntil)` thay vì trừ balance, trả 402 `PRO_REQUIRED` nếu chưa PRO. Gói cộng dồn (`max(now, current) + duration`), lifetime ghi đè `pro_until = 9999-12-31`.
+- Xong SSE realtime: `/api/wallet/stream` (in-process pub/sub `lib/sse-bus.ts`, heartbeat 25s), publish event `subscription`/`balance`/`topup-completed` từ approve/credit/extend endpoints. UserMenu + WalletClient subscribe singleton EventSource. Thêm `<SessionProvider refetchInterval={60} refetchOnWindowFocus>` làm safety net khi SSE drop.
+- Xong Casso adapter (off): `lib/casso.ts` reconcile transactions theo bankRef trong description, `/api/casso/webhook` check `Secure-Token` header, gated bởi `CASSO_ENABLED=true`.
+- Xong legal pages: `/chinh-sach-bao-mat` + `/xoa-du-lieu` chuẩn bị cho Facebook Live mode khi deploy production.
+- Fix nhiều bug: (a) MissingCSRF khi gọi `signIn()` từ server action → đổi sang client-side `signIn` từ `next-auth/react`. (b) Google OAuth Client ID bị cắt cụt trong .env (39 chars thay vì 72), user paste thiếu `.apps.googleusercontent.com`. (c) Facebook "Invalid Scopes: email" warning → thêm explicit `authorization.params.scope = 'public_profile,email'`. (d) Next.js không load root `.env` → thêm `dotenv.config({path: '../../.env'})` ở `next.config.js`. (e) `useSession()` cache → gọi `update()` trong SSE callback.
+
+**Files đã sửa (chính, không liệt kê hết — ~80 file):**
+- `packages/db/{schema.ts,client.ts,migrate.ts,promote-admin.ts,drizzle.config.ts}` — package mới.
+- `packages/db/migrations/0000_mushy_silver_centurion.sql` + `0001_outgoing_toxin.sql`.
+- `packages/ai/src/{limit.ts mới, analyze.ts parallel, prompts.ts thêm NAM_HIEN_TAI_JSON_PROMPT}`.
+- `packages/core/src/types.ts` — thêm `NamHienTaiReading`, `NamCategory`, `MonthLabel`, `NamHienTaiAspect`, mở rộng `DeepReadingsData.namHienTai`.
+- `apps/web/src/auth.ts` — Auth.js v5 config + 3 provider conditional + callback inject session.
+- `apps/web/src/lib/{birth.ts mới, tier.ts mới, money.ts mới, sse-bus.ts mới, casso.ts mới, api.ts đọc từ DB}`.
+- `apps/web/src/app/api/{auth/[...nextauth], wallet/*, admin/*, tuvi/submit, tuvi/[chartId]/{analyze,deep-readings}, casso/webhook}` — tất cả endpoints mới.
+- `apps/web/src/app/{dang-nhap, vi-cua-toi, lich-su, admin/{users,transactions,bank-config}, chinh-sach-bao-mat, xoa-du-lieu}/*` — UI pages mới.
+- `apps/web/src/components/{layout/{UserMenu mới, Header thêm mobile menu auth}, providers/AuthProvider mới, tu-vi/{TuviClient refactor + VietnameseCenter overlay, DeepReadings move AnalysisCards vào tab + advice with tục ngữ}}`.
+- `apps/web/src/styles/iztrolabe-overrides.css` — mới.
+- `apps/web/next.config.js` — thêm `dotenv.config` + `transpilePackages` mở rộng.
+- `apps/api/src/{routes/tuvi.ts, store.ts}` — thêm cache file, legacy không dùng nữa từ FE.
+- `CLAUDE.md` — viết lại API surface (Next.js là chính, Express legacy), thêm section Auth+Payment architecture.
+- `.env.example` — thêm khối Database, Auth, Google, Facebook, Email, Casso.
+
+**Blocker:**
+- **Test E2E chưa làm**: lập lá số PRO → AI analyze + deep, cache hit lần 2, share giữa user cùng ngày sinh, đều chưa verify với form thật.
+- **Realtime navbar update**: vẫn có thể chưa fire trong vài case edge (HMR dev mode reset sse-bus listener Map). Đã có 3 safety net (SSE + refetchInterval 60s + window focus) nhưng chưa stress test.
+- **Facebook Live mode**: yêu cầu 4 thứ (icon 1024px, privacy URL public, data deletion URL public, category) → phải deploy production trước. 2 legal page đã có sẵn, chờ deploy. Dev mode chỉ login được account owner + test users.
+- **Apps/bot dir rỗng**: Windows giữ file handle, `rmdir` báo busy. Phải restart máy hoặc đóng IDE nắm folder đó. Không ảnh hưởng vì pnpm-workspace.yaml `apps/*` không match dir rỗng.
+- **Bot Google Cloud account user**: bị close (đã đăng nhập lại bằng account khác `tuanmanh97x@gmail.com`).
+- **Express API legacy**: `/api/tuvi/*` cũ vẫn còn ở port 4100 nhưng FE không dùng nữa. Cần dọn khi deploy production để giảm attack surface.
+- **PDF generation**: route `/api/tuvi/pdf` ở Express vẫn tham chiếu filesystem cũ, không sync với DB. `/tu-vi/[slug]` page link tới `${API_BASE_URL}/api/tuvi/pdf/${slug}` → sẽ 404 cho chart mới lập từ Next.js flow.
+- **/tu-vi/[slug] page**: dùng thiết kế cũ (purple/gold brand-old), không sync với rebrand Diễn Cầm. Cần redesign hoặc redirect.
+
+**Việc tiếp theo:**
+- Test E2E full flow: đăng nhập (Google/Facebook) → /vi-cua-toi mua "Gói Tháng 20k" → admin duyệt → navbar realtime PRO → /xem-tu-vi lập lá số thật → verify AI 6 section + 4 deep readings + advice tục ngữ + lá số render Iztrolabe + center tiếng Việt + balance trừ đúng (subscription model: KHÔNG trừ tiền, chỉ check tier).
+- Update `/tu-vi/[slug]` page sang brand mới (Diễn Cầm cream/xanh núi/vàng đồng), bỏ link Telegram/PDF tạm thời cho đến khi wire lại PDF qua Next.js.
+- Wire PDF generation lại: hoặc move `@tuvi/pdf` vào Next.js route, hoặc dispatch background job. PDF lưu Cloudflare R2 hoặc Vercel Blob khi deploy.
+- Deploy production stack: Vercel (Next.js) + Neon (đã có) + custom domain + Cloudflare R2 (PDF/QR) + Sentry (error tracking). Cần `.env.production` riêng với `NEXTAUTH_URL=https://domain.com`, Google OAuth thêm redirect production, Facebook thêm production URL.
+- Sau khi deploy: upload Facebook app icon 1024×1024, điền 2 URL legal vào Basic Settings, switch Live mode → user thật login được.
+- Optional: gửi `tier` field trong SSE event để UserMenu chip update không phải round-trip qua `update()`.
+- Cleanup: xoá `apps/api` legacy (sau khi PDF migration xong), gỡ `prices` table (deprecated), drop bảng `analyses`/`deep_readings` filesystem cache code trong store.ts.
+
+---
+
 ### 2026-05-08
 
 **Đang làm:** (1) Rebuild toàn bộ UI "Diễn Cầm Tam Thế" từ source HTML/JSX user gửi qua từng turn — home (ZodiacRing, LucDieu, Horoscope, Articles), ngay-tot (Calendar + DeepReading + FindDay), xem-tu-vi (form + lá số 4×4 + AI), Header/Footer reusable. (2) Wire form xem-tu-vi sang API thật (iztro `/calculate` + 6-section AI `/analyze`) — bỏ `buildLaSo` demo random. (3) Endpoint mới `/api/tuvi/deep-readings` JSON-mode Deepseek cho 12 đại hạn / 6 năm tiểu hạn / 12 cung — wire vào DeepReadings component. (4) Auto-trigger toàn bộ AI khi submit form (không còn nút "Xin luận giải" riêng).

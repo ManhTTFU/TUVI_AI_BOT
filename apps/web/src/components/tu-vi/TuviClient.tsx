@@ -1,17 +1,33 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { solarToLunar } from '@tuvi/lichvannien';
 import type {
   AnalysisSections,
   ChartData,
   DeepReadingsData,
-  PalaceData,
 } from '@tuvi/core';
-import { ANALYSIS_TITLES } from '@tuvi/core';
-import { API_BASE_URL } from '@/lib/env';
-import DeepReadings from './DeepReadings';
+import { formatVnd } from '@/lib/money';
+import { isProActive } from '@/lib/tier';
+import DeepReadings, { BasicInfo } from './DeepReadings';
+import '@/styles/iztrolabe-overrides.css';
+
+// react-iztro renders DOM directly + reads window; load client-side only.
+const Iztrolabe = dynamic(
+  () => import('react-iztro').then((m) => ({ default: m.Iztrolabe })),
+  { ssr: false },
+);
+
+type IztroSnap = {
+  birthday: string;
+  birthTime: number;
+  gender: 'male' | 'female';
+  birthdayType: 'solar' | 'lunar';
+};
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -43,24 +59,65 @@ type FormState = {
   calendar: Calendar;
 };
 
-const ANALYSIS_ORDER: Array<keyof AnalysisSections> = [
-  'overview',
-  'career',
-  'love',
-  'health',
-  'decade',
-  'advice',
-];
-
-const CELL_POS: Record<string, [number, number]> = {
-  Tỵ: [0, 0], Ngọ: [0, 1], Mùi: [0, 2], Thân: [0, 3],
-  Thìn: [1, 0], Dậu: [1, 3],
-  Mão: [2, 0], Tuất: [2, 3],
-  Dần: [3, 0], Sửu: [3, 1], Tý: [3, 2], Hợi: [3, 3],
-};
-
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
+}
+
+function VietnameseCenter({ chart }: { chart: ChartData }) {
+  const isMale = chart.info.gender === 'male';
+  const rows: Array<[string, string]> = [
+    ['Ngũ hành cục', chart.fiveElementsClass],
+    ['Dương lịch', chart.solarDate],
+    ['Âm lịch', chart.lunarDate],
+    ['Tứ trụ Can Chi', chart.chineseDate],
+    ['Giờ sinh', `${chart.time} (${chart.timeRange})`],
+    ['Con giáp', chart.zodiac],
+    ['Cung hoàng đạo', chart.sign],
+    ['Mệnh chủ', chart.soul],
+    ['Thân chủ', chart.body],
+    ['Địa chi Mệnh', chart.earthlyBranchOfSoulPalace],
+    ['Địa chi Thân', chart.earthlyBranchOfBodyPalace],
+  ];
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 grid"
+      style={{
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateRows: 'repeat(4, 1fr)',
+        gap: 3,
+      }}
+    >
+      <div
+        className="pointer-events-auto rounded-md border-2 border-[#c89146]/55 bg-gradient-to-br from-[#fbf3e2] to-[#f5e3c0] flex flex-col p-3 overflow-hidden"
+        style={{ gridColumn: '2 / span 2', gridRow: '2 / span 2' }}
+      >
+        <div className="text-center mb-2">
+          <div className="text-[10px] tracking-[0.3em] uppercase text-[#4a3a30] font-semibold">
+            Lá Số Tử Vi
+          </div>
+          <div
+            className="mt-0.5 text-xl font-serif italic text-[#5a3a1a]"
+            style={{ fontFamily: SERIF_FONT }}
+          >
+            {isMale ? '♂ Càn Tạo' : '♀ Khôn Tạo'}
+          </div>
+          <div className="mt-0.5 text-[11px] text-[#0f0a08] font-medium truncate px-2">
+            {chart.info.name}
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] leading-[1.45] overflow-y-auto">
+          {rows.map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-2 min-w-0">
+              <span className="text-[#4a3a30]">{k}</span>
+              <span className="font-semibold text-[#5a3a1a] truncate text-right">
+                {v}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Brute-force lunar→solar (lichvannien chỉ export solarToLunar). Lunar (ly,lm,ld)
@@ -90,154 +147,6 @@ type ApiBirthInfo = {
   timeIndex: number;
   birthPlace: string;
 };
-
-function PalaceCell({ palace }: { palace: PalaceData | null }) {
-  if (!palace) return <div className="rounded-lg border border-dashed border-[#4a6c7a]/25 bg-[#fbf3e2]/30 min-h-[120px]" />;
-
-  const isMenh = palace.name === 'Mệnh';
-  const isThan = palace.isBodyPalace;
-
-  return (
-    <div
-      className={`relative rounded-lg border bg-[#fbf3e2]/95 p-2.5 min-h-[120px] flex flex-col ${
-        isMenh
-          ? 'border-[#c8361d] border-2 shadow-[0_0_0_2px_#c8361d20]'
-          : 'border-[#4a6c7a]/45'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-1 mb-1.5">
-        <div className="text-[9px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold leading-none">
-          {palace.name}
-        </div>
-        <div className="text-[10px] text-[#4a6c7a] font-semibold leading-none">
-          {palace.heavenlyStem} {palace.earthlyBranch}
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col gap-1">
-        {palace.majorStars.map((s, i) => (
-          <div
-            key={i}
-            className="text-[11px] font-semibold text-[#c8361d] leading-tight"
-            title={s.brightness ? `Độ sáng: ${s.brightness}` : undefined}
-          >
-            {s.name}
-            {s.mutagen && (
-              <span className="ml-1 text-[9px] text-[#4a6c7a]">
-                [Hóa {s.mutagen}]
-              </span>
-            )}
-          </div>
-        ))}
-        {palace.minorStars.map((s, i) => (
-          <div
-            key={i}
-            className="text-[10px] text-[#4a3a30] italic leading-tight"
-          >
-            {s.name}
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-1 mt-1">
-        {isMenh && (
-          <span className="px-1.5 py-0.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[9px] tracking-wider">
-            MỆNH
-          </span>
-        )}
-        {isThan && (
-          <span className="px-1.5 py-0.5 rounded-full bg-[#3a8a5e] text-[#fbf3e2] text-[9px] tracking-wider">
-            THÂN
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CenterCard({ chart }: { chart: ChartData }) {
-  const isMale = chart.info.gender === 'male';
-  return (
-    <div className="rounded-lg border-2 border-[#4a6c7a]/60 bg-gradient-to-br from-[#fbf3e2] to-[#e9d4b6] p-4 flex flex-col justify-center h-full">
-      <div className="text-center">
-        <div className="text-[10px] tracking-[0.3em] uppercase text-[#0f0a08] font-semibold">
-          Lá Số Tử Vi
-        </div>
-        <div
-          className="mt-2 text-2xl font-serif italic text-[#5a3a1a]"
-          style={{ fontFamily: SERIF_FONT }}
-        >
-          {isMale ? 'Càn Tạo' : 'Khôn Tạo'}
-        </div>
-        <div className="mt-3 space-y-1 text-[12px] text-[#0f0a08]">
-          <div>
-            Dương:{' '}
-            <span className="font-semibold text-[#5a3a1a]">
-              {chart.solarDate}
-            </span>
-          </div>
-          <div>
-            Âm:{' '}
-            <span className="font-semibold text-[#5a3a1a]">
-              {chart.lunarDate}
-            </span>
-          </div>
-          <div>
-            Can chi:{' '}
-            <span className="font-semibold text-[#5a3a1a]">
-              {chart.chineseDate}
-            </span>
-          </div>
-          <div>
-            Giờ:{' '}
-            <span className="font-semibold text-[#5a3a1a]">
-              {chart.time} ({chart.timeRange})
-            </span>
-          </div>
-          <div>
-            Ngũ hành:{' '}
-            <span className="font-semibold text-[#5a3a1a]">
-              {chart.fiveElementsClass}
-            </span>
-          </div>
-          <div>
-            Mệnh chủ:{' '}
-            <span className="font-semibold text-[#5a3a1a]">{chart.soul}</span>{' '}
-            · Thân chủ:{' '}
-            <span className="font-semibold text-[#5a3a1a]">{chart.body}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LaSo({ chart }: { chart: ChartData }) {
-  const grid: (PalaceData | null)[][] = Array(4)
-    .fill(null)
-    .map(() => Array(4).fill(null));
-  for (const p of chart.palaces) {
-    const pos = CELL_POS[p.earthlyBranch];
-    if (pos) grid[pos[0]][pos[1]] = p;
-  }
-  return (
-    <div className="rounded-2xl border border-[#4a6c7a]/55 bg-[#fbf3e2]/94 p-4 md:p-5 shadow-[0_30px_80px_-30px_rgba(90,58,26,0.3)]">
-      <div className="grid grid-cols-4 grid-rows-4 gap-2">
-        {grid.map((row, r) =>
-          row.map((cell, c) => {
-            if (r === 1 && c === 1) {
-              return (
-                <div key={`${r}-${c}`} className="col-span-2 row-span-2">
-                  <CenterCard chart={chart} />
-                </div>
-              );
-            }
-            if ((r === 1 || r === 2) && (c === 1 || c === 2)) return null;
-            return <PalaceCell key={`${r}-${c}`} palace={cell} />;
-          })
-        )}
-      </div>
-    </div>
-  );
-}
 
 function FieldLabel({
   icon,
@@ -301,36 +210,6 @@ function SegmentChoice<T extends string>({
   );
 }
 
-function AnalysisCards({ analysis }: { analysis: AnalysisSections }) {
-  return (
-    <div className="mt-6 grid md:grid-cols-2 gap-5">
-      {ANALYSIS_ORDER.map((key) => {
-        const text = analysis[key];
-        if (!text) return null;
-        const paragraphs = text.split(/\n\n+/).filter(Boolean);
-        return (
-          <article
-            key={key}
-            className="rounded-2xl border border-[#3a8a5e]/35 bg-gradient-to-br from-[#f5e8d0]/70 to-[#fbf3e2]/40 p-6 md:p-7"
-          >
-            <h4
-              className="text-xl font-serif italic text-[#5a3a1a] mb-3"
-              style={{ fontFamily: SERIF_FONT }}
-            >
-              {ANALYSIS_TITLES[key]}
-            </h4>
-            <div className="space-y-3 text-[14.5px] leading-[1.8] text-[#0f0a08]">
-              {paragraphs.map((p, i) => (
-                <p key={i}>{p}</p>
-              ))}
-            </div>
-          </article>
-        );
-      })}
-    </div>
-  );
-}
-
 export default function TuviClient() {
   const [form, setForm] = useState<FormState>({
     name: '',
@@ -341,10 +220,14 @@ export default function TuviClient() {
     gender: 'nam',
     calendar: 'duong',
   });
+  const router = useRouter();
+  const { data: session } = useSession();
   const [chart, setChart] = useState<ChartData | null>(null);
+  const [iztroSnap, setIztroSnap] = useState<IztroSnap | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
   const [deep, setDeep] = useState<DeepReadingsData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [proRequired, setProRequired] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [deepLoading, setDeepLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -408,15 +291,11 @@ export default function TuviClient() {
     };
   };
 
-  const fetchAnalysis = (info: ApiBirthInfo) => {
+  const fetchAnalysis = (chartId: string) => {
     setAiLoading(true);
     setAnalysis(null);
     setAiError(null);
-    fetch(`${API_BASE_URL}/api/tuvi/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(info),
-    })
+    fetch(`/api/tuvi/${chartId}/analyze`, { method: 'POST' })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || !data?.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
@@ -426,15 +305,11 @@ export default function TuviClient() {
       .finally(() => setAiLoading(false));
   };
 
-  const fetchDeep = (info: ApiBirthInfo) => {
+  const fetchDeep = (chartId: string) => {
     setDeepLoading(true);
     setDeep(null);
     setDeepError(null);
-    fetch(`${API_BASE_URL}/api/tuvi/deep-readings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(info),
-    })
+    fetch(`/api/tuvi/${chartId}/deep-readings`, { method: 'POST' })
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok || !data?.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
@@ -449,26 +324,47 @@ export default function TuviClient() {
     setError(null);
     setAiError(null);
     setDeepError(null);
+    setProRequired(false);
+
+    if (!session?.user) {
+      router.push('/dang-nhap?callbackUrl=/xem-tu-vi');
+      return;
+    }
+
     const info = buildBirthInfo();
     if (!info) return;
+
+    const [bd, bm, by] = info.birthDate.split('/').map(Number);
+    setIztroSnap({
+      birthday: `${by}-${pad2(bm)}-${pad2(bd)}`,
+      birthTime: info.timeIndex,
+      gender: info.gender,
+      birthdayType: 'solar',
+    });
+
     setLoading(true);
     setChart(null);
     setAnalysis(null);
     setDeep(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/tuvi/calculate`, {
+      const res = await fetch(`/api/tuvi/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(info),
       });
       const data = await res.json();
+      if (res.status === 402 && data?.code === 'PRO_REQUIRED') {
+        setProRequired(true);
+        setIztroSnap(null);
+        return;
+      }
       if (!res.ok || !data?.ok) {
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
       setChart(data.chart as ChartData);
-      // Fire AI calls in parallel — chart already shown, hai phần AI tự fill khi xong.
-      fetchAnalysis(info);
-      fetchDeep(info);
+      // Fire AI parallel — chart already saved + balance đã trừ.
+      fetchAnalysis(data.chartId as string);
+      fetchDeep(data.chartId as string);
     } catch (err) {
       setError(`Không lập được lá số: ${(err as Error).message}`);
     } finally {
@@ -603,13 +499,53 @@ export default function TuviClient() {
               </div>
             )}
 
+            {proRequired && (
+              <div className="rounded-xl border border-[#c89146]/55 bg-[#f5e3c0]/50 px-4 py-3 text-[#5a3a1a] text-[13.5px] space-y-2">
+                <div>
+                  ⚠ <strong>Cần tài khoản PRO.</strong> Đăng ký gói (từ 20.000đ/tháng)
+                  để lập lá số không giới hạn.
+                </div>
+                <Link
+                  href="/vi-cua-toi"
+                  className="inline-block px-4 py-1.5 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[12.5px] font-semibold hover:bg-[#4a6c7a]"
+                >
+                  Đăng ký gói PRO →
+                </Link>
+              </div>
+            )}
+
+            <div className="rounded-xl border border-[#c89146]/55 bg-gradient-to-br from-[#f5e3c0]/40 to-[#fbf3e2]/60 px-4 py-3 text-[12.5px] text-[#4a3a30]">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <span className="text-[10px] tracking-[0.25em] uppercase font-bold">
+                    Cần gói PRO
+                  </span>
+                  <div className="text-[#0f0a08]">
+                    Mua 1 lần, lập lá số không giới hạn trong thời hạn gói
+                  </div>
+                </div>
+                <div
+                  className="text-2xl font-serif italic text-[#5a3a1a]"
+                  style={{ fontFamily: SERIF_FONT }}
+                >
+                  từ {formatVnd(20_000)}/tháng
+                </div>
+              </div>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
               className="w-full h-14 rounded-full bg-gradient-to-r from-[#5a3a1a] via-[#7a4a1f] to-[#c89146] text-[#fbf3e2] font-semibold tracking-wide hover:from-[#4a6c7a] hover:via-[#8a5520] hover:to-[#d4a05a] transition shadow-[0_10px_30px_-10px_rgba(90,58,26,0.6)] flex items-center justify-center gap-2.5 text-[15px] disabled:opacity-60 disabled:cursor-wait"
             >
               <span className="text-lg">✦</span>
-              <span>{loading ? 'Đang lập lá số…' : 'Lập Lá Số Tử Vi'}</span>
+              <span>
+                {loading
+                  ? 'Đang lập lá số…'
+                  : session?.user
+                    ? 'Lập Lá Số Tử Vi'
+                    : 'Đăng nhập để lập lá số'}
+              </span>
             </button>
           </form>
         </div>
@@ -629,44 +565,26 @@ export default function TuviClient() {
                 Lá số {chart.info.name}
               </h2>
             </div>
-            <LaSo chart={chart} />
-
-            <div className="mt-6 rounded-2xl border border-[#3a8a5e]/35 bg-gradient-to-br from-[#f5e8d0]/70 to-[#fbf3e2]/40 p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-3">
-                <h3
-                  className="text-2xl font-serif text-[#0f0a08]"
-                  style={{ fontFamily: SERIF_FONT }}
-                >
-                  Diễn Cầm Luận Giải
-                </h3>
-                <span className="px-2.5 py-1 rounded-full bg-[#3a8a5e]/15 text-[#2a6e48] text-[10px] tracking-[0.2em] font-bold uppercase">
-                  6 phần · AI
-                </span>
-              </div>
-
-              {aiLoading && (
-                <div className="flex items-center justify-center gap-3 py-8 text-[#0f0a08] italic">
-                  <span className="inline-block w-2 h-2 bg-[#4a6c7a] rounded-full animate-pulse" />
-                  <span
-                    className="inline-block w-2 h-2 bg-[#4a6c7a] rounded-full animate-pulse"
-                    style={{ animationDelay: '0.2s' }}
-                  />
-                  <span
-                    className="inline-block w-2 h-2 bg-[#4a6c7a] rounded-full animate-pulse"
-                    style={{ animationDelay: '0.4s' }}
-                  />
-                  <span className="ml-2">
-                    Đang lắng nghe linh khí… (AI đang viết 6 đoạn)
-                  </span>
-                </div>
-              )}
-              {aiError && !aiLoading && (
-                <div className="rounded-lg border border-[#c8361d]/40 bg-[#c8361d]/10 px-3 py-2 text-[#c8361d] text-[13px]">
-                  ⚠ Không luận giải được: {aiError}
-                </div>
-              )}
-              {analysis && <AnalysisCards analysis={analysis} />}
+            <div className="mb-6">
+              <BasicInfo chart={chart} form={form} />
             </div>
+
+            {iztroSnap && (
+              <div className="rounded-2xl border border-[#4a6c7a]/55 bg-[#fbf3e2]/94 p-3 md:p-5 shadow-[0_30px_80px_-30px_rgba(90,58,26,0.3)] overflow-x-auto">
+                <div className="min-w-[860px] relative">
+                  <Iztrolabe
+                    birthday={iztroSnap.birthday}
+                    birthTime={iztroSnap.birthTime}
+                    gender={iztroSnap.gender}
+                    birthdayType={iztroSnap.birthdayType}
+                    lang="vi-VN"
+                    width="100%"
+                    centerPalaceAlign
+                  />
+                  <VietnameseCenter chart={chart} />
+                </div>
+              </div>
+            )}
 
             <DeepReadings
               chart={chart}
@@ -674,6 +592,9 @@ export default function TuviClient() {
               deep={deep}
               deepLoading={deepLoading}
               deepError={deepError}
+              analysis={analysis}
+              analysisLoading={aiLoading}
+              analysisError={aiError}
             />
           </div>
         </section>
