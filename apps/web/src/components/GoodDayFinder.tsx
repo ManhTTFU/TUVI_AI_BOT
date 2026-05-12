@@ -84,7 +84,7 @@ export function GoodDayFinder() {
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-600/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-amber-900 ring-1 ring-amber-700/30">
             <span>✦</span> Xem Ngày Tốt
           </span>
-          <h2 className="mt-4 font-serif text-3xl font-bold text-[#2a1040] md:text-4xl">
+          <h2 className="mt-4 font-serif text-3xl font-bold text-[#0f0a08] md:text-4xl">
             Chọn việc cần làm — tìm ngày hoàng đạo
           </h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm text-[#5c3a1e]/80">
@@ -157,7 +157,7 @@ export function GoodDayFinder() {
 
             <button
               type="submit"
-              className="mt-6 w-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 px-6 py-3 text-sm font-semibold text-[#2a1040] shadow-lg shadow-amber-700/25 ring-1 ring-amber-100/60 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-600/30"
+              className="mt-6 w-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 px-6 py-3 text-sm font-semibold text-[#0f0a08] shadow-lg shadow-amber-700/25 ring-1 ring-amber-100/60 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-600/30"
             >
               Xem ngay
             </button>
@@ -188,7 +188,7 @@ export function GoodDayFinder() {
               <>
                 <div className="mb-3 flex items-center justify-between px-1">
                   <div className="text-sm text-[#5c3a1e]">
-                    <strong className="text-[#2a1040]">{results.length}</strong> ngày hoàng đạo phù hợp{' '}
+                    <strong className="text-[#0f0a08]">{results.length}</strong> ngày hoàng đạo phù hợp{' '}
                     <strong className="text-amber-800">{currentWork.toLowerCase()}</strong> · Tháng{' '}
                     {query.m}/{query.y}
                   </div>
@@ -228,15 +228,15 @@ function GoodDayCard({ info }: { info: DayInfo }) {
         {/* Middle — details */}
         <div className="min-w-0">
           <div className="text-xs text-[#5c3a1e]/75">
-            <strong className="text-[#2a1040]">Âm lịch:</strong> {info.lunar.day}/{info.lunar.month}
+            <strong className="text-[#0f0a08]">Âm lịch:</strong> {info.lunar.day}/{info.lunar.month}
             {info.lunar.leap ? ' (nhuận)' : ''}/{info.lunar.year}
           </div>
           <div className="mt-1 text-xs text-[#5c3a1e]/75">
-            <strong className="text-[#2a1040]">Ngày:</strong> {info.canChiText.day} · Trực{' '}
+            <strong className="text-[#0f0a08]">Ngày:</strong> {info.canChiText.day} · Trực{' '}
             <strong className="text-emerald-700">{info.dayStar.name}</strong>
           </div>
           <div className="mt-1 text-xs text-[#5c3a1e]/75">
-            <strong className="text-[#2a1040]">Giờ Hoàng Đạo:</strong>{' '}
+            <strong className="text-[#0f0a08]">Giờ Hoàng Đạo:</strong>{' '}
             {info.luckyHours
               .map((h) => `${h.chi} (${shortHourRange(h.range)})`)
               .join(', ')}

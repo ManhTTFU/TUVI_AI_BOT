@@ -84,6 +84,9 @@ importers:
       '@tuvi/lichvannien':
         specifier: workspace:*
         version: link:../../packages/lichvannien
+      '@tuvi/pdf':
+        specifier: workspace:*
+        version: link:../../packages/pdf
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2

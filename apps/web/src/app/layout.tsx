@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/env';
 import { BodyBackground, Header, Footer } from '@/components/layout';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { Toaster } from '@/components/ui/toast';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main>{children}</main>
           <Footer />
+          <Toaster />
         </AuthProvider>
       </body>
     </html>

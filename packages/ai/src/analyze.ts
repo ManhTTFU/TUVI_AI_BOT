@@ -17,7 +17,10 @@ import {
   DAI_HAN_JSON_PROMPT,
   TIEU_HAN_JSON_PROMPT,
   TWELVE_PALACES_JSON_PROMPT,
-  NAM_HIEN_TAI_JSON_PROMPT,
+  NAM_HIEN_TAI_MAIN_PROMPT,
+  NAM_HIEN_TAI_MONTHS_PROMPT,
+  BAT_TU_SYSTEM_PROMPT,
+  BAT_TU_PROMPT,
   type SectionKey,
 } from './prompts.js';
 
@@ -46,6 +49,7 @@ async function callOneSection(key: SectionKey, chartSummary: string): Promise<st
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.7,
+    max_tokens: 1500, // ~1000 từ VN — cap để section không phình quá dài (mỗi 1k token ~ 20-25s sinh)
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       {
@@ -89,6 +93,16 @@ export async function analyzeChart(
 // Deep readings — JSON-mode calls
 // ============================================================================
 
+// max_tokens phân theo loại JSON deep. Tăng buffer ~30% để tránh truncate
+// giữa chừng → JSON parse fail (đã gặp với twelvePalaces 2500 không đủ).
+const JSON_MAX_TOKENS: Record<string, number> = {
+  daiHan: 3000,            // 12 vận × ~50 token = 600 + overhead JSON + buffer
+  tieuHan: 1800,           // 6 năm × ~80 token = 480 + buffer
+  twelvePalaces: 4000,     // 12 cung × 4-5 câu × ~30 token = 1800 + buffer (gặp truncate ở 2500)
+  namHienTaiMain: 3500,    // overview + 5 aspects (mỗi aspect 5-7 câu) + advice — đã thêm family + chi tiết hơn
+  namHienTaiMonths: 1500,  // 12 tháng × 1-2 câu + buffer
+};
+
 async function callJsonSection<T>(
   prompt: string,
   chartSummary: string,
@@ -107,6 +121,7 @@ async function callJsonSection<T>(
     const completion = await client.chat.completions.create({
       model,
       temperature: 0.7,
+      max_tokens: JSON_MAX_TOKENS[label] ?? 2000,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -114,12 +129,27 @@ async function callJsonSection<T>(
       ],
     });
 
+    const finishReason = completion.choices[0]?.finish_reason;
     const text = completion.choices[0]?.message?.content?.trim();
     if (!text) throw new Error('Deepseek không trả lời (JSON)');
+
+    // finish_reason='length' = bị cắt do max_tokens → JSON gần như chắc chắn truncate.
+    // Throw kèm status 500 để withRetry retry (may have shorter output lần sau).
+    if (finishReason === 'length') {
+      const err = new Error(
+        `Deepseek bị cắt do max_tokens (label=${label}); thử retry với output ngắn hơn`,
+      ) as Error & { status: number };
+      err.status = 500;
+      throw err;
+    }
     try {
       return JSON.parse(text) as T;
     } catch (e) {
-      throw new Error(`Deepseek trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 500)}`);
+      const err = new Error(
+        `Deepseek trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 300)}`,
+      ) as Error & { status: number };
+      err.status = 500; // mark retryable — model temperature 0.7, lần sau có thể OK
+      throw err;
     }
   }, label);
 }
@@ -276,6 +306,13 @@ function buildNamHienTaiContext(
     ) ?? null;
   const menh = chart.palaces.find((p) => p.name === 'Mệnh') ?? null;
 
+  // Cung gia đạo — để AI luận quan hệ cha mẹ / vợ chồng / con cái / anh chị em năm này.
+  const phuMau = chart.palaces.find((p) => p.name === 'Phụ Mẫu') ?? null;
+  const phuThe = chart.palaces.find((p) => p.name === 'Phu Thê') ?? null;
+  const tuTuc =
+    chart.palaces.find((p) => p.name === 'Tử Nữ' || p.name === 'Tử Tức') ?? null;
+  const huynhDe = chart.palaces.find((p) => p.name === 'Huynh Đệ') ?? null;
+
   const fmtPalace = (p: typeof tieuHanPalace, label: string) => {
     if (!p) return `${label}: không xác định`;
     const major = p.majorStars.map((s) => s.name).join(', ') || '(không chính tinh)';
@@ -301,6 +338,12 @@ function buildNamHienTaiContext(
     fmtPalace(menh, 'Cung MỆNH gốc'),
     `Mệnh chủ: ${chart.soul} · Thân chủ: ${chart.body}; Ngũ hành cục: ${chart.fiveElementsClass}.`,
     '',
+    '--- CUNG GIA ĐẠO (để luận quan hệ với các thành viên trong gia đình) ---',
+    fmtPalace(phuMau, 'Cung PHỤ MẪU (cha mẹ)'),
+    fmtPalace(phuThe, 'Cung PHU THÊ (vợ/chồng)'),
+    fmtPalace(tuTuc, 'Cung TỬ TỨC (con cái)'),
+    fmtPalace(huynhDe, 'Cung HUYNH ĐỆ (anh chị em / bạn thân)'),
+    '',
     'Chi 12 tháng năm hiện tại (để xét xung khắc với cung tiểu hạn):',
     ...monthChis,
   ];
@@ -312,7 +355,11 @@ function buildNamHienTaiContext(
   };
 }
 
-type RawNamHienTai = Omit<NamHienTaiReading, 'year' | 'age' | 'yearCanChi' | 'palaceName' | 'earthlyBranch'>;
+type RawNamHienTaiMain = Omit<
+  NamHienTaiReading,
+  'year' | 'age' | 'yearCanChi' | 'palaceName' | 'earthlyBranch' | 'months'
+>;
+type RawNamHienTaiMonths = { months?: NamHienTaiReading['months'] };
 
 export async function analyzeNamHienTai(
   chart: ChartData,
@@ -325,16 +372,27 @@ export async function analyzeNamHienTai(
     birthYear,
     currentYear,
   );
-  const raw = await callJsonSection<RawNamHienTai>(
-    NAM_HIEN_TAI_JSON_PROMPT,
-    summary,
-    context,
-    'namHienTai',
-  );
+
+  // Split thành 2 call parallel: main (aspects + advice) + months (12 tháng).
+  // Cùng share context, giảm thời gian từ ~50s → ~max(main, months) ≈ ~25-30s.
+  const [main, monthsRes] = await Promise.all([
+    callJsonSection<RawNamHienTaiMain>(
+      NAM_HIEN_TAI_MAIN_PROMPT,
+      summary,
+      context,
+      'namHienTaiMain',
+    ),
+    callJsonSection<RawNamHienTaiMonths>(
+      NAM_HIEN_TAI_MONTHS_PROMPT,
+      summary,
+      context,
+      'namHienTaiMonths',
+    ),
+  ]);
 
   // Đảm bảo 12 tháng đủ và đúng thứ tự — fallback nếu AI lệch.
-  const monthsMap = new Map<number, RawNamHienTai['months'][number]>();
-  (raw.months ?? []).forEach((m) => {
+  const monthsMap = new Map<number, NamHienTaiReading['months'][number]>();
+  (monthsRes.months ?? []).forEach((m) => {
     if (m && typeof m.month === 'number') monthsMap.set(m.month, m);
   });
   const months: NamHienTaiReading['months'] = [];
@@ -353,8 +411,8 @@ export async function analyzeNamHienTai(
     return Math.max(1, Math.min(5, Math.round(v)));
   };
 
-  const advice = Array.isArray(raw.advice)
-    ? raw.advice
+  const advice = Array.isArray(main.advice)
+    ? main.advice
         .map((s) => (typeof s === 'string' ? s.trim() : ''))
         .filter((s) => s.length > 0)
     : [];
@@ -365,24 +423,28 @@ export async function analyzeNamHienTai(
     yearCanChi: canChiYearStr(currentYear),
     palaceName: tieuHanPalaceName,
     earthlyBranch: tieuHanBranch,
-    category: raw.category ?? 'Bình Hòa',
-    overview: raw.overview?.trim() || '(AI không trả lời tổng quan năm)',
+    category: main.category ?? 'Bình Hòa',
+    overview: main.overview?.trim() || '(AI không trả lời tổng quan năm)',
     aspects: {
       career: {
-        rating: clampRating(raw.aspects?.career?.rating),
-        text: raw.aspects?.career?.text?.trim() || '(AI không trả lời)',
+        rating: clampRating(main.aspects?.career?.rating),
+        text: main.aspects?.career?.text?.trim() || '(AI không trả lời)',
       },
       wealth: {
-        rating: clampRating(raw.aspects?.wealth?.rating),
-        text: raw.aspects?.wealth?.text?.trim() || '(AI không trả lời)',
+        rating: clampRating(main.aspects?.wealth?.rating),
+        text: main.aspects?.wealth?.text?.trim() || '(AI không trả lời)',
       },
       love: {
-        rating: clampRating(raw.aspects?.love?.rating),
-        text: raw.aspects?.love?.text?.trim() || '(AI không trả lời)',
+        rating: clampRating(main.aspects?.love?.rating),
+        text: main.aspects?.love?.text?.trim() || '(AI không trả lời)',
       },
       health: {
-        rating: clampRating(raw.aspects?.health?.rating),
-        text: raw.aspects?.health?.text?.trim() || '(AI không trả lời)',
+        rating: clampRating(main.aspects?.health?.rating),
+        text: main.aspects?.health?.text?.trim() || '(AI không trả lời)',
+      },
+      family: {
+        rating: clampRating(main.aspects?.family?.rating),
+        text: main.aspects?.family?.text?.trim() || '(AI không trả lời)',
       },
     },
     months,
@@ -413,4 +475,41 @@ export async function analyzeDeepReadings(
     analyzeNamHienTai(chart, birthYear, currentYear).then((r) => { tick('namHienTai'); return r; }),
   ]);
   return { daiHan, tieuHan, twelvePalaces, namHienTai };
+}
+
+// ============================================================================
+// Tứ Trụ Bát Tự — 1 call markdown trả 7 phần đã định nghĩa trong BAT_TU_PROMPT.
+// `context` đã được caller format trước (tên/giới tính/dương lịch/âm lịch/4 trụ/Nhật chủ).
+// ============================================================================
+
+export async function analyzeBatTu(context: string): Promise<string> {
+  return aiCall(async () => {
+    const client = getDeepseekClient();
+    const model = getDeepseekModel();
+
+    const completion = await client.chat.completions.create({
+      model,
+      temperature: 0.7,
+      max_tokens: 3500, // 1500-2200 từ VN — buffer tránh truncate ở phần cuối
+      messages: [
+        { role: 'system', content: BAT_TU_SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `THÔNG TIN ĐƯƠNG SỐ (bắt buộc bám sát):\n\n${context}\n\n---\n\n${BAT_TU_PROMPT}`,
+        },
+      ],
+    });
+
+    const finishReason = completion.choices[0]?.finish_reason;
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) throw new Error('Deepseek không trả lời (bat-tu)');
+    if (finishReason === 'length') {
+      const err = new Error(
+        `Deepseek bị cắt do max_tokens (bat-tu); thử retry`,
+      ) as Error & { status: number };
+      err.status = 500;
+      throw err;
+    }
+    return text;
+  }, 'bat-tu');
 }

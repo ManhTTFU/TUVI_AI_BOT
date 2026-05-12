@@ -96,7 +96,7 @@ export type MonthLabel = 'Tốt' | 'Bình' | 'Cẩn trọng';
 export interface NamHienTaiAspect {
   /** 1..5 sao đánh giá */
   rating: number;
-  /** 3-5 câu luận giải khía cạnh trong năm */
+  /** 5-7 câu luận giải khía cạnh trong năm */
   text: string;
 }
 
@@ -120,6 +120,8 @@ export interface NamHienTaiReading {
     wealth: NamHienTaiAspect;
     love: NamHienTaiAspect;
     health: NamHienTaiAspect;
+    /** Gia đạo: quan hệ với cha mẹ, vợ/chồng, con cái, anh chị em theo cung Phụ Mẫu/Phu Thê/Tử Tức/Huynh Đệ. */
+    family: NamHienTaiAspect;
   };
   months: NamHienTaiMonth[];
   /**

@@ -1126,6 +1126,15 @@ function NamHienTaiDetail({
       rating:
         aiData?.aspects.health.rating ?? ratingD(seedBase + currentYear + 4),
     },
+    {
+      icon: "🏠",
+      label: "Gia đạo",
+      text:
+        aiData?.aspects.family?.text ??
+        "Gia đạo nhìn chung hòa thuận. Dành thời gian quan tâm cha mẹ và người thân trong gia đình.",
+      rating:
+        aiData?.aspects.family?.rating ?? ratingD(seedBase + currentYear + 5),
+    },
   ];
 
   const months = Array.from({ length: 12 }).map((_, i) => {
@@ -1523,12 +1532,6 @@ export default function DeepReadings({
           <CareerWealth chart={chart} seedBase={seedBase} />
           <LoveFamily chart={chart} seedBase={seedBase} />
           <Health chart={chart} seedBase={seedBase} />
-          <DaiHan10
-            chart={chart}
-            form={form}
-            seedBase={seedBase}
-            aiData={deep?.daiHan}
-          />
           <Advice chart={chart} seedBase={seedBase} />
         </div>
       )}

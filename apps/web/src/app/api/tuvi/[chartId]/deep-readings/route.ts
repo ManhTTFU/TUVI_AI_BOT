@@ -49,16 +49,22 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
     });
   }
 
-  const data = await analyzeDeepReadings(
-    chartRow.chartData as ChartData,
-    birthYear,
-    currentYear,
-  );
+  try {
+    const data = await analyzeDeepReadings(
+      chartRow.chartData as ChartData,
+      birthYear,
+      currentYear,
+    );
 
-  await db
-    .insert(deepReadings)
-    .values({ birthHash: chartRow.birthHash, year: currentYear, data })
-    .onConflictDoNothing();
+    await db
+      .insert(deepReadings)
+      .values({ birthHash: chartRow.birthHash, year: currentYear, data })
+      .onConflictDoNothing();
 
-  return NextResponse.json({ ok: true, deep: data, cached: false });
+    return NextResponse.json({ ok: true, deep: data, cached: false });
+  } catch (e) {
+    const msg = (e as Error).message ?? 'Lỗi không xác định khi gọi AI';
+    console.error(`[deep-readings] ${msg}`);
+    return NextResponse.json({ ok: false, error: msg }, { status: 502 });
+  }
 }

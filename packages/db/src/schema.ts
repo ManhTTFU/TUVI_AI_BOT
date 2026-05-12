@@ -151,6 +151,47 @@ export const deepReadings = pgTable(
 );
 
 /**
+ * Tứ Trụ Bát Tự chart (1 row mỗi lần user submit). Hash deterministic theo
+ * (gender|solarDate|hour|minute) để share cache giữa user trùng input.
+ * birthPlace + name chỉ là context hiển thị, KHÔNG vào hash.
+ */
+export const batTuCharts = pgTable(
+  'bat_tu_charts',
+  {
+    id: text('id')
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    gender: varchar('gender', { length: 8 }).notNull(), // 'male' | 'female'
+    solarDate: varchar('solar_date', { length: 10 }).notNull(), // DD/MM/YYYY
+    hour: integer('hour').notNull(), // 0..23
+    minute: integer('minute').notNull(), // 0..59
+    birthPlace: text('birth_place'),
+    /** sha256(gender|solarDate|hour|minute).slice(0,16) */
+    birthHash: varchar('birth_hash', { length: 32 }).notNull(),
+    chartData: jsonb('chart_data').notNull(), // BatTuChart snapshot
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userIdx: index('bat_tu_charts_user_idx').on(t.userId),
+    hashIdx: index('bat_tu_charts_hash_idx').on(t.birthHash),
+  }),
+);
+
+/**
+ * Cache AI markdown cho Tứ Trụ. PK birthHash — share giữa user cùng input.
+ * AI trả về 1 khối markdown nguyên bản (không phải sections), nên lưu text.
+ */
+export const batTuAnalyses = pgTable('bat_tu_analyses', {
+  birthHash: varchar('birth_hash', { length: 32 }).primaryKey(),
+  markdown: text('markdown').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+});
+
+/**
  * Giao dịch ví: topup (admin approve manual hoặc Casso auto), charge (trừ khi
  * lập lá số), refund. amountVnd dương cho topup/refund/admin_credit, ÂM cho charge.
  */
@@ -255,6 +296,8 @@ export const subscriptionPurchases = pgTable(
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Chart = typeof charts.$inferSelect;
+export type BatTuChartRow = typeof batTuCharts.$inferSelect;
+export type BatTuAnalysisRow = typeof batTuAnalyses.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type BankConfig = typeof bankConfig.$inferSelect;

@@ -154,7 +154,7 @@ export default function TxClient({ initial }: { initial: AdminTx[] }) {
                   {new Date(r.createdAt).toLocaleString('vi-VN')}
                 </td>
                 <td className="py-2.5 pr-3 text-right whitespace-nowrap">
-                  {r.status === 'pending' && r.type === 'topup' ? (
+                  {r.status === 'pending' && (r.type === 'topup' || r.type === 'subscription') ? (
                     <div className="inline-flex gap-1.5">
                       <button
                         type="button"

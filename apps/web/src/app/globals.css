@@ -6,10 +6,13 @@
 @tailwind utilities;
 
 :root {
-  --brand-purple: #6B1D5E;
-  --brand-gold: #D4A843;
-  --brand-cream: #FDF8F0;
-  --brand-ink: #2C1729;
+  /* unified brand palette — legacy --brand-purple ánh xạ về đồng cổ */
+  --brand-purple: #5a3a1a;
+  --brand-gold: #c89146;
+  --brand-cream: #fbf3e2;
+  --brand-ink: #0f0a08;
+  --brand-mountain: #4a6c7a;
+  --brand-vermilion: #c8361d;
   --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'Segoe UI', system-ui, sans-serif;
 }
 

@@ -66,11 +66,11 @@ export function LunarCalendar() {
   const yearShort = selected.solar.year % 100;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#3d1d4a] to-[#2a1040] py-20 text-white">
-      {/* dusk palette extracted from sakura-yuhi — cùng thế giới twilight với Hero, khác medium (gradient vs ảnh) */}
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#0f0a08] via-[#2a1c14] to-[#5a3a1a] py-20 text-white">
+      {/* brand sumi gradient: mực tàu → bronze → đồng cổ, glow vàng đồng + chu sa nhẹ */}
       <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50">
-        <div className="absolute left-1/4 top-10 h-72 w-72 rounded-full bg-amber-500/20 blur-3xl" />
-        <div className="absolute right-1/4 bottom-10 h-72 w-72 rounded-full bg-fuchsia-700/25 blur-3xl" />
+        <div className="absolute left-1/4 top-10 h-72 w-72 rounded-full bg-[#c89146]/25 blur-3xl" />
+        <div className="absolute right-1/4 bottom-10 h-72 w-72 rounded-full bg-[#c8361d]/20 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 md:px-6">
@@ -199,7 +199,7 @@ export function LunarCalendar() {
                   tone = 'text-white/25 hover:text-white/50';
                 } else if (cell.isToday) {
                   tone =
-                    'bg-gradient-to-br from-fuchsia-500 to-purple-600 text-white shadow-lg shadow-fuchsia-500/30 ring-1 ring-fuchsia-300/50';
+                    'bg-gradient-to-br from-[#c89146] to-[#5a3a1a] text-white shadow-lg shadow-[#c89146]/30 ring-1 ring-[#e9d4b6]/50';
                 } else if (isSelected) {
                   tone = 'bg-white/15 text-white ring-1 ring-white/30';
                 } else if (good) {
@@ -230,7 +230,7 @@ export function LunarCalendar() {
             </div>
 
             <div className="mt-5 flex flex-wrap items-center gap-5 text-xs text-white/70">
-              <Dot color="bg-fuchsia-500" label="Hôm nay" />
+              <Dot color="bg-[#c89146]" label="Hôm nay" />
               <Dot color="bg-emerald-400" label="Ngày tốt" />
               <Dot color="bg-rose-400" label="Ngày xấu" />
             </div>

@@ -15,6 +15,13 @@
       "when": 1778494299081,
       "tag": "0001_outgoing_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778578146617,
+      "tag": "0002_stormy_shadow_king",
+      "breakpoints": true
     }
   ]
 }

@@ -23,6 +23,194 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-12 — tối
+
+**Đang làm:** 4 mảng độc lập liên quan UX + persistence cho Tứ Trụ + homepage:
+(1) Thêm DB cache cho Tứ Trụ Bát Tự (song song với Tử Vi), (2) trang chi tiết `/tu-tru/[chartId]` + lịch sử merge cả 2 loại lá số, (3) toast notification khi luận AI xong cho cả Tử Vi + Tứ Trụ, (4) wire link 8 cánh cửa Huyền Học ở home page + badge "Hệ thống đang triển khai" cho 5 cánh cửa chưa có route.
+
+**Đến đâu rồi:**
+- **Cache Tứ Trụ (song song Tử Vi)**:
+  - Schema: `packages/db/src/schema.ts` thêm 2 bảng `bat_tu_charts` (per-user row, FK users, chartData JSONB, birthHash) + `bat_tu_analyses` (PK birthHash, markdown TEXT). Migration `packages/db/migrations/0002_stormy_shadow_king.sql` generated bằng `pnpm exec drizzle-kit generate` (drizzle-kit phải chạy qua `pnpm exec` trong package dir, không qua root scripts). Đã apply lên Neon prod (`[migrate] xong`).
+  - Hash helper `apps/web/src/lib/bat-tu-hash.ts`: `sha256(gender|DD/MM/YYYY|hour|minute).slice(0,16)` — name + birthPlace KHÔNG vào hash (chỉ context hiển thị). Phạm vi share hẹp hơn Tử Vi vì Bát Tự phụ thuộc tới phút.
+  - Submit `apps/web/src/app/api/tu-tru/submit/route.ts` rewrite: insert `bat_tu_charts` row → trả `{chartId, name, gender, chart}`. Bỏ luôn nhánh lunar→solar dead code (form chỉ submit solar).
+  - Analyze `apps/web/src/app/api/tu-tru/[chartId]/analyze/route.ts` NEW: auth + PRO + load chart bằng (id, userId) → check cache `bat_tu_analyses[birthHash]` → hit trả ngay với `cached: true`, miss gọi `analyzeBatTu` + `INSERT ... ON CONFLICT DO NOTHING` (chống race). Route cũ `/api/tu-tru/analyze` (truyền chart trong body) đã xoá.
+
+- **Detail page + lịch sử merge**:
+  - Extract `apps/web/src/components/tu-tru/TuTruResultView.tsx` NEW: shared component chứa `PillarsGrid` + `DayMasterPanel` + AI fetcher (`useEffect` auto-fire khi chưa có `initialMarkdown`, gọi `/api/tu-tru/<chartId>/analyze`). Nhận prop `initialMarkdown` để SSR detail page skip fetch khi cache đã hit.
+  - Server detail `apps/web/src/app/tu-tru/[chartId]/page.tsx` NEW: auth + load `bat_tu_charts` (ownership hoặc admin) + preload `bat_tu_analyses.markdown` → render `<TuTruResultView initialMarkdown={...}>`. 404 `not-found.tsx` brand cream + 2 CTA.
+  - Refactor `TuTruClient.tsx`: bỏ inline result block + duplicate fetchAnalysis → render `<TuTruResultView>` sau submit. Thêm link "📜 Đã lưu vào lịch sử — xem tất cả lá số" → `/lich-su`.
+  - Update `/lich-su` `apps/web/src/app/lich-su/page.tsx`: query parallel `charts` + `batTuCharts` (mỗi cái limit 100), merge thành `HistoryItem[]` sort `createdAt desc`. Type badge khác màu (Tử Vi `#5a3a1a`, Tứ Trụ `#4a6c7a`). Icon: ☯ vs 四. Link `/tu-vi/<slug>` vs `/tu-tru/<chartId>`. Header counter "X lá số (Y Tử Vi · Z Tứ Trụ)". Empty state 2 CTA.
+
+- **Toast system**:
+  - `apps/web/src/components/ui/toast.tsx` NEW: custom toast singleton emitter (không thêm dep). Module-level `items` array + `listeners` Set, `push(kind, msg, ttl=4000)` emit ra subscribers. Export `toast.success/error/info`. `<Toaster />` listens via `useEffect(listeners.add(setList))`, render fixed bottom-right, 3 màu match brand (success xanh `#3a8a5e`, error chu sa `#c8361d`, info xanh núi `#4a6c7a`), animation slide-up qua `<style jsx>` keyframe.
+  - Mount: `apps/web/src/app/layout.tsx` thêm `<Toaster />` cuối tree dưới `<Footer />`.
+  - Fire toast: `TuviClient.tsx` + `ChartDetailClient.tsx` `fetchAnalysis/fetchDeep` → `toast.success(cached ? 'Đã có sẵn luận giải...' : 'Luận giải xong')`, catch → `toast.error(...)`. `TuTruResultView.tsx` same pattern. Bắn cho cả 3 endpoint (`/api/tuvi/[id]/analyze`, `/api/tuvi/[id]/deep-readings`, `/api/tu-tru/[id]/analyze`).
+
+- **8 cánh cửa Huyền Học ở home**:
+  - `apps/web/src/lib/home-data.ts`: type `Service` thêm `href?` + `comingSoon?`. SERVICES: tuvi → `/xem-tu-vi`, tutru → `/tu-tru-bat-tu`, xemngay → `/ngay-tot`; 5 cánh cửa còn lại (tarot/phongthuy/xemtuong/gieoque/duyenso) đánh `comingSoon: true`.
+  - `apps/web/src/components/home/HomeClient.tsx`: render Link (Next.js) nếu có `href` + `!comingSoon`, else render `<div aria-disabled>` với badge `⚙ Hệ thống đang triển khai` (vàng đồng `#c89146/15` bg + đồng đậm text). Hover effect chỉ trên Link card (`hover:-translate-y-1`), disabled card `opacity-80 cursor-not-allowed`.
+
+**Files đã sửa:**
+- `packages/db/src/schema.ts` — + `batTuCharts` + `batTuAnalyses` tables + types
+- `packages/db/migrations/0002_stormy_shadow_king.sql` — NEW (drizzle-kit generated)
+- `apps/web/src/lib/bat-tu-hash.ts` — NEW
+- `apps/web/src/app/api/tu-tru/submit/route.ts` — rewrite (save chart row, return chartId, bỏ lunar dead branch)
+- `apps/web/src/app/api/tu-tru/[chartId]/analyze/route.ts` — NEW (cache lookup → AI → insert)
+- `apps/web/src/app/api/tu-tru/analyze/route.ts` — DELETED
+- `apps/web/src/components/tu-tru/TuTruResultView.tsx` — NEW (shared view + AI fetcher)
+- `apps/web/src/components/tu-tru/TuTruClient.tsx` — refactor dùng shared view + link lịch sử
+- `apps/web/src/app/tu-tru/[chartId]/page.tsx` + `not-found.tsx` — NEW (SSR detail)
+- `apps/web/src/app/lich-su/page.tsx` — merge cả 2 loại lá số
+- `apps/web/src/components/ui/toast.tsx` — NEW (toast singleton + Toaster)
+- `apps/web/src/app/layout.tsx` — mount `<Toaster />`
+- `apps/web/src/components/tu-vi/TuviClient.tsx` + `ChartDetailClient.tsx` — fire toast success/error
+- `apps/web/src/lib/home-data.ts` — Service.href/comingSoon, map 3 active + 5 coming soon
+- `apps/web/src/components/home/HomeClient.tsx` — render Link/disabled card với badge
+
+**Blocker:**
+- DB migrate ban đầu bị classifier deny (production write) → user explicit cho phép → chạy lại `pnpm --filter @tuvi/db migrate` OK. Câu verify `SELECT FROM information_schema.tables` tiếp đó cũng bị deny — output `[migrate] xong` không error đã đủ confirm.
+- Submit Tứ Trụ trùng input → tạo `chartId` mới mỗi lần (vì `bat_tu_charts` insert per-submit), nhưng AI markdown share theo `birthHash`. Lịch sử sẽ có 2 row trùng input (giống Tử Vi). Nếu muốn dedupe per-user, cần unique index `(userId, birthHash)` + ON CONFLICT — chưa làm.
+
+**Việc tiếp theo:**
+- E2E test bằng tài khoản PRO: submit Tứ Trụ 2 lần cùng input → verify cache hit instant + toast khác giữa lần 1 (`Luận giải xong`) và lần 2 (`Đã có sẵn...`); kiểm `/lich-su` hiện đủ cả Tử Vi + Tứ Trụ sort đúng; click "Xem chi tiết" → `/tu-tru/<chartId>` render SSR với markdown sẵn không cần fetch.
+- Visual check 8 cánh cửa: 3 active link đúng route, 5 coming-soon disabled rõ ràng.
+- Tarot là cánh cửa "coming soon" duy nhất có sẵn data (TAROT_DECK 22 lá Major Arcana trong `home-data.ts`) — nếu mở rộng sản phẩm, ưu tiên build trang Tarot trước.
+- Carry-over từ session trước: PDF endpoint chưa test, apps/bot dir locked Windows, Casso regex 5-char bankRef, Express legacy chưa remove.
+
+---
+
+### 2026-05-12 — chiều
+
+**Đang làm:** Session chiều gộp 4 mảng độc lập: (1) trang `/hoang-dao` (list + detail), (2) unify color palette toàn site loại bỏ tím + rewrite `patterns.md`, (3) trang mới `/tu-tru-bat-tu` (Bát Tự Tử Bình full pipeline: form + API + AI prompt + PRO gate + 4 trụ card + markdown analysis), (4) thêm `birthPlace` cả Tử Vi + Tứ Trụ + đồng bộ form date/giờ giữa 2 trang.
+
+**Đến đâu rồi:**
+- **Trang Hoàng Đạo `/hoang-dao`**:
+  - List: `apps/web/src/components/hoang-dao/HoangDaoClient.tsx` — Hero gradient sumi dark (mực tàu→bronze→đồng cổ) + sparkle vàng đồng. Grid 12 cung cream cards với element tone (Lửa→chu sa, Đất→vàng đồng, Khí→xanh núi, Nước→slate-navy).
+  - Detail: `apps/web/src/components/hoang-dao/HoangDaoDetail.tsx` + `apps/web/src/app/hoang-dao/[slug]/page.tsx` — breadcrumb → hero card centered → Hôm nay text từ `HOROSCOPE` → Tổng quan paragraph → Strengths/Weaknesses 2 cột → Meta grid (sao chiếu, ngũ hành, quality, màu may mắn, số may mắn, cung hợp) → prev/next + back CTA → 3 related cards.
+  - Data: `apps/web/src/lib/zodiac-detail.ts` — 12 cung mở rộng (slug, ruler, quality, lucky, compatible, strengths/weaknesses, overview 4-6 câu) + helper `getZodiacBySlug/Neighbors/Related`.
+  - 404 `apps/web/src/app/hoang-dao/[slug]/not-found.tsx` brand cream.
+  - Update Header nav `Hoàng Đạo` → `/hoang-dao` (trước là `/#cung` anchor).
+- **Unify palette / bỏ tím**:
+  - `apps/web/tailwind.config.ts` remap: `brand.purple #6B1D5E` → đồng cổ `#5a3a1a`. `brand.purpleDark #3A0F32` → mực tàu `#0f0a08`. `brand.ink #2C1729` → mực tàu. `brand.gold #D4A843` → `#c89146`. Thêm `brand.mountain #4a6c7a` + `brand.vermilion #c8361d`. Shadow soft rgba update.
+  - `apps/web/src/app/globals.css` `--brand-purple` → đồng cổ. Mọi class `.btn-primary/.prose-tuvi` (dùng `brand-purple`) tự render brand qua tailwind remap.
+  - `HoangDaoClient` hero `#1a0b2e/3d1d4a/2a1040` → `#0f0a08/2a1c14/5a3a1a` (warm sumi), sparkle `#fbbf24` → `#c89146`. Element `Nước` indigo `#3d4a6b` → slate-navy `#2a3a4a`.
+  - `apps/web/src/components/LunarCalendar.tsx` (orphan): dusk plum gradient → sumi brand, today badge `from-fuchsia-500 to-purple-600` → `from-[#c89146] to-[#5a3a1a]`, fuchsia dot/glow → vàng đồng/chu sa.
+  - `apps/web/src/components/GoodDayFinder.tsx` (orphan): `text-[#2a1040]` (4 occurrences) → `#0f0a08`.
+  - Rewrite `.claude/memory/patterns.md` "Design rhythm": thêm section "Brand palette — single source of truth" với bảng 9 token + tailwind alias. Codify gradient dark chuẩn `from-[#0f0a08] via-[#2a1c14] to-[#5a3a1a]`. Anti-pattern mới: cấm `purple-*/indigo-*/violet-*/fuchsia-*` tailwind class + hex tím. Audit clean: grep `#1a0b2e|#3d1d4a|#2a1040|purple-|violet-|indigo-|fuchsia-` → 0 match.
+- **Trang Tứ Trụ Bát Tự `/tu-tru-bat-tu`** (mới hoàn toàn):
+  - `apps/web/src/lib/bat-tu.ts`: `calculateBatTu({year,month,day,hour,minute,birthPlace?})` → `BatTuChart` với 4 trụ (Năm/Tháng/Ngày/Giờ) + Can + Chi + ngũ hành Can/Chi + Nhật chủ. Handle hour ≥ 23 → đẩy ngày trụ sang hôm sau (Tý mở đầu ngày Can Chi mới). `formatBatTuForAI` format context cho prompt (kèm `Nơi sinh:` nếu có).
+  - `packages/ai/src/prompts.ts`: thêm `BAT_TU_SYSTEM_PROMPT` + `BAT_TU_PROMPT` 7 phần theo spec user (Tứ trụ → Bản mệnh + cường nhược + dụng/kỵ thần → Tính cách → Sự nghiệp → Tài lộc → Tình duyên & hôn nhân → Tổng kết). Giả định UTC+7, không hiệu chỉnh giờ mặt trời.
+  - `packages/ai/src/analyze.ts`: thêm `analyzeBatTu(context)` → markdown 1 call, max_tokens 3500, retry khi `finish_reason=length`.
+  - API: `apps/web/src/app/api/tu-tru/submit/route.ts` (auth + PRO gate + lunar→solar nếu cần + compute pillars → return chart) và `/analyze/route.ts` (auth + PRO + receive chart → AI). Cả 2 trả 402 `PRO_REQUIRED` nếu chưa PRO.
+  - Page: `apps/web/src/app/tu-tru-bat-tu/page.tsx` + `apps/web/src/components/tu-tru/TuTruClient.tsx`. Form: Họ tên (1 hàng) + Nơi sinh (1 hàng) + Giới tính (1 hàng) + Ngày/Tháng/Năm + Giờ Tý/Sửu/.../Hợi (1 hàng 4 cột). PRO banner nếu 402. Result: hero → Nhật chủ panel → 4 pillar card (Can+Chi+ngũ hành Can+ngũ hành Chi+âm/dương) → AI markdown analysis qua `RenderTuviContent`.
+  - Update Header nav thêm "Tứ Trụ" → `/tu-tru-bat-tu`.
+- **birthPlace cho cả Tử Vi + Tứ Trụ**:
+  - `TuviClient.tsx` thêm `birthPlace: string` vào FormState + initial + input "📍 Nơi sinh" right sau Họ tên. Pass vào `ApiBirthInfo.birthPlace` (trước hardcode `''`). Backend đã sẵn `parseBirthPayload` → `BirthInfo.birthPlace` → `chart.info` → `charts.chartData` JSON.
+  - Tứ Trụ: `BatTuInput.birthPlace?` + `BatTuChart.birth.place?` + `/api/tu-tru/submit` parse + `formatBatTuForAI` chèn `Nơi sinh: ...` vào AI context. `TuTruClient` input "📍 Nơi sinh" sau Họ tên.
+- **Đồng bộ form date Tứ Trụ với Tử Vi** (đợt cuối):
+  - Bỏ field minute hoàn toàn. `FormState.hour` từ string "0-23" → number 0-11 (timeIndex canh giờ).
+  - Layout 1 hàng 4 cột: Ngày | Tháng | Năm | Giờ Tý/Sửu/.../Hợi (dropdown với range "23:00 – 01:00" inline).
+  - Convert tại submit: `civilHour = timeIndex * 2`, `minute: 0`. Backend tính hour chi qua `hourChiIndex` không đổi.
+  - Default `hour: 6` = Ngọ (11-13h).
+
+**Files đã sửa (chính):**
+- `apps/web/src/components/hoang-dao/HoangDaoClient.tsx` — mới + revise palette.
+- `apps/web/src/components/hoang-dao/HoangDaoDetail.tsx` — mới.
+- `apps/web/src/app/hoang-dao/{page,[slug]/page,[slug]/not-found}.tsx` — mới.
+- `apps/web/src/lib/zodiac-detail.ts` — mới.
+- `apps/web/tailwind.config.ts` + `apps/web/src/app/globals.css` — palette remap.
+- `apps/web/src/components/LunarCalendar.tsx` + `GoodDayFinder.tsx` (orphan) — neutralize purple.
+- `.claude/memory/patterns.md` — rewrite design-rhythm + thêm Brand palette section.
+- `apps/web/src/lib/bat-tu.ts` — mới (pillars calc).
+- `packages/ai/src/prompts.ts` — thêm BAT_TU_SYSTEM + BAT_TU_PROMPT.
+- `packages/ai/src/analyze.ts` — thêm `analyzeBatTu`.
+- `apps/web/src/app/api/tu-tru/{submit,analyze}/route.ts` — mới.
+- `apps/web/src/app/tu-tru-bat-tu/page.tsx` + `apps/web/src/components/tu-tru/TuTruClient.tsx` — mới.
+- `apps/web/src/components/layout/Header.tsx` — nav order + thêm "Tứ Trụ".
+- `apps/web/src/components/tu-vi/TuviClient.tsx` — thêm input Nơi sinh.
+
+**Blocker (cả 2 mảng đều chưa close):**
+- **Chưa E2E test Tứ Trụ với PRO account thật**:
+  - Submit → 4 trụ render đúng? Đặc biệt boundary giờ Tý (timeIndex 0 → civilHour 0 → không đẩy ngày).
+  - AI analyze 7 phần có ra đủ format `## ** •` markdown? Có gọi tên Can Chi cụ thể không hay luận chung chung?
+  - Timing tổng /submit + /analyze trong 60s? Max_tokens 3500 đủ chưa truncate?
+  - PRO banner / 402 flow đã verify endpoint trả 401 unauth, nhưng chưa test 402 PRO_REQUIRED với non-PRO user.
+- **Chưa kiểm UI `/hoang-dao` + `/hoang-dao/[slug]` trên browser**:
+  - Chỉ verify route 200 + compile clean qua curl + dev log.
+  - Chưa scroll thực tế xem: tone Lửa/Đất/Khí/Nước có distinguishable không? Element symbol gradient có readable không? Breadcrumb mobile có wrap đẹp?
+- Carry-over: PDF endpoint `/api/tuvi/[chartId]/pdf` chưa test thật. Apps/bot dir rỗng vẫn lock Windows. Casso regex 5-char bankRef. Express legacy chưa xoá.
+
+**Việc tiếp theo:** (user chưa chốt — sẽ quyết đầu session sau)
+
+---
+
+### 2026-05-12
+
+**Đang làm:** Session dài, gộp nhiều giai đoạn: (1) Kill dev server treo từ hôm qua (PID 2644 chạy 24h, ăn 614MB RAM + 37k CPU sec) + tạo skill `stop-dev`. (2) Admin tools — fix bug `/admin/transactions` không hiện nút Duyệt/Từ chối, thêm "Hủy gói PRO" trong `/admin/users` (có self-guard), nội dung CK auto-fill = bankRef + email. (3) Rút bankRef xuống 5 chars (`makeBankRef()` bỏ prefix, output dạng `IS0JR`). (4) Chart detail page = giống `/xem-tu-vi` result + nút Tải PDF — tạo `ChartDetailClient`, viết lại `/tu-vi/[slug]/page.tsx` đọc DB, endpoint mới `/api/tuvi/[chartId]/pdf` dùng `@tuvi/pdf`. (5) Bỏ duplicate "Toàn Bộ Đại Hạn" ở tab Tổng Quan. (6) **AI optimize 6 section: 71s → 30s** — max_tokens cap mỗi loại call, pLimit 8→16, retry backoff 8s→3s, log timing per call, split `namHienTai` thành 2 prompt parallel (main + months). (7) Fix bug "Unexpected end of JSON input" + truncate `twelvePalaces` + invalid JSON `namHienTaiMain`. (8) Thêm aspect **Gia đạo** vào năm hiện tại với context cụ thể từng cung (Phụ Mẫu / Phu Thê / Tử Tức / Huynh Đệ), nâng 4 aspect cũ từ 3-5 → 5-7 câu.
+
+**Đến đâu rồi:**
+- **Dev server**: kill PID 2644 + start lại sạch, Next ready 5.7s. Skill `/stop-dev` đã tạo (`.claude/skills/stop-dev/SKILL.md`) — gõ `/stop-dev` khi muốn kill cuối buổi.
+- **Admin transactions fix**: `TxClient.tsx:157` filter từ `r.type === 'topup'` → `(r.type === 'topup' || r.type === 'subscription')`. Approve endpoint đã hỗ trợ cả 2 type sẵn, chỉ FE filter sai từ refactor subscription.
+- **Hủy PRO**: endpoint `POST /api/admin/users/revoke-pro` — set `proUntil = null` + log tx `admin_extend` với metadata `{action: 'revoke', previousProUntil}` (reuse type vì enum không có `admin_revoke`) + publish SSE `subscription` tier=NORMAL. UsersClient có nút "Hủy PRO" cạnh "Tặng gói", chỉ render khi `isProActive(u.proUntil) && u.id !== meId`. 400 server-side guard.
+- **Nội dung CK**: `WalletClient.tsx` thêm prop `userEmail`, helper `ckContent(ref) = "<bankRef> <email>"`, áp dụng cả Row + đoạn `<code>` cảnh báo.
+- **bankRef 5 chars**: `makeBankRef()` giờ trả 5 char alphanumeric uppercase (2 char ts + 3 char rand), bỏ prefix. 60M tổ hợp đủ thưa, unique constraint DB bắt collision. Casso regex `[A-Z]{2,6}[A-Z0-9]{4,12}` không match được 5-char ref → khi enable Casso phải đổi regex (Casso đang OFF).
+- **Chart detail page**: tách `VietnameseCenter` thành component dùng chung; `ChartDetailClient` render heading + BasicInfo + Iztrolabe + VietnameseCenter + DeepReadings + nút "Tải PDF" (disable đến khi analysis xong). `/tu-vi/[slug]/page.tsx` viết lại — server component đọc chart + analyses + deepReadings từ DB, auth-gate (owner hoặc admin), pass xuống ChartDetailClient. `not-found.tsx` brand mới cream/xanh núi/vàng đồng. `/api/tuvi/[chartId]/pdf` GET dùng `buildPdf()` từ `@tuvi/pdf`, stream Blob về FE, `Content-Disposition: attachment` filename theo tên + ngày sinh. Thêm `@tuvi/pdf` vào `apps/web/package.json` + `next.config.js transpilePackages`.
+- **Bỏ duplicate Đại Hạn**: `DeepReadings.tsx:1526-1531` xóa `<DaiHan10>` trong tab Tổng Quan, giữ ở section "Đại Hạn & Tiểu Hạn" bên dưới.
+- **AI optimize**: `callOneSection` cap `max_tokens: 1500`. `callJsonSection` cap per label — daiHan 3000, tieuHan 1800, twelvePalaces 4000, namHienTaiMain 3500, namHienTaiMonths 1500. `limit.ts` pLimit default 8→16, withRetry retries 4→3 + maxMs 8000→3000. `aiCall` log `[ai:label] Nms` mỗi call (success + fail). Prompts: tất cả "Ít nhất 3 tiêu đề" → "3 tiêu đề" (fix, không flex), thêm `${LENGTH_HINT}` = "Độ dài: 600-900 từ. Súc tích, không lặp ý."
+- **Split namHienTai**: 2 prompt mới `NAM_HIEN_TAI_MAIN_PROMPT` (category + overview + 5 aspects + advice) và `NAM_HIEN_TAI_MONTHS_PROMPT` (chỉ 12 tháng). `analyzeNamHienTai` `Promise.all([main, months])` rồi merge. Giữ alias `NAM_HIEN_TAI_JSON_PROMPT = NAM_HIEN_TAI_MAIN_PROMPT` cho backward compat.
+- **Fix JSON crash**:
+  - 2 route `/analyze` + `/deep-readings` wrap try/catch quanh `analyzeChart`/`analyzeDeepReadings` → trả `502 {ok: false, error}` thay vì 500 + body rỗng. FE `res.json()` không crash nữa.
+  - `twelvePalaces` truncate ở position 5761 vì cap 2500 không đủ → raise 4000 + giảm prompt "5-7 câu" → "4-5 câu mỗi cung".
+  - `namHienTaiMain` invalid JSON ở position 2483 vì prompt yêu cầu wrap tục ngữ trong `"..."` (escaped quote literal) → đổi sang "viết liền câu khuyên, KHÔNG bọc dấu nháy kép". Cap raise 2000 → 2500 → 3500 (sau khi thêm Gia đạo).
+  - `callJsonSection` giờ detect `completion.choices[0].finish_reason === 'length'` → throw error có `.status = 500` để withRetry tự retry. JSON parse error cũng đánh dấu retryable.
+- **Gia đạo**:
+  - `packages/core/src/types.ts`: thêm `family: NamHienTaiAspect` vào `NamHienTaiReading.aspects`; đổi yêu cầu text "3-5 câu" → "5-7 câu".
+  - `analyze.ts buildNamHienTaiContext`: thêm 4 dòng cung gia đạo (Phụ Mẫu / Phu Thê / Tử Nữ-Tử Tức / Huynh Đệ) với sao chính + phụ.
+  - `analyzeNamHienTai`: merge `family` aspect với fallback rating + text.
+  - `NAM_HIEN_TAI_MAIN_PROMPT`: 4 aspect cũ 3-5 → 5-7 câu với dẫn dắt cụ thể (chia quý Q1-Q4, mức rủi ro, tháng nào nên khám sức khoẻ). Aspect `family` yêu cầu nói TỪNG NHÓM: cha mẹ (Phụ Mẫu), vợ/chồng (Phu Thê — có sinh con không), con cái (Tử Tức), anh chị em (Huynh Đệ).
+  - `DeepReadings NamHienTaiDetail`: aspects array thêm card thứ 5 🏠 "Gia đạo" với fallback default.
+
+**Files đã sửa (chính):**
+- `.claude/skills/stop-dev/SKILL.md` — mới.
+- `apps/web/src/app/admin/transactions/TxClient.tsx` — filter fix.
+- `apps/web/src/app/admin/users/UsersClient.tsx` — nút Hủy PRO + self-guard.
+- `apps/web/src/app/api/admin/users/revoke-pro/route.ts` — mới.
+- `apps/web/src/app/vi-cua-toi/page.tsx` + `WalletClient.tsx` — userEmail prop + nội dung CK = bankRef+email.
+- `apps/web/src/lib/money.ts` — `makeBankRef` 5 chars.
+- `apps/web/src/app/api/wallet/topup-request/route.ts` — bỏ query refPrefix.
+- `apps/web/src/components/tu-vi/VietnameseCenter.tsx` — mới, tách từ TuviClient.
+- `apps/web/src/components/tu-vi/ChartDetailClient.tsx` — mới.
+- `apps/web/src/components/tu-vi/TuviClient.tsx` — import VietnameseCenter shared.
+- `apps/web/src/components/tu-vi/DeepReadings.tsx` — bỏ DaiHan10 ở tab Tổng Quan, thêm aspect Gia đạo.
+- `apps/web/src/app/tu-vi/[slug]/page.tsx` — viết lại đọc DB + auth-gate.
+- `apps/web/src/app/tu-vi/[slug]/not-found.tsx` — brand mới.
+- `apps/web/src/app/api/tuvi/[chartId]/pdf/route.ts` — mới, build PDF stream.
+- `apps/web/src/app/api/tuvi/[chartId]/analyze/route.ts` + `/deep-readings/route.ts` — wrap try/catch trả 502 JSON.
+- `apps/web/package.json` + `next.config.js` — thêm `@tuvi/pdf`.
+- `packages/ai/src/limit.ts` — pLimit 16, retry budget giảm, log timing.
+- `packages/ai/src/analyze.ts` — split namHienTai 2 call, family fallback, JSON_MAX_TOKENS table, finish_reason='length' detect, context thêm cung gia đạo.
+- `packages/ai/src/prompts.ts` — split namHienTai prompt + đổi cố định 3 tiêu đề + length hints + thêm family aspect.
+- `packages/core/src/types.ts` — family aspect, "5-7 câu".
+
+**Timing đo được (test trước fix Gia đạo):**
+- `/analyze`: **29.4s** 🎯 đạt target 30s. Max section `love 22.5s`.
+- `/deep-readings`: failed 500 vì JSON bugs (twelvePalaces truncate, namHienTaiMain invalid). Pre-fail: `daiHan 27.4s, tieuHan 16.4s, namHienTaiMain 13.9s, namHienTaiMonths 9.7s, twelvePalaces ~30s`. Sau fix expect ~30s.
+
+**Blocker:**
+- **Chưa E2E test lá số mới** sau khi thêm Gia đạo + raise caps + fix JSON bugs. Cần verify:
+  - Aspect `family` ra đầy đủ data, đề cập đúng từng nhóm thành viên (cha mẹ / vợ chồng / con / anh em).
+  - JSON không còn truncate (twelvePalaces, namHienTaiMain).
+  - Timing tổng vẫn ~30s sau khi thêm aspect thứ 5 + chi tiết 5-7 câu (namHienTaiMain expect ~25-28s, vẫn dưới max của daiHan/twelvePalaces).
+- **Apps/bot dir rỗng** vẫn lock Windows (carry over từ 2026-05-11).
+- **PDF chưa test thật** — endpoint mới `/api/tuvi/[chartId]/pdf` chưa verify với chart có cache analysis. Có thể fonts NotoSans path không resolve đúng trong Next.js cwd.
+- **Express legacy** `/api/tuvi/*` vẫn ở port 4100, cần xoá khi deploy.
+- **Casso regex** `[A-Z]{2,6}[A-Z0-9]{4,12}` không match 5-char ref → khi enable Casso phải đổi (chưa critical vì Casso đang OFF).
+- **`/tu-vi/[slug]` SEO**: trang giờ `robots: noindex` (cá nhân, auth-gate). Trước có canonical + og:title cho share — đã bỏ. Nếu muốn share lá số public cần thêm cờ public riêng.
+
+**Việc tiếp theo:** (user tự quyết)
+
+---
+
 ### 2026-05-11
 
 **Đang làm:** Session rất dài (gần 8 tiếng), gộp 4 giai đoạn lớn: (1) Polish AI/UI tử vi — gộp Diễn Cầm Luận Giải vào tab Tổng Quan, thêm prompt năm hiện tại cá nhân hóa + tục ngữ VN, replace chart vẽ tay bằng `react-iztro` + CSS overrides theme brand. (2) Performance — parallel hoá AI calls + p-limit semaphore + retry exponential backoff + cache theo birth-hash trên đĩa, tổng thời gian từ ~50s xuống ~12s. (3) **Loại bỏ Telegram bot** + dọn dẹp. (4) **Database + Auth + Payment foundation** (cực lớn) — Neon Postgres + Drizzle ORM (12 bảng), Auth.js v5 với Google + Facebook OAuth + Email magic link, hệ thống ví/topup/admin với SSE realtime, sau đó **refactor sang subscription PRO/NORMAL** (4 gói: 20k/tháng, 50k/nửa năm, 100k/năm, 500k/trọn đời) thay model per-chart cũ.

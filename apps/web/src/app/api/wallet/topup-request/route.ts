@@ -1,7 +1,6 @@
 import { auth } from '@/auth';
 import {
   getDb,
-  bankConfig,
   subscriptionPlans,
   transactions,
   type Plan,
@@ -39,13 +38,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Gói không tồn tại' }, { status: 404 });
   }
 
-  const [cfg] = await db
-    .select({ refPrefix: bankConfig.refPrefix })
-    .from(bankConfig)
-    .where(eq(bankConfig.key, 'default'))
-    .limit(1);
-  const prefix = cfg?.refPrefix ?? 'VTV';
-
   // Chống spam: tối đa 5 pending tx subscription cùng lúc.
   const pending = await db
     .select({ id: transactions.id })
@@ -64,7 +56,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const bankRef = makeBankRef(prefix);
+  const bankRef = makeBankRef();
   const [tx] = await db
     .insert(transactions)
     .values({

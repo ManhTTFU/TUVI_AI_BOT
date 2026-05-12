@@ -3,11 +3,15 @@ export function formatVnd(n: number): string {
 }
 
 /**
- * Sinh bank ref unique theo prefix + timestamp + random.
- * VD: "VTV12K3X7" — đủ random để không trùng, ngắn để user dễ ghi vào nội dung CK.
+ * Sinh bank ref unique 5 ký tự alphanumeric uppercase.
+ * VD: "K3X72" — ngắn để user dễ ghi vào nội dung CK + dễ đọc qua điện thoại.
+ * 36^5 = 60M tổ hợp, đủ thưa để collision negligible với số pending tx thực tế.
+ * Nếu cực hiếm trùng → unique constraint DB throw, caller có thể retry.
+ *
+ * `prefix` arg giữ lại để không phá API cũ; hiện tại không dùng.
  */
-export function makeBankRef(prefix: string): string {
-  const ts = Date.now().toString(36).toUpperCase().slice(-5);
-  const rand = Math.random().toString(36).toUpperCase().slice(2, 5);
-  return `${prefix}${ts}${rand}`;
+export function makeBankRef(_prefix?: string): string {
+  const ts = Date.now().toString(36).toUpperCase().slice(-2);
+  const rand = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3).padEnd(3, '0');
+  return `${ts}${rand}`;
 }

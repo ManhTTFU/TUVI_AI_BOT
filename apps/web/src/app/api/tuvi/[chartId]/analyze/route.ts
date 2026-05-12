@@ -42,13 +42,19 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
   }
 
   // Cache miss → call AI (đã wrap aiCall semaphore + retry trong @tuvi/ai).
-  const sections = await analyzeChart(chartRow.chartData as ChartData);
+  try {
+    const sections = await analyzeChart(chartRow.chartData as ChartData);
 
-  // Save cache. onConflictDoNothing đề phòng race (2 user submit cùng lúc).
-  await db
-    .insert(analyses)
-    .values({ birthHash: chartRow.birthHash, sections })
-    .onConflictDoNothing();
+    // Save cache. onConflictDoNothing đề phòng race (2 user submit cùng lúc).
+    await db
+      .insert(analyses)
+      .values({ birthHash: chartRow.birthHash, sections })
+      .onConflictDoNothing();
 
-  return NextResponse.json({ ok: true, analysis: sections, cached: false });
+    return NextResponse.json({ ok: true, analysis: sections, cached: false });
+  } catch (e) {
+    const msg = (e as Error).message ?? 'Lỗi không xác định khi gọi AI';
+    console.error(`[analyze] ${msg}`);
+    return NextResponse.json({ ok: false, error: msg }, { status: 502 });
+  }
 }

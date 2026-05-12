@@ -13,10 +13,10 @@ type NavLink = { label: string; href: string };
 const NAV_LINKS: NavLink[] = [
   { label: 'Trang Chủ', href: '/#top' },
   { label: 'Xem Tử Vi', href: '/xem-tu-vi' },
+  { label: 'Tứ Trụ', href: '/tu-tru-bat-tu' },
   { label: 'Xem Ngày Tốt', href: '/ngay-tot' },
-  { label: 'Con Giáp', href: '/#zodiac' },
+  { label: 'Hoàng Đạo', href: '/hoang-dao' },
   { label: 'Lục Diệu', href: '/#lucdieu' },
-  { label: 'Hoàng Đạo', href: '/#cung' },
 ];
 
 function isActive(href: string, pathname: string): boolean {

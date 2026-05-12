@@ -14,6 +14,8 @@ import type {
 import { formatVnd } from '@/lib/money';
 import { isProActive } from '@/lib/tier';
 import DeepReadings, { BasicInfo } from './DeepReadings';
+import VietnameseCenter from './VietnameseCenter';
+import { toast } from '@/components/ui/toast';
 import '@/styles/iztrolabe-overrides.css';
 
 // react-iztro renders DOM directly + reads window; load client-side only.
@@ -57,67 +59,11 @@ type FormState = {
   hour: number;
   gender: Gender;
   calendar: Calendar;
+  birthPlace: string;
 };
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
-}
-
-function VietnameseCenter({ chart }: { chart: ChartData }) {
-  const isMale = chart.info.gender === 'male';
-  const rows: Array<[string, string]> = [
-    ['Ngũ hành cục', chart.fiveElementsClass],
-    ['Dương lịch', chart.solarDate],
-    ['Âm lịch', chart.lunarDate],
-    ['Tứ trụ Can Chi', chart.chineseDate],
-    ['Giờ sinh', `${chart.time} (${chart.timeRange})`],
-    ['Con giáp', chart.zodiac],
-    ['Cung hoàng đạo', chart.sign],
-    ['Mệnh chủ', chart.soul],
-    ['Thân chủ', chart.body],
-    ['Địa chi Mệnh', chart.earthlyBranchOfSoulPalace],
-    ['Địa chi Thân', chart.earthlyBranchOfBodyPalace],
-  ];
-  return (
-    <div
-      className="pointer-events-none absolute inset-0 grid"
-      style={{
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gridTemplateRows: 'repeat(4, 1fr)',
-        gap: 3,
-      }}
-    >
-      <div
-        className="pointer-events-auto rounded-md border-2 border-[#c89146]/55 bg-gradient-to-br from-[#fbf3e2] to-[#f5e3c0] flex flex-col p-3 overflow-hidden"
-        style={{ gridColumn: '2 / span 2', gridRow: '2 / span 2' }}
-      >
-        <div className="text-center mb-2">
-          <div className="text-[10px] tracking-[0.3em] uppercase text-[#4a3a30] font-semibold">
-            Lá Số Tử Vi
-          </div>
-          <div
-            className="mt-0.5 text-xl font-serif italic text-[#5a3a1a]"
-            style={{ fontFamily: SERIF_FONT }}
-          >
-            {isMale ? '♂ Càn Tạo' : '♀ Khôn Tạo'}
-          </div>
-          <div className="mt-0.5 text-[11px] text-[#0f0a08] font-medium truncate px-2">
-            {chart.info.name}
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] leading-[1.45] overflow-y-auto">
-          {rows.map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-2 min-w-0">
-              <span className="text-[#4a3a30]">{k}</span>
-              <span className="font-semibold text-[#5a3a1a] truncate text-right">
-                {v}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // Brute-force lunar→solar (lichvannien chỉ export solarToLunar). Lunar (ly,lm,ld)
@@ -219,6 +165,7 @@ export default function TuviClient() {
     hour: 6,
     gender: 'nam',
     calendar: 'duong',
+    birthPlace: '',
   });
   const router = useRouter();
   const { data: session } = useSession();
@@ -287,7 +234,7 @@ export default function TuviClient() {
       gender: form.gender === 'nam' ? 'male' : 'female',
       birthDate: `${pad2(d)}/${pad2(m)}/${y}`,
       timeIndex: form.hour,
-      birthPlace: '',
+      birthPlace: form.birthPlace.trim(),
     };
   };
 
@@ -300,8 +247,12 @@ export default function TuviClient() {
         const data = await res.json();
         if (!res.ok || !data?.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
         setAnalysis(data.analysis as AnalysisSections);
+        toast.success('Luận giải Tử Vi xong');
       })
-      .catch((err: Error) => setAiError(err.message))
+      .catch((err: Error) => {
+        setAiError(err.message);
+        toast.error(`Lỗi luận Tử Vi: ${err.message}`);
+      })
       .finally(() => setAiLoading(false));
   };
 
@@ -314,8 +265,12 @@ export default function TuviClient() {
         const data = await res.json();
         if (!res.ok || !data?.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
         setDeep(data.deep as DeepReadingsData);
+        toast.success('Luận đại hạn + 12 cung xong');
       })
-      .catch((err: Error) => setDeepError(err.message))
+      .catch((err: Error) => {
+        setDeepError(err.message);
+        toast.error(`Lỗi luận chi tiết: ${err.message}`);
+      })
       .finally(() => setDeepLoading(false));
   };
 
@@ -362,11 +317,14 @@ export default function TuviClient() {
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
       setChart(data.chart as ChartData);
+      toast.success('Đã lập lá số Tử Vi — đang chờ AI luận giải');
       // Fire AI parallel — chart already saved + balance đã trừ.
       fetchAnalysis(data.chartId as string);
       fetchDeep(data.chartId as string);
     } catch (err) {
-      setError(`Không lập được lá số: ${(err as Error).message}`);
+      const msg = (err as Error).message;
+      setError(`Không lập được lá số: ${msg}`);
+      toast.error(`Lập lá số thất bại: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -402,6 +360,16 @@ export default function TuviClient() {
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Nhập tên của bạn"
+                className="w-full h-12 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] text-[#0f0a08] placeholder:text-[#7a6a52] focus:outline-none focus:border-[#4a6c7a] focus:ring-2 focus:ring-[#4a6c7a]/15 transition"
+              />
+            </div>
+
+            <div>
+              <FieldLabel icon="📍">Nơi sinh (không bắt buộc)</FieldLabel>
+              <input
+                value={form.birthPlace}
+                onChange={(e) => setForm({ ...form, birthPlace: e.target.value })}
+                placeholder="VD: TP. Hồ Chí Minh"
                 className="w-full h-12 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] text-[#0f0a08] placeholder:text-[#7a6a52] focus:outline-none focus:border-[#4a6c7a] focus:ring-2 focus:ring-[#4a6c7a]/15 transition"
               />
             </div>

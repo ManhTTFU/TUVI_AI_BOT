@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import {
   ARTICLES,
@@ -86,40 +87,67 @@ function ServiceGrid() {
           </h2>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {SERVICES.map((s, i) => (
-            <a
-              key={s.key}
-              href={`#${s.key}`}
-              className="group relative rounded-2xl border border-[#c89146]/55 bg-[#fbf3e2]/92 backdrop-blur-sm p-6 hover:border-[#4a6c7a]/60 hover:-translate-y-1 transition-all duration-300 overflow-hidden"
-            >
-              <div
-                className="absolute right-3 top-3 text-[44px] leading-none font-serif text-[#5a3a1a]/15 group-hover:text-[#5a3a1a]/30 transition"
-                style={{ fontFamily: SERIF_FONT }}
-              >
-                {s.glyph}
-              </div>
-              <div className="relative">
-                <div className="text-[10px] tracking-[0.3em] uppercase text-[#4a6c7a] font-semibold">
-                  {String(i + 1).padStart(2, '0')}
-                </div>
-                <h3
-                  className="mt-3 text-2xl font-serif text-[#0f0a08] leading-tight"
+          {SERVICES.map((s, i) => {
+            const content = (
+              <>
+                <div
+                  className="absolute right-3 top-3 text-[44px] leading-none font-serif text-[#5a3a1a]/15 group-hover:text-[#5a3a1a]/30 transition"
                   style={{ fontFamily: SERIF_FONT }}
                 >
-                  {s.title}
-                </h3>
-                <p className="mt-2 text-sm text-[#0f0a08] leading-relaxed min-h-[3rem]">
-                  {s.sub}
-                </p>
-                <div className="mt-5 inline-flex items-center gap-2 text-[#5a3a1a] text-sm group-hover:text-[#4a6c7a]">
-                  Xem ngay{' '}
-                  <span className="transition-transform group-hover:translate-x-1">
-                    →
-                  </span>
+                  {s.glyph}
                 </div>
-              </div>
-            </a>
-          ))}
+                <div className="relative">
+                  <div className="text-[10px] tracking-[0.3em] uppercase text-[#4a6c7a] font-semibold">
+                    {String(i + 1).padStart(2, '0')}
+                  </div>
+                  <h3
+                    className="mt-3 text-2xl font-serif text-[#0f0a08] leading-tight"
+                    style={{ fontFamily: SERIF_FONT }}
+                  >
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-[#0f0a08] leading-relaxed min-h-[3rem]">
+                    {s.sub}
+                  </p>
+                  {s.comingSoon ? (
+                    <div className="mt-5 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#c89146]/15 border border-[#c89146]/40 text-[#7a5520] text-[11.5px] font-semibold tracking-wide">
+                      <span>⚙</span> Hệ thống đang triển khai
+                    </div>
+                  ) : (
+                    <div className="mt-5 inline-flex items-center gap-2 text-[#5a3a1a] text-sm group-hover:text-[#4a6c7a]">
+                      Xem ngay{' '}
+                      <span className="transition-transform group-hover:translate-x-1">
+                        →
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+            const baseClass =
+              'group relative rounded-2xl border border-[#c89146]/55 bg-[#fbf3e2]/92 backdrop-blur-sm p-6 transition-all duration-300 overflow-hidden';
+            if (s.comingSoon || !s.href) {
+              return (
+                <div
+                  key={s.key}
+                  aria-disabled="true"
+                  className={`${baseClass} opacity-80 cursor-not-allowed`}
+                  title="Hệ thống đang triển khai"
+                >
+                  {content}
+                </div>
+              );
+            }
+            return (
+              <Link
+                key={s.key}
+                href={s.href}
+                className={`${baseClass} hover:border-[#4a6c7a]/60 hover:-translate-y-1`}
+              >
+                {content}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

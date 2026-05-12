@@ -18,6 +18,7 @@
     "@tuvi/core": "workspace:*",
     "@tuvi/db": "workspace:*",
     "@tuvi/lichvannien": "workspace:*",
+    "@tuvi/pdf": "workspace:*",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.36.4",
     "next": "14.2.18",

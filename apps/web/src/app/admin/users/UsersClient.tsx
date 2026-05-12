@@ -39,6 +39,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
   const [extendPlan, setExtendPlan] = useState<Plan>('monthly');
   const [extendNote, setExtendNote] = useState('');
   const [extendBusy, setExtendBusy] = useState(false);
+  const [revokeBusy, setRevokeBusy] = useState<string | null>(null);
 
   const filtered = users.filter((u) => {
     const q = filter.trim().toLowerCase();
@@ -76,6 +77,25 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
       setError((e as Error).message);
     } finally {
       setExtendBusy(false);
+    }
+  };
+
+  const revokePro = async (u: AdminUser) => {
+    if (!confirm(`Hủy gói PRO của ${u.email}? Sau khi hủy, user về NORMAL ngay lập tức.`)) return;
+    setRevokeBusy(u.id);
+    try {
+      const res = await fetch('/api/admin/users/revoke-pro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: u.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, proUntil: null } : x)));
+    } catch (e) {
+      alert('Lỗi: ' + (e as Error).message);
+    } finally {
+      setRevokeBusy(null);
     }
   };
 
@@ -217,18 +237,31 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
                   {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                 </td>
                 <td className="py-2.5 pr-3 text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setExtendFor(u);
-                      setExtendPlan('monthly');
-                      setExtendNote('');
-                      setError(null);
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[12px] hover:bg-[#a52a16] transition mr-1"
-                  >
-                    Tặng gói
-                  </button>
+                  <div className="inline-flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExtendFor(u);
+                        setExtendPlan('monthly');
+                        setExtendNote('');
+                        setError(null);
+                      }}
+                      className="px-3 py-1.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[12px] hover:bg-[#a52a16] transition"
+                    >
+                      Tặng gói
+                    </button>
+                    {isProActive(u.proUntil) && u.id !== meId && (
+                      <button
+                        type="button"
+                        onClick={() => revokePro(u)}
+                        disabled={revokeBusy === u.id}
+                        title="Hủy gói PRO của user này, đặt về NORMAL"
+                        className="px-3 py-1.5 rounded-full border border-[#c8361d]/45 text-[#c8361d] text-[12px] font-semibold hover:bg-[#c8361d]/10 transition disabled:opacity-50"
+                      >
+                        {revokeBusy === u.id ? '…' : 'Hủy PRO'}
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

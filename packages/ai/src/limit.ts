@@ -2,10 +2,11 @@ import pLimit from 'p-limit';
 
 /**
  * Global concurrency limit cho mọi call Deepseek từ process này.
- * 8 là sweet spot: nhanh hơn 4–5×, không đụng rate-limit chuẩn (60 RPM, 50 concurrent).
- * Có thể override qua env `AI_CONCURRENCY` (vd "16") khi scale up.
+ * 16 đủ chỗ cho 6 section analyze + 4 deep readings chạy truly parallel khi FE
+ * fire 2 endpoint cùng lúc (10 calls). Deepseek free tier cho phép 50 concurrent.
+ * Có thể override qua env `AI_CONCURRENCY`.
  */
-const concurrency = Number(process.env.AI_CONCURRENCY) || 8;
+const concurrency = Number(process.env.AI_CONCURRENCY) || 16;
 export const aiLimit = pLimit(concurrency);
 
 interface RetryOptions {
@@ -23,7 +24,7 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   opts: RetryOptions = {},
 ): Promise<T> {
-  const { retries = 4, baseMs = 600, maxMs = 8000, label = 'ai' } = opts;
+  const { retries = 3, baseMs = 500, maxMs = 3000, label = 'ai' } = opts;
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -44,7 +45,19 @@ export async function withRetry<T>(
   throw lastErr;
 }
 
-/** Wrap 1 call AI: limit + retry. Dùng cho mọi entry điểm Deepseek. */
+/** Wrap 1 call AI: limit + retry + timing log. Dùng cho mọi entry điểm Deepseek. */
 export function aiCall<T>(fn: () => Promise<T>, label = 'ai'): Promise<T> {
-  return aiLimit(() => withRetry(fn, { label }));
+  return aiLimit(async () => {
+    const start = Date.now();
+    try {
+      const result = await withRetry(fn, { label });
+      const ms = Date.now() - start;
+      console.log(`[ai:${label}] ${ms}ms`);
+      return result;
+    } catch (e) {
+      const ms = Date.now() - start;
+      console.error(`[ai:${label}] FAILED after ${ms}ms — ${(e as Error).message}`);
+      throw e;
+    }
+  });
 }

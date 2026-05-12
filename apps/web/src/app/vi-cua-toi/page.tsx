@@ -43,6 +43,7 @@ export default async function WalletPage() {
         sortOrder: p.sortOrder,
       }))}
       userName={session.user.name ?? session.user.email ?? ''}
+      userEmail={session.user.email ?? ''}
     />
   );
 }

@@ -40,13 +40,17 @@ export default function WalletClient({
   bank,
   plans,
   userName,
+  userEmail,
 }: {
   initialBalance: number;
   initialProUntil: string | null;
   bank: BankConfig | null;
   plans: PlanInfo[];
   userName: string;
+  userEmail: string;
 }) {
+  const ckContent = (ref: string | null) =>
+    [ref, userEmail].filter(Boolean).join(' ').trim();
   const [proUntil, setProUntil] = useState<string | null>(initialProUntil);
   const [balance] = useState(initialBalance);
   const [pickedPlan, setPickedPlan] = useState<Plan | null>(null);
@@ -336,7 +340,7 @@ export default function WalletClient({
                 />
                 <Row
                   label="Nội dung CK"
-                  value={pending.tx.bankRef ?? ''}
+                  value={ckContent(pending.tx.bankRef)}
                   copy
                   bold
                   highlight
@@ -344,7 +348,7 @@ export default function WalletClient({
                 <p className="mt-3 text-[12.5px] leading-relaxed text-[#4a3a30] border-l-2 border-[#c89146] pl-3">
                   <strong>QUAN TRỌNG:</strong> Ghi đúng nội dung CK là{' '}
                   <code className="font-mono text-[#c8361d]">
-                    {pending.tx.bankRef}
+                    {ckContent(pending.tx.bankRef)}
                   </code>
                   . Sau khi admin xác nhận, gói PRO sẽ kích hoạt và cộng vào hạn
                   hiện tại của bạn (cộng dồn).

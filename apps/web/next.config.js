@@ -11,6 +11,7 @@ const nextConfig = {
     '@tuvi/db',
     '@tuvi/ai',
     '@tuvi/astrology',
+    '@tuvi/pdf',
   ],
   experimental: {
     serverActions: {
