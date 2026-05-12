@@ -72,10 +72,17 @@
 - Submit Tứ Trụ trùng input → tạo `chartId` mới mỗi lần (vì `bat_tu_charts` insert per-submit), nhưng AI markdown share theo `birthHash`. Lịch sử sẽ có 2 row trùng input (giống Tử Vi). Nếu muốn dedupe per-user, cần unique index `(userId, birthHash)` + ON CONFLICT — chưa làm.
 
 **Việc tiếp theo:**
-- E2E test bằng tài khoản PRO: submit Tứ Trụ 2 lần cùng input → verify cache hit instant + toast khác giữa lần 1 (`Luận giải xong`) và lần 2 (`Đã có sẵn...`); kiểm `/lich-su` hiện đủ cả Tử Vi + Tứ Trụ sort đúng; click "Xem chi tiết" → `/tu-tru/<chartId>` render SSR với markdown sẵn không cần fetch.
+- E2E test bằng tài khoản PRO: submit Tứ Trụ 2 lần cùng input → verify cache hit instant; kiểm `/lich-su` hiện đủ cả Tử Vi + Tứ Trụ sort đúng; click "Xem chi tiết" → `/tu-tru/<chartId>` render SSR với markdown sẵn không cần fetch.
 - Visual check 8 cánh cửa: 3 active link đúng route, 5 coming-soon disabled rõ ràng.
 - Tarot là cánh cửa "coming soon" duy nhất có sẵn data (TAROT_DECK 22 lá Major Arcana trong `home-data.ts`) — nếu mở rộng sản phẩm, ưu tiên build trang Tarot trước.
 - Carry-over từ session trước: PDF endpoint chưa test, apps/bot dir locked Windows, Casso regex 5-char bankRef, Express legacy chưa remove.
+
+**Cập nhật (cuối session tối):**
+- **Toast khi submit form**: thêm `toast.success('Đã lập ... — đang chờ AI luận giải')` ngay sau khi `/api/tuvi/submit` + `/api/tu-tru/submit` trả ok; catch error → `toast.error('Lập ... thất bại: ...')`. Lý do: user cần feedback ngay khi action submit hoàn tất, không phải đợi 30–60s cho AI mới biết submit thành công.
+- **Toast bỏ phân biệt cached**: 3 chỗ AI analyze toast (`TuviClient.fetchAnalysis`, `ChartDetailClient.analyze`, `TuTruResultView.fetchAnalysis`) gộp về 1 message duy nhất (`'Luận giải Tử Vi xong'` / `'Luận giải Bát Tự xong'`). Trước đó dùng ternary `data.cached ? 'Đã có sẵn...' : 'Luận giải xong'` — user nói: cache là tech detail, không leak ra UI text. Backend vẫn trả `cached: true/false` (debug + analytics).
+- **Pattern `patterns.md`**: thêm section "Toast notification" trong **Frontend (web)** chốt rule: (1) fire toast trên submit form (success/error), (2) fire toast trên async background fetch dài như AI, (3) **không** dùng `toast.info` cho việc thông thường (noise), (4) message báo kết quả thực sự — không expose internal state (cache hit/miss, retry count, v.v.).
+- Files thêm trong cập nhật này: `TuviClient.tsx`, `ChartDetailClient.tsx`, `TuTruClient.tsx`, `TuTruResultView.tsx`, `.claude/memory/patterns.md`.
+- Blocker + Việc tiếp theo kế thừa nguyên từ phần trên (không có gì mới).
 
 ---
 
