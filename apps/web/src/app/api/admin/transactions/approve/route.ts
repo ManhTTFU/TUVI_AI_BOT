@@ -35,59 +35,44 @@ export async function POST(req: Request) {
       .limit(1);
     if (!txn) throw new Error('Giao dịch không tồn tại hoặc đã xử lý');
 
-    // Hỗ trợ 2 loại pending: subscription (mới) và topup (legacy balance).
-    if (txn.type !== 'subscription' && txn.type !== 'topup') {
-      throw new Error('Chỉ duyệt được giao dịch nạp tiền / mua gói');
+    if (txn.type !== 'subscription') {
+      throw new Error('Chỉ duyệt được giao dịch mua gói PRO');
     }
 
     const [u] = await tx
-      .select({ proUntil: users.proUntil, balanceVnd: users.balanceVnd })
+      .select({ proUntil: users.proUntil })
       .from(users)
       .where(eq(users.id, txn.userId))
       .limit(1);
     if (!u) throw new Error('User không tồn tại');
 
-    let newProUntil = u.proUntil;
-    let newBalance = u.balanceVnd;
-    let purchaseId: string | null = null;
+    const meta = (txn.metadata ?? {}) as { plan?: Plan; durationDays?: number | null };
+    const plan = meta.plan;
+    const durationDays = meta.durationDays ?? null;
+    if (!plan) throw new Error('Thiếu plan trong metadata');
 
-    if (txn.type === 'subscription') {
-      const meta = (txn.metadata ?? {}) as { plan?: Plan; durationDays?: number | null };
-      const plan = meta.plan;
-      const durationDays = meta.durationDays ?? null;
-
-      if (!plan) throw new Error('Thiếu plan trong metadata');
-
-      // Tính pro_until mới: max(now, current) + duration. Lifetime → LIFETIME_DATE.
-      const now = new Date();
-      const base = u.proUntil && u.proUntil > now ? u.proUntil : now;
-      if (durationDays == null || plan === 'lifetime') {
-        newProUntil = LIFETIME_DATE;
-      } else {
-        newProUntil = new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
-      }
-
-      await tx.update(users).set({ proUntil: newProUntil }).where(eq(users.id, txn.userId));
-
-      const [purchase] = await tx
-        .insert(subscriptionPurchases)
-        .values({
-          userId: txn.userId,
-          plan,
-          amountVnd: txn.amountVnd,
-          transactionId: txn.id,
-          proUntilAfter: newProUntil,
-        })
-        .returning({ id: subscriptionPurchases.id });
-      purchaseId = purchase.id;
+    // Tính pro_until mới: max(now, current) + duration. Lifetime → LIFETIME_DATE.
+    const now = new Date();
+    const base = u.proUntil && u.proUntil > now ? u.proUntil : now;
+    let newProUntil: Date;
+    if (durationDays == null || plan === 'lifetime') {
+      newProUntil = LIFETIME_DATE;
     } else {
-      // Legacy topup → balance
-      newBalance = u.balanceVnd + txn.amountVnd;
-      await tx
-        .update(users)
-        .set({ balanceVnd: newBalance })
-        .where(eq(users.id, txn.userId));
+      newProUntil = new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
     }
+
+    await tx.update(users).set({ proUntil: newProUntil }).where(eq(users.id, txn.userId));
+
+    const [purchase] = await tx
+      .insert(subscriptionPurchases)
+      .values({
+        userId: txn.userId,
+        plan,
+        amountVnd: txn.amountVnd,
+        transactionId: txn.id,
+        proUntilAfter: newProUntil,
+      })
+      .returning({ id: subscriptionPurchases.id });
 
     await tx
       .update(transactions)
@@ -98,36 +83,25 @@ export async function POST(req: Request) {
           ...((txn.metadata as Record<string, unknown>) ?? {}),
           approvedBy: session.user.id,
           approvedByEmail: session.user.email,
-          purchaseId,
+          purchaseId: purchase.id,
         },
       })
       .where(eq(transactions.id, id));
 
     return {
       userId: txn.userId,
-      type: txn.type,
       proUntil: newProUntil,
-      balanceVnd: newBalance,
       amount: txn.amountVnd,
     };
   });
 
-  // SSE push tới user.
-  if (result.type === 'subscription') {
-    publish(result.userId, 'subscription', {
-      proUntil: result.proUntil ? result.proUntil.toISOString() : null,
-      tier: 'PRO',
-    });
-  } else {
-    publish(result.userId, 'balance', {
-      balanceVnd: result.balanceVnd,
-      source: 'topup_approved',
-    });
-  }
+  publish(result.userId, 'subscription', {
+    proUntil: result.proUntil.toISOString(),
+    tier: 'PRO',
+  });
 
   return NextResponse.json({
     ok: true,
-    proUntil: result.proUntil ? result.proUntil.toISOString() : null,
-    balanceVnd: result.balanceVnd,
+    proUntil: result.proUntil.toISOString(),
   });
 }

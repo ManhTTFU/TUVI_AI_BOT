@@ -7,13 +7,13 @@ import type { AnalysisSections, ChartData, DeepReadingsData } from '@tuvi/core';
 import ChartDetailClient from '@/components/tu-vi/ChartDetailClient';
 
 interface PageProps {
-  params: { slug: string };
+  params: { chartId: string };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   return {
     title: `Lá số · Diễn Cầm Tam Thế`,
-    alternates: { canonical: `/tu-vi/${params.slug}` },
+    alternates: { canonical: `/tu-vi/${params.chartId}` },
     robots: { index: false, follow: false },
   };
 }
@@ -23,7 +23,7 @@ export const dynamic = 'force-dynamic';
 export default async function Page({ params }: PageProps) {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect(`/dang-nhap?callbackUrl=/tu-vi/${params.slug}`);
+    redirect(`/dang-nhap?callbackUrl=/tu-vi/${params.chartId}`);
   }
 
   const db = getDb();
@@ -34,8 +34,8 @@ export default async function Page({ params }: PageProps) {
     .from(charts)
     .where(
       isAdmin
-        ? eq(charts.slug, params.slug)
-        : and(eq(charts.slug, params.slug), eq(charts.userId, session.user.id)),
+        ? eq(charts.id, params.chartId)
+        : and(eq(charts.id, params.chartId), eq(charts.userId, session.user.id)),
     )
     .limit(1);
   if (!chartRow) notFound();

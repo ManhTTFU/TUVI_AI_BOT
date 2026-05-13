@@ -13,7 +13,7 @@ export default async function WalletPage() {
 
   const db = getDb();
   const [u] = await db
-    .select({ balanceVnd: users.balanceVnd, proUntil: users.proUntil })
+    .select({ proUntil: users.proUntil })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
@@ -31,7 +31,6 @@ export default async function WalletPage() {
 
   return (
     <WalletClient
-      initialBalance={u?.balanceVnd ?? 0}
       initialProUntil={u?.proUntil ? u.proUntil.toISOString() : null}
       bank={cfg ?? null}
       plans={plans.map((p) => ({

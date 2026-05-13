@@ -1,8 +1,9 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { getDb, charts, batTuCharts } from '@tuvi/db';
+import { getDb, charts, batTuCharts, hoangDaoCharts } from '@tuvi/db';
 import { desc, eq } from 'drizzle-orm';
 import Link from 'next/link';
+import { ALL_SIGNS_VI } from '@/lib/horoscope-lib';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -10,7 +11,7 @@ export const metadata = { title: 'Lịch sử của tôi · Diễn Cầm Tam Th�
 export const dynamic = 'force-dynamic';
 
 type HistoryItem = {
-  kind: 'tu-vi' | 'tu-tru';
+  kind: 'tu-vi' | 'tu-tru' | 'hoang-dao';
   id: string;
   name: string;
   gender: string;
@@ -22,7 +23,24 @@ type HistoryItem = {
 const KIND_STYLE: Record<HistoryItem['kind'], { label: string; color: string; icon: string }> = {
   'tu-vi': { label: 'Tử Vi', color: '#5a3a1a', icon: '☯' },
   'tu-tru': { label: 'Tứ Trụ', color: '#4a6c7a', icon: '四' },
+  'hoang-dao': { label: 'Hoàng Đạo', color: '#c8361d', icon: '♆' },
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  single: 'Độc thân',
+  dating: 'Đang yêu',
+  married: 'Đã kết hôn',
+  divorced: 'Ly hôn / Goá',
+};
+const GOAL_LABEL: Record<string, string> = {
+  career: 'Sự nghiệp',
+  love: 'Tình cảm',
+  wealth: 'Tài chính',
+  health: 'Sức khỏe',
+  study: 'Học hành',
+  family: 'Gia đình',
+};
+const SIGN_VI_BY_EN = new Map(ALL_SIGNS_VI.map((s) => [s.en, s]));
 
 export default async function HistoryPage() {
   const session = await auth();
@@ -30,14 +48,13 @@ export default async function HistoryPage() {
 
   const db = getDb();
 
-  const [tuViRows, tuTruRows] = await Promise.all([
+  const [tuViRows, tuTruRows, hoangDaoRows] = await Promise.all([
     db
       .select({
         id: charts.id,
         name: charts.name,
         gender: charts.gender,
         birthDate: charts.birthDate,
-        slug: charts.slug,
         createdAt: charts.createdAt,
       })
       .from(charts)
@@ -58,6 +75,19 @@ export default async function HistoryPage() {
       .where(eq(batTuCharts.userId, session.user.id))
       .orderBy(desc(batTuCharts.createdAt))
       .limit(100),
+    db
+      .select({
+        id: hoangDaoCharts.id,
+        signEn: hoangDaoCharts.signEn,
+        gender: hoangDaoCharts.gender,
+        status: hoangDaoCharts.status,
+        goal: hoangDaoCharts.goal,
+        createdAt: hoangDaoCharts.createdAt,
+      })
+      .from(hoangDaoCharts)
+      .where(eq(hoangDaoCharts.userId, session.user.id))
+      .orderBy(desc(hoangDaoCharts.createdAt))
+      .limit(100),
   ]);
 
   const items: HistoryItem[] = [
@@ -67,7 +97,7 @@ export default async function HistoryPage() {
       name: r.name,
       gender: r.gender,
       birthDate: r.birthDate,
-      href: `/tu-vi/${r.slug}`,
+      href: `/tu-vi/${r.id}`,
       createdAt: r.createdAt,
     })),
     ...tuTruRows.map<HistoryItem>((r) => ({
@@ -79,6 +109,18 @@ export default async function HistoryPage() {
       href: `/tu-tru/${r.id}`,
       createdAt: r.createdAt,
     })),
+    ...hoangDaoRows.map<HistoryItem>((r) => {
+      const sv = SIGN_VI_BY_EN.get(r.signEn);
+      return {
+        kind: 'hoang-dao',
+        id: r.id,
+        name: sv ? `Cung ${sv.name}` : r.signEn,
+        gender: r.gender,
+        birthDate: `${STATUS_LABEL[r.status] ?? r.status} · Mục tiêu: ${GOAL_LABEL[r.goal] ?? r.goal}`,
+        href: `/hoang-dao/luan-giai?sign=${encodeURIComponent(r.signEn)}&gender=${r.gender}&status=${r.status}&goal=${r.goal}`,
+        createdAt: r.createdAt,
+      };
+    }),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
@@ -93,7 +135,7 @@ export default async function HistoryPage() {
               Lịch sử của tôi
             </h1>
             <p className="mt-2 text-[14px] text-[#4a3a30]">
-              {items.length} lá số ({tuViRows.length} Tử Vi · {tuTruRows.length} Tứ Trụ) — sắp xếp theo thời gian gần nhất
+              {items.length} lá số ({tuViRows.length} Tử Vi · {tuTruRows.length} Tứ Trụ · {hoangDaoRows.length} Hoàng Đạo) — sắp xếp theo thời gian gần nhất
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -108,6 +150,12 @@ export default async function HistoryPage() {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#4a6c7a]/55 bg-[#fbf3e2] text-[#4a6c7a] font-semibold text-[12.5px] hover:bg-[#e8eef2] transition"
             >
               <span>四</span> Lập Tứ Trụ
+            </Link>
+            <Link
+              href="/hoang-dao"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#c8361d]/55 bg-[#fbf3e2] text-[#c8361d] font-semibold text-[12.5px] hover:bg-[#fde8e5] transition"
+            >
+              <span>♆</span> Xem Hoàng Đạo
             </Link>
           </div>
         </div>
@@ -130,6 +178,12 @@ export default async function HistoryPage() {
                 className="inline-block px-5 py-2.5 rounded-full border border-[#4a6c7a]/55 bg-[#fbf3e2] text-[#4a6c7a] font-semibold text-[13px]"
               >
                 Lập Tứ Trụ
+              </Link>
+              <Link
+                href="/hoang-dao"
+                className="inline-block px-5 py-2.5 rounded-full border border-[#c8361d]/55 bg-[#fbf3e2] text-[#c8361d] font-semibold text-[13px]"
+              >
+                Xem Hoàng Đạo
               </Link>
             </div>
           </div>

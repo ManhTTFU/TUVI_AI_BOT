@@ -3,7 +3,7 @@ import { getDb, users, batTuCharts, batTuAnalyses } from '@tuvi/db';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { isProActive } from '@/lib/tier';
-import { analyzeBatTu } from '@tuvi/ai';
+import { analyzeBatTu, seedFromHash } from '@tuvi/ai';
 import { formatBatTuForAI, type BatTuChart } from '@/lib/bat-tu';
 
 export const runtime = 'nodejs';
@@ -54,7 +54,7 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
   try {
     const chart = chartRow.chartData as BatTuChart;
     const context = formatBatTuForAI(chart, chartRow.name, chartRow.gender as 'male' | 'female');
-    const markdown = await analyzeBatTu(context);
+    const markdown = await analyzeBatTu(context, seedFromHash(chartRow.birthHash));
 
     await db
       .insert(batTuAnalyses)

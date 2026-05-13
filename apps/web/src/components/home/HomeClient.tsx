@@ -10,6 +10,8 @@ import {
   SERVICES,
   ZODIAC,
 } from '@/lib/home-data';
+import { getSignToday } from '@/lib/horoscope-lib';
+import { useDailyHoroscope } from '@/lib/use-daily-horoscope';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -283,19 +285,25 @@ function ZodiacRing() {
 
 function Horoscope() {
   const [today, setToday] = useState('');
+  const [todaySignEn, setTodaySignEn] = useState<string | null>(null);
+  const daily = useDailyHoroscope();
+
   useEffect(() => {
+    const now = new Date();
     setToday(
-      new Date().toLocaleDateString('vi-VN', {
+      now.toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       })
     );
+    setTodaySignEn(getSignToday(now)?.en ?? null);
   }, []);
+
   return (
     <section id="cung" className="relative py-20 px-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
+        <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
           <div>
             <div className="text-[11px] tracking-[0.4em] text-[#4a6c7a] font-semibold uppercase">
               十 二 星 座 · Tinh Tọa
@@ -311,10 +319,34 @@ function Horoscope() {
               ngày
             </p>
           </div>
-          <a href="#" className="text-[#5a3a1a] hover:text-[#4a6c7a] text-sm">
+          <Link href="/hoang-dao" className="text-[#5a3a1a] hover:text-[#4a6c7a] text-sm">
             Xem tất cả →
-          </a>
+          </Link>
         </div>
+
+        {/* Banner: cung của hôm nay (lib horoscope tính từ ngày hiện tại) */}
+        {todaySignEn && (() => {
+          const sign = HOROSCOPE.find((h) => h.en === todaySignEn);
+          if (!sign) return null;
+          return (
+            <div
+              className="mb-8 inline-flex items-center gap-3 rounded-full border border-[#c89146]/55 bg-[#fbf3e2]/85 px-5 py-2 text-[13.5px] text-[#0f0a08]"
+              suppressHydrationWarning
+            >
+              <span className="text-[10px] tracking-[0.3em] uppercase text-[#4a6c7a] font-bold">
+                Hôm nay
+              </span>
+              <span className="w-px h-3.5 bg-[#c89146]/55" />
+              <span>
+                Mặt Trời đang chiếu cung{' '}
+                <strong className="text-[#5a3a1a]">
+                  {sign.name} {sign.sym}
+                </strong>
+              </span>
+            </div>
+          );
+        })()}
+
         <div className="grid md:grid-cols-2 gap-5">
           {HOROSCOPE.map((h) => (
             <div
@@ -342,18 +374,19 @@ function Horoscope() {
                   {h.el}
                 </span>
               </div>
-              <p className="text-[14px] text-[#0f0a08] leading-relaxed">
-                <span className="text-[#0f0a08]" suppressHydrationWarning>
-                  {today ? `Ngày ${today}, ` : ''}
-                </span>
-                {h.text}
-              </p>
-              <a
-                href="#"
-                className="mt-4 inline-flex items-center gap-1.5 text-[#4a6c7a] hover:text-[#5a3a1a] text-sm"
-              >
-                Xem chi tiết <span>→</span>
-              </a>
+              {daily?.readings[h.en] ? (
+                <p className="text-[14px] text-[#0f0a08] leading-relaxed">
+                  <span className="text-[#0f0a08]" suppressHydrationWarning>
+                    {today ? `Ngày ${today}, ` : ''}
+                  </span>
+                  {daily.readings[h.en]}
+                </p>
+              ) : (
+                <div className="inline-flex items-center gap-2 text-[13px] text-[#4a6c7a] italic">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#c89146] animate-pulse" />
+                  Hệ thống đang luận giải vận trình hôm nay…
+                </div>
+              )}
             </div>
           ))}
         </div>

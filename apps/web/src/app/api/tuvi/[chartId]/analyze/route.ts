@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { analyzeChart } from '@tuvi/ai';
+import { analyzeChart, seedFromHash } from '@tuvi/ai';
 import type { AnalysisSections, ChartData } from '@tuvi/core';
 import { getDb, charts, analyses } from '@tuvi/db';
 import { and, eq } from 'drizzle-orm';
@@ -43,7 +43,9 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
 
   // Cache miss → call AI (đã wrap aiCall semaphore + retry trong @tuvi/ai).
   try {
-    const sections = await analyzeChart(chartRow.chartData as ChartData);
+    const sections = await analyzeChart(chartRow.chartData as ChartData, {
+      seed: seedFromHash(chartRow.birthHash),
+    });
 
     // Save cache. onConflictDoNothing đề phòng race (2 user submit cùng lúc).
     await db

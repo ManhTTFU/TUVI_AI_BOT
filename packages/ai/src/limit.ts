@@ -1,12 +1,34 @@
 import pLimit from 'p-limit';
 
 /**
- * Global concurrency limit cho mọi call Deepseek từ process này.
- * 16 đủ chỗ cho 6 section analyze + 4 deep readings chạy truly parallel khi FE
- * fire 2 endpoint cùng lúc (10 calls). Deepseek free tier cho phép 50 concurrent.
- * Có thể override qua env `AI_CONCURRENCY`.
+ * Map birthHash (16 hex) → integer seed cho Deepseek `seed` parameter.
+ * Lấy 7 hex đầu (max 0xFFFFFFF ≈ 268M) — fit safe trong int32 signed, tránh
+ * edge case API reject seed quá lớn.
+ *
+ * Mục đích: cùng input → cùng seed → output deterministic (~95-98%, best-effort
+ * theo Deepseek doc). Cho phép cache share-cross-user có ý nghĩa logic chứ
+ * không chỉ "đông cứng output random".
  */
-const concurrency = Number(process.env.AI_CONCURRENCY) || 16;
+export function seedFromHash(hash: string): number {
+  return parseInt(hash.slice(0, 7), 16);
+}
+
+/**
+ * Global concurrency limit cho mọi call Deepseek từ process này.
+ *
+ * Default 64 — chọn cho Deepseek paid tier (không hard cap concurrent, chỉ
+ * rate-limit RPM ~5000). 64 đủ để:
+ *  - 1 user submit Tu-Vi full (11 calls) chạy hoàn toàn song song.
+ *  - 5-6 user submit cùng lúc vẫn không queue (60+ calls).
+ *  - Còn buffer cho daily/personalize background.
+ *
+ * Limit thực tế ở mức cao hơn = Node single-thread + memory per pending HTTP
+ * request (~10MB × 64 ≈ 640MB). Vượt 128 dễ nghẽn event loop.
+ *
+ * Có thể override qua env `AI_CONCURRENCY` (vd: AI_CONCURRENCY=128 cho server
+ * mạnh, hoặc =16 trên free tier để tránh 429).
+ */
+const concurrency = Number(process.env.AI_CONCURRENCY) || 64;
 export const aiLimit = pLimit(concurrency);
 
 interface RetryOptions {

@@ -93,6 +93,9 @@ importers:
       drizzle-orm:
         specifier: ^0.36.4
         version: 0.36.4(@types/react@18.3.28)(postgres@3.4.9)(react@18.3.1)
+      horoscope:
+        specifier: ^2.0.1
+        version: 2.0.1
       next:
         specifier: 14.2.18
         version: 14.2.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1433,6 +1436,9 @@ packages:
     resolution: {integrity: sha512-ej4AhfhfL2Q2zpMmLo7U1Uv9+PyhIZpgQLGT1F9miIGmiCJIoCgSmczFdrc97mWT4kVY72KA+WnnhJ5pghSvSg==}
     engines: {node: '>= 0.4'}
 
+  horoscope@2.0.1:
+    resolution: {integrity: sha512-GZJ4CttacOZ2OpvkkC0s0tL5dDTvo1Q4War5KGq8qImErt1bCFgNCpNOPYLdHaACIx2xzcZSJ+8sbJdfwzHYAA==}
+
   http-errors@2.0.1:
     resolution: {integrity: sha512-4FbRdAX+bSdmo4AUFuS0WNiPz8NgFt+r8ThgNWmlrjQjt1Q7ZR9+zTlce2859x4KSXrwIsaeTqDoKQmtP8pLmQ==}
     engines: {node: '>= 0.8'}
@@ -1573,6 +1579,9 @@ packages:
 
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
+
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
 
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
@@ -3223,6 +3232,10 @@ snapshots:
     dependencies:
       function-bind: 1.1.2
 
+  horoscope@2.0.1:
+    dependencies:
+      lodash: 4.18.1
+
   http-errors@2.0.1:
     dependencies:
       depd: 2.0.0
@@ -3370,6 +3383,8 @@ snapshots:
       unicode-trie: 2.0.0
 
   lines-and-columns@1.2.4: {}
+
+  lodash@4.18.1: {}
 
   loose-envify@1.4.0:
     dependencies:

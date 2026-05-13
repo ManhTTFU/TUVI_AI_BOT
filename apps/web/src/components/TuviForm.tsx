@@ -68,7 +68,7 @@ export default function TuviForm() {
       });
       const data = await res.json();
       if (!data?.ok) throw new Error(data?.error || 'Lỗi không xác định');
-      router.push(`/tu-vi/${data.slug}`);
+      router.push(`/tu-vi/${data.chartId}`);
     } catch (err) {
       setError((err as Error).message);
     } finally {

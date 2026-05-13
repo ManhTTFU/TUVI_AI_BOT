@@ -174,6 +174,8 @@ Adding a new analysis section requires three coordinated edits:
 
 Đọc `.claude/memory/session-log.md` khi user hỏi "đang làm gì" / "hôm qua làm đến đâu" / "session trước".
 
+Đọc `.claude/memory/backlog.md` khi user hỏi "vấn đề tồn đọng" / "có gì cần fix không" / "tech debt" / "scaling" / "concurrency" / "performance"; HOẶC trước khi đề xuất scaling/optimization (item có thể đã được ranked sẵn).
+
 Slash commands memory:
 - `/decide <quyết định>` — ghi decision log (dùng NGAY sau khi chốt thay đổi business logic quan trọng)
 - `/log` — cập nhật session log (cuối session)

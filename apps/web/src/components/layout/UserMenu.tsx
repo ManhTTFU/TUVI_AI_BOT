@@ -9,47 +9,7 @@ import {
   isLifetime,
   tierFromProUntil,
 } from '@/lib/tier';
-
-// Singleton EventSource cho /api/wallet/stream — tránh nhiều tab/component
-// cùng mở connection. Chia sẻ qua window.__walletListeners.
-declare global {
-  interface Window {
-    __walletListeners?: Set<(p: { proUntil?: string | null }) => void>;
-    __walletES?: EventSource;
-  }
-}
-
-function subscribeWallet(
-  fn: (p: { proUntil?: string | null }) => void,
-): () => void {
-  if (typeof window === 'undefined') return () => {};
-  if (!window.__walletListeners) window.__walletListeners = new Set();
-  window.__walletListeners.add(fn);
-
-  if (!window.__walletES) {
-    const es = new EventSource('/api/wallet/stream');
-    window.__walletES = es;
-    const handler = (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        window.__walletListeners?.forEach((f) => f(data));
-      } catch {
-        /* ignore */
-      }
-    };
-    es.addEventListener('subscription', handler);
-    es.addEventListener('balance', handler);
-    es.addEventListener('topup-completed', handler);
-  }
-
-  return () => {
-    window.__walletListeners?.delete(fn);
-    if (window.__walletListeners?.size === 0) {
-      window.__walletES?.close();
-      window.__walletES = undefined;
-    }
-  };
-}
+import { subscribeWallet } from '@/lib/wallet-sse';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -69,12 +29,12 @@ export default function UserMenu() {
   // đọc DB tươi, đảm bảo role/tier sync khi user mở tab mới hoặc reload).
   useEffect(() => {
     if (!session?.user) return;
-    const unsubscribe = subscribeWallet((data) => {
-      if (typeof data.proUntil !== 'undefined') {
+    const unsubscribe = subscribeWallet((event, data) => {
+      if (event === 'subscription' && data && typeof data.proUntil !== 'undefined') {
         setProUntil(data.proUntil ?? null);
       }
       // Refresh session cookie → useSession() ở mọi component trong app sẽ
-      // nhận giá trị mới (balanceVnd, role, proUntil, tier).
+      // nhận giá trị mới (role, proUntil, tier).
       update().catch(() => {});
     });
     return unsubscribe;
@@ -124,6 +84,7 @@ export default function UserMenu() {
           <img
             src={u.image}
             alt=""
+            referrerPolicy="no-referrer"
             className="w-7 h-7 rounded-full object-cover"
           />
         ) : (

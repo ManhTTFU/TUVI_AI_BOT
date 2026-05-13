@@ -9,6 +9,83 @@
 **Module resolution:**
 NodeNext. Imports của `.ts` files PHẢI có extension `.js` (ví dụ `export * from './types.js'`). Không "sửa" thành `.ts`.
 
+---
+
+## Data modeling — Shared AI cache pattern (CHỐT)
+
+Mọi feature có AI sinh output **deterministic theo input params** (cùng input → output gần như nhau) BẮT BUỘC dùng pattern 2 bảng:
+
+| Bảng | PK | Vai trò | Scope share |
+|---|---|---|---|
+| `<feature>_charts` (submission) | `id` (uuid) | Per-user history row. Lưu input fields + `birthHash`. **KHÔNG chứa AI output.** | Per-user (FK `userId`) |
+| `<feature>_analyses` (cache) | `birth_hash` | AI output (markdown text hoặc JSONB structured). | **Cross-user** — N user cùng combo → 1 row |
+
+**Hash:** `sha256(input1|input2|...).slice(0,16)` (16 hex = 64 bits, collision-safe đến hàng tỷ user). Tên column convention: `birth_hash varchar(32)`.
+
+**Indexes bắt buộc trên `<feature>_charts`:**
+- `(user_id, created_at)` — composite cho `/lich-su` query `WHERE user_id=X ORDER BY created_at DESC`.
+- `(birth_hash)` — single, cho JOIN tới analyses.
+- `(user_id, birth_hash)` UNIQUE — idempotent insert + dedup (1 user submit cùng combo 2 lần → 1 row).
+
+**Indexes trên `<feature>_analyses`:** không cần thêm — PK `birth_hash` đủ.
+
+**Server flow (`getXxx(userId, input)`):**
+```ts
+const birthHash = computeBirthHash(input);
+
+const [reading, chartId] = await Promise.all([
+  resolveReading(input, birthHash),   // analyses cache → Deepseek + INSERT ON CONFLICT
+  ensureUserChart(userId, input, birthHash), // chart row INSERT ON CONFLICT
+]);
+
+return { id: chartId, reading };
+```
+
+`resolveReading` dùng **inflight Map theo birthHash** (KHÔNG userId) → 2 user khác nhau cùng miss đồng thời chỉ gọi Deepseek 1 lần.
+
+**Race-safety:** `INSERT ... ON CONFLICT DO NOTHING` + `SELECT` lại để lấy row id chuẩn (nếu race với instance khác).
+
+**Hiện đang áp dụng:**
+- Tu-Vi: `charts` + `analyses` + `deep_readings` (compound PK `(birthHash, year)`).
+- Tu-Tru: `bat_tu_charts` + `bat_tu_analyses` (markdown TEXT).
+- Hoang-Dao: `hoang_dao_charts` + `hoang_dao_analyses` (PersonalizedReading JSONB).
+
+**Khi KHÔNG dùng pattern này:**
+- AI output phụ thuộc vào dữ liệu user-specific KHÔNG nằm trong hash (vd: real-time user state) → khó share, để per-user.
+- AI output cố tình varied per call (creative writing). → bỏ cache.
+- Daily/temporal global cache (như `daily_horoscope`): PK theo time-bucket (date `YYYY-MM-DD`) thay vì hash — 1 row chia sẻ toàn bộ user trong cùng bucket.
+
+**Anti-pattern đã vấp (2026-05-13, fix bằng migration 0005):**
+Ban đầu `hoang_dao_charts` lưu `reading` JSONB inline + dedup theo `(userId, signEn, gender, status, goal)`. Mỗi user mới với cùng combo → gọi Deepseek lại từ đầu. Fix: split thành `hoang_dao_charts` (chỉ submission record) + `hoang_dao_analyses` (shared cache) qua `birth_hash`. Lý do nhớ: AI output deterministic theo input, không phụ thuộc user → không có lý do để per-user.
+
+---
+
+## Migration & schema conventions
+
+**Tạo migration:**
+```bash
+cd packages/db && pnpm exec drizzle-kit generate
+```
+Drizzle-kit sẽ hỏi interactive khi rename column → trả lời cẩn thận. Nếu cần data-preserving migration phức tạp (vd: backfill column từ logic SHA256), tự viết SQL trong `migrations/XXXX_name.sql` + thêm entry vào `_journal.json` + copy `0XXX_snapshot.json` từ revision trước rồi patch.
+
+**Apply migration:**
+```bash
+cd packages/db && pnpm migrate
+```
+`src/migrate.ts` chạy `drizzle-orm/postgres-js/migrator` rồi seed `prices` + `subscription_plans` (idempotent qua `ON CONFLICT DO NOTHING`).
+
+**pgcrypto sẵn sàng:** Migration runner đã `CREATE EXTENSION IF NOT EXISTS pgcrypto` → dùng được `gen_random_uuid()` cho PK default + `digest('input', 'sha256')` cho backfill hash trong SQL.
+
+**Tên column convention:**
+- Time: `created_at`, `updated_at`, `completed_at`, `expires` (Auth.js) — `timestamp { mode: 'date' }`.
+- FK: `<entity>_id` text, `.references(...)` với `onDelete: 'cascade'` cho child records của user/auth.
+- Hash: `birth_hash varchar(32)` (lưu 16 hex char + buffer).
+- JSON: dùng `jsonb` cho structured, `text` cho markdown thuần.
+
+**Index naming:** `<table>_<purpose>_idx` cho non-unique, `<table>_<purpose>_uniq` cho unique. Vd: `charts_user_created_idx`, `hoang_dao_charts_user_hash_uniq`.
+
+---
+
 **Env loading:**
 Root `.env` cho bot + api (qua `tsx --env-file=../../.env`). Next.js đọc `apps/web/.env.local` riêng — update cả 2 nơi cho `NEXT_PUBLIC_*`.
 
@@ -17,6 +94,44 @@ Mọi `@tuvi/*` workspace expose source trực tiếp: `"main": "./src/index.ts"
 
 **AI client:**
 `openai` SDK chỉ dùng như HTTP client, `baseURL` override về Deepseek. Không bao giờ gọi `api.openai.com`.
+
+**Mọi call Deepseek BẮT BUỘC wrap qua `aiCall(fn, label)`:**
+`aiCall` từ `@tuvi/ai` = `pLimit(64)` semaphore (default, override qua `AI_CONCURRENCY`) + `withRetry` exponential backoff cho 429/5xx/network + timing log `[ai:label] Xms`. KHÔNG dùng `client.chat.completions.create` trực tiếp — bypass semaphore + không có retry → có thể flood Deepseek + fail vì transient error.
+
+```ts
+return aiCall(async () => {
+  const completion = await client.chat.completions.create({ ... });
+  // ... validate
+  if (finishReason === 'length') {
+    const err = new Error('...') as Error & { status: number };
+    err.status = 500;  // mark retryable
+    throw err;
+  }
+  return result;
+}, 'feature:label');
+```
+
+**Mark retryable errors với `status = 500`:** `finish_reason === 'length'`, schema parse fail, JSON syntax error — tất cả mark retryable vì `temperature > 0` có thể fix lần sau. KHÔNG mark retryable: auth error (401), bad request (400) — fail-fast.
+
+**Default `AI_CONCURRENCY = 64`** — cho Deepseek paid tier (không hard cap concurrent, chỉ RPM ~5000). Free tier nên `AI_CONCURRENCY=16` để tránh 429.
+
+**Seed deterministic cho mọi call Deepseek (BẮT BUỘC):**
+
+Mọi `client.chat.completions.create` PHẢI có `seed` derive từ cache key (`birthHash`, `dateStr`, v.v.). Lý do: cache share-cross-user chỉ "chính danh" khi regenerate ra cùng output. Không seed = cache là "đông cứng random". Có seed = cache memoize cho deterministic computation.
+
+Helper:
+```ts
+import { seedFromHash } from '@tuvi/ai';
+const seed = seedFromHash(birthHash); // parseInt 7 hex đầu → int
+```
+
+Khi chia parallel multi-call cho cùng input (vd `analyzeChart` 6 sections, `analyzeDeepReadings` 4 nhánh, `analyzeNamHienTai` main+months) → mỗi nhánh dùng `seed + offset` để output không "đồng pha" wording.
+
+Khi cache key có thêm dimension (vd `deepReadings` PK = `(birthHash, year)`) → seed phải bao gồm dimension đó (`seed = seedFromHash(birthHash) + year`).
+
+Daily horoscope không có birthHash → seed = `sha256(dateStr|groupTag).slice(0,7)` qua `seedForDailyGroup()`.
+
+**Lưu ý độ tin cậy:** Deepseek doc ghi `seed` là "best-effort", ~95-98% reproducible trong 1 model version. Model upgrade có thể đổi output (track qua `system_fingerprint`). Đủ cho use case content generation, KHÔNG dùng cho computation đòi hỏi 100% deterministic.
 
 ---
 

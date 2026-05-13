@@ -1,16 +1,24 @@
 /**
- * Casso webhook adapter — auto reconcile bank transfer thành topup completed.
- * Mặc định OFF (CASSO_ENABLED=false). Bật khi admin đăng ký Casso + cấu hình webhook
- * trỏ tới /api/casso/webhook.
+ * Casso webhook adapter — auto reconcile bank transfer thành PRO subscription
+ * approved. Mặc định OFF (CASSO_ENABLED=false). Bật khi admin đăng ký Casso +
+ * cấu hình webhook trỏ tới /api/casso/webhook.
  *
- * Logic: Casso đọc SMS bank → tìm "memo" chứa bankRef của transaction pending →
- * match → mark completed → cộng balance + publish SSE.
+ * Logic: Casso đọc SMS bank → tìm "memo" chứa bankRef của transaction pending
+ * type='subscription' → match số tiền → extend pro_until + insert
+ * subscription_purchases + publish SSE.
  *
  * Doc: https://docs.casso.vn
  */
-import { getDb, transactions, users } from '@tuvi/db';
-import { eq, and, sql } from 'drizzle-orm';
+import {
+  getDb,
+  transactions,
+  users,
+  subscriptionPurchases,
+  type Plan,
+} from '@tuvi/db';
+import { eq, and } from 'drizzle-orm';
 import { publish } from './sse-bus';
+import { LIFETIME_DATE } from './tier';
 
 export interface CassoTxPayload {
   /** ID giao dịch ngân hàng từ Casso */
@@ -29,8 +37,8 @@ export function isCassoEnabled(): boolean {
 }
 
 /**
- * Match incoming Casso tx với pending topup theo bankRef nằm trong description.
- * Trả về số transaction đã reconcile.
+ * Match incoming Casso tx với pending subscription theo bankRef nằm trong
+ * description. Trả về số transaction đã reconcile.
  */
 export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promise<number> {
   if (!isCassoEnabled()) return 0;
@@ -52,7 +60,7 @@ export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promi
         .where(
           and(
             eq(transactions.bankRef, ref),
-            eq(transactions.type, 'topup'),
+            eq(transactions.type, 'subscription'),
             eq(transactions.status, 'pending'),
           ),
         )
@@ -61,12 +69,38 @@ export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promi
       if (!pending) continue;
       if (pending.amountVnd !== item.amount) continue; // số tiền không khớp → bỏ qua, admin duyệt tay.
 
+      const meta = (pending.metadata ?? {}) as { plan?: Plan; durationDays?: number | null };
+      const plan = meta.plan;
+      const durationDays = meta.durationDays ?? null;
+      if (!plan) continue;
+
       const result = await db.transaction(async (tx) => {
-        const [updated] = await tx
-          .update(users)
-          .set({ balanceVnd: sql`${users.balanceVnd} + ${pending.amountVnd}` })
+        const [u] = await tx
+          .select({ proUntil: users.proUntil })
+          .from(users)
           .where(eq(users.id, pending.userId))
-          .returning({ balanceVnd: users.balanceVnd });
+          .limit(1);
+        if (!u) throw new Error('User không tồn tại');
+
+        const now = new Date();
+        const base = u.proUntil && u.proUntil > now ? u.proUntil : now;
+        const newProUntil =
+          durationDays == null || plan === 'lifetime'
+            ? LIFETIME_DATE
+            : new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+        await tx.update(users).set({ proUntil: newProUntil }).where(eq(users.id, pending.userId));
+
+        const [purchase] = await tx
+          .insert(subscriptionPurchases)
+          .values({
+            userId: pending.userId,
+            plan,
+            amountVnd: pending.amountVnd,
+            transactionId: pending.id,
+            proUntilAfter: newProUntil,
+          })
+          .returning({ id: subscriptionPurchases.id });
 
         await tx
           .update(transactions)
@@ -77,20 +111,17 @@ export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promi
               ...((pending.metadata as Record<string, unknown>) ?? {}),
               cassoTxId: item.id,
               cassoDescription: item.description,
+              purchaseId: purchase.id,
             },
           })
           .where(eq(transactions.id, pending.id));
 
-        return { userId: pending.userId, balanceVnd: updated?.balanceVnd ?? 0 };
+        return { userId: pending.userId, proUntil: newProUntil };
       });
 
-      publish(result.userId, 'balance', {
-        balanceVnd: result.balanceVnd,
-        source: 'casso_auto',
-      });
-      publish(result.userId, 'topup-completed', {
-        balanceVnd: result.balanceVnd,
-        amountVnd: pending.amountVnd,
+      publish(result.userId, 'subscription', {
+        proUntil: result.proUntil.toISOString(),
+        tier: 'PRO',
       });
 
       count++;

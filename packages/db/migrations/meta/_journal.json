@@ -22,6 +22,34 @@
       "when": 1778578146617,
       "tag": "0002_stormy_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778644896671,
+      "tag": "0003_flat_sinister_six",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778656694191,
+      "tag": "0004_misty_amazoness",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778660000000,
+      "tag": "0005_refactor_hoang_dao_shared_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778670000000,
+      "tag": "0006_drop_balance_and_slug",
+      "breakpoints": true
     }
   ]
 }

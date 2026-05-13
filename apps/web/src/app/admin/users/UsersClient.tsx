@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { formatVnd } from '@/lib/money';
 import { daysRemaining, isLifetime, isProActive } from '@/lib/tier';
 import type { Plan } from '@tuvi/db';
 
@@ -12,7 +11,6 @@ type AdminUser = {
   name: string | null;
   image: string | null;
   role: 'user' | 'admin';
-  balanceVnd: number;
   proUntil: string | null;
   createdAt: string;
 };
@@ -29,10 +27,6 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
   const meId = session?.user?.id ?? '';
   const [users, setUsers] = useState(initialUsers);
   const [filter, setFilter] = useState('');
-  const [creditFor, setCreditFor] = useState<AdminUser | null>(null);
-  const [amount, setAmount] = useState(0);
-  const [note, setNote] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busyRole, setBusyRole] = useState<string | null>(null);
   const [extendFor, setExtendFor] = useState<AdminUser | null>(null);
@@ -127,32 +121,6 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
     }
   };
 
-  const submitCredit = async () => {
-    if (!creditFor) return;
-    setError(null);
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/admin/credit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: creditFor.id, amountVnd: amount, note }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      // Update local state với new balance.
-      setUsers((prev) =>
-        prev.map((u) => (u.id === creditFor.id ? { ...u, balanceVnd: data.balanceVnd } : u)),
-      );
-      setCreditFor(null);
-      setAmount(0);
-      setNote('');
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div className="rounded-3xl border border-[#4a6c7a]/45 bg-[#fbf3e2]/95 p-5 md:p-7">
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
@@ -186,7 +154,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
                   <div className="flex items-center gap-2 min-w-0">
                     {u.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={u.image} alt="" className="w-7 h-7 rounded-full object-cover" />
+                      <img src={u.image} alt="" referrerPolicy="no-referrer" className="w-7 h-7 rounded-full object-cover" />
                     ) : (
                       <span className="w-7 h-7 rounded-full bg-[#5a3a1a] text-[#fbf3e2] flex items-center justify-center text-[11px] font-semibold">
                         {(u.name ?? u.email).charAt(0).toUpperCase()}
@@ -358,72 +326,6 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
         </div>
       )}
 
-      {creditFor && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={() => !submitting && setCreditFor(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl border border-[#4a6c7a]/55 bg-[#fbf3e2] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold mb-1">Điều chỉnh số dư</h3>
-            <p className="text-[12.5px] text-[#4a3a30] mb-4">
-              User: <strong>{creditFor.email}</strong> · Số dư hiện tại:{' '}
-              <strong className="text-[#5a3a1a]">{formatVnd(creditFor.balanceVnd)}</strong>
-            </p>
-            <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mb-1">
-              Số tiền (số âm = trừ tiền)
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              placeholder="VD: 100000 hoặc -50000"
-              className="w-full h-11 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] focus:outline-none focus:border-[#4a6c7a] mb-3"
-            />
-            <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mb-1">
-              Ghi chú (tuỳ chọn)
-            </label>
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="VD: Đã nhận CK 100k qua BIDV"
-              className="w-full h-11 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] focus:outline-none focus:border-[#4a6c7a]"
-            />
-            {error && (
-              <div className="mt-3 rounded-xl border border-[#c8361d]/40 bg-[#c8361d]/10 px-3 py-2 text-[#c8361d] text-[13px]">
-                ⚠ {error}
-              </div>
-            )}
-            <p className="mt-3 text-[12px] text-[#4a3a30]">
-              Sau khi xác nhận, số dư mới ={' '}
-              <strong className="text-[#5a3a1a]">
-                {formatVnd(creditFor.balanceVnd + amount)}
-              </strong>
-              . User sẽ nhận update <strong>realtime</strong>.
-            </p>
-            <div className="mt-4 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setCreditFor(null)}
-                disabled={submitting}
-                className="px-4 py-2 rounded-full border border-[#4a6c7a]/40 hover:bg-[#fbf3e2]/60 text-[13px]"
-              >
-                Huỷ
-              </button>
-              <button
-                type="button"
-                onClick={submitCredit}
-                disabled={submitting || amount === 0}
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#5a3a1a] to-[#c89146] text-[#fbf3e2] text-[13px] font-semibold disabled:opacity-50"
-              >
-                {submitting ? 'Đang xử lý…' : 'Xác nhận'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

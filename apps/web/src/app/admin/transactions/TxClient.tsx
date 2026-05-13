@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { formatVnd } from '@/lib/money';
+import { toast } from '@/components/ui/toast';
 
 type AdminTx = {
   id: string;
@@ -57,8 +58,11 @@ export default function TxClient({ initial }: { initial: AdminTx[] }) {
             : r,
         ),
       );
+      toast.success('Đã duyệt giao dịch thành công');
     } catch (e) {
-      setErr((e as Error).message);
+      const msg = (e as Error).message;
+      setErr(msg);
+      toast.error(`Duyệt thất bại: ${msg}`);
     } finally {
       setBusy(null);
     }
@@ -78,8 +82,11 @@ export default function TxClient({ initial }: { initial: AdminTx[] }) {
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status: 'rejected' } : r)),
       );
+      toast.success('Đã từ chối giao dịch');
     } catch (e) {
-      setErr((e as Error).message);
+      const msg = (e as Error).message;
+      setErr(msg);
+      toast.error(`Từ chối thất bại: ${msg}`);
     } finally {
       setBusy(null);
     }

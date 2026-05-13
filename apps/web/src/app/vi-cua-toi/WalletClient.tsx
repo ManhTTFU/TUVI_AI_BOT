@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatVnd } from '@/lib/money';
 import { formatProExpiry, daysRemaining, isLifetime, tierFromProUntil } from '@/lib/tier';
+import { toast } from '@/components/ui/toast';
+import { subscribeWallet } from '@/lib/wallet-sse';
 import type { BankConfig, Plan } from '@tuvi/db';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
@@ -35,14 +37,12 @@ const PLAN_BADGES: Record<Plan, { tag: string | null; color: string }> = {
 };
 
 export default function WalletClient({
-  initialBalance,
   initialProUntil,
   bank,
   plans,
   userName,
   userEmail,
 }: {
-  initialBalance: number;
   initialProUntil: string | null;
   bank: BankConfig | null;
   plans: PlanInfo[];
@@ -52,7 +52,6 @@ export default function WalletClient({
   const ckContent = (ref: string | null) =>
     [ref, userEmail].filter(Boolean).join(' ').trim();
   const [proUntil, setProUntil] = useState<string | null>(initialProUntil);
-  const [balance] = useState(initialBalance);
   const [pickedPlan, setPickedPlan] = useState<Plan | null>(null);
   const [pending, setPending] = useState<{ tx: Tx; plan: PlanInfo } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -65,17 +64,25 @@ export default function WalletClient({
   const days = daysRemaining(proUntil);
 
   useEffect(() => {
-    const es = new EventSource('/api/wallet/stream');
-    es.addEventListener('subscription', (e) => {
-      try {
-        const data = JSON.parse((e as MessageEvent).data);
-        if (typeof data.proUntil === 'string') setProUntil(data.proUntil);
-        loadHistory();
-      } catch {}
+    const unsubscribe = subscribeWallet((event, data) => {
+      if (event === 'subscription') {
+        let wasPro = false;
+        if (data && typeof data.proUntil === 'string') {
+          setProUntil((prev) => {
+            wasPro = tierFromProUntil(prev) === 'PRO';
+            return data.proUntil;
+          });
+        }
+        // setState updater chạy đồng bộ → wasPro đã có giá trị đúng tại đây.
+        toast.success(
+          wasPro
+            ? 'Gói PRO của bạn đã được gia hạn!'
+            : 'Tài khoản của bạn đã được nâng cấp lên gói PRO!',
+        );
+      }
+      loadHistory();
     });
-    es.addEventListener('balance', () => loadHistory());
-    es.addEventListener('topup-completed', () => loadHistory());
-    return () => es.close();
+    return unsubscribe;
   }, []);
 
   const loadHistory = async () => {

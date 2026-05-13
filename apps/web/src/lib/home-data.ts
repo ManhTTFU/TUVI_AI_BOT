@@ -20,13 +20,14 @@ export type Zodiac = {
   fortune: string;
 };
 
+import { ALL_SIGNS_VI } from './horoscope-lib';
+
 export type Horoscope = {
   name: string;
   en: string;
   sym: string;
   el: string;
   range: string;
-  text: string;
 };
 
 export type LucDieu = {
@@ -82,20 +83,16 @@ export const ZODIAC: Zodiac[] = [
   { name: 'Hợi', en: 'Lợn', glyph: '🐷', hours: '21h–23h', years: '1995, 2007, 2019, 2031', ratings: [4, 5, 4, 4], lucky: 'Hồng', num: 6, fortune: 'Tận hưởng phước lành đang có. Đừng so sánh đời mình với mạng xã hội.' },
 ];
 
-export const HOROSCOPE: Horoscope[] = [
-  { name: 'Bạch Dương', en: 'Aries', sym: '♈', el: 'Lửa', range: '21/3 – 19/4', text: 'Năng lượng tích cực dồi dào, khuyến khích bạn hành động dứt khoát và theo đuổi mục tiêu mới. Trong tình yêu, sức quyến rũ mạnh mẽ có thể mở ra cơ hội lãng mạn thú vị — chỉ cần kiềm chế cơn bốc đồng. Công việc thuận cho việc khởi xướng dự án sáng tạo.' },
-  { name: 'Kim Ngưu', en: 'Taurus', sym: '♉', el: 'Đất', range: '20/4 – 20/5', text: 'Một ngày ổn định và trù phú, năng lượng Đất mang lại sự kiên định. Tình yêu ấm áp hơn nhờ sự lãng mạn thực tế. Công việc thích hợp đầu tư tài chính dài hạn — óc thực tế của bạn nổi bật.' },
-  { name: 'Song Tử', en: 'Gemini', sym: '♊', el: 'Khí', range: '21/5 – 20/6', text: 'Sao Thủy mang đến ngày năng động, nhiều cơ hội giao tiếp và sáng tạo. Tình yêu rộn ràng — một lời nói khéo có thể mở ra duyên mới. Công việc tỏa sáng trong nhóm và học hỏi.' },
-  { name: 'Cự Giải', en: 'Cancer', sym: '♋', el: 'Nước', range: '21/6 – 22/7', text: 'Mặt Trăng mời bạn trở về với gia đình và nội tâm. Tình yêu đậm cảm xúc — bày tỏ chân thành sẽ được đón nhận. Công việc hợp tác nhóm hoặc dự án sáng tạo.' },
-  { name: 'Sư Tử', en: 'Leo', sym: '♌', el: 'Lửa', range: '23/7 – 22/8', text: 'Mặt Trời tăng năng lượng và sự tự tin. Tình yêu lãng mạn bất ngờ. Công việc hợp với vai trò dẫn dắt và thuyết trình — bạn có sức hút.' },
-  { name: 'Xử Nữ', en: 'Virgo', sym: '♍', el: 'Đất', range: '23/8 – 22/9', text: 'Sao Thủy giúp tập trung vào chi tiết. Giao tiếp hiệu quả mang lại ổn định. Tình yêu thiên về chân thành thay vì lãng mạn rườm rà.' },
-  { name: 'Thiên Bình', en: 'Libra', sym: '♎', el: 'Khí', range: '23/9 – 22/10', text: 'Sao Kim mang đến hài hòa trong mọi mối quan hệ. Tình yêu nồng nàn nhờ vẻ duyên dáng tự nhiên. Công việc hợp đàm phán và hợp tác.' },
-  { name: 'Bọ Cạp', en: 'Scorpio', sym: '♏', el: 'Nước', range: '23/10 – 21/11', text: 'Sao Diêm Vương khơi dậy chiều sâu cảm xúc và trực giác sắc bén. Tình yêu mãnh liệt — đừng để ghen tuông phá hỏng. Công việc cần điều tra tỉ mỉ sẽ có đột phá.' },
-  { name: 'Nhân Mã', en: 'Sagittarius', sym: '♐', el: 'Lửa', range: '22/11 – 21/12', text: 'Sao Mộc mở rộng tầm nhìn — ngày tốt để học, đi xa, trải nghiệm. Tình yêu phiêu lưu, thoải mái. Công việc thuận cho ý tưởng lớn.' },
-  { name: 'Ma Kết', en: 'Capricorn', sym: '♑', el: 'Đất', range: '22/12 – 19/1', text: 'Sao Thổ đề cao kỷ luật và tham vọng. Tình yêu chậm rãi nhưng bền vững. Công việc thích hợp lập kế hoạch dài hạn.' },
-  { name: 'Bảo Bình', en: 'Aquarius', sym: '♒', el: 'Khí', range: '20/1 – 18/2', text: 'Sao Thiên Vương khuyến khích sáng tạo và sự độc đáo. Tình yêu cần không gian riêng. Công việc thuận cho ý tưởng đột phá hoặc công nghệ.' },
-  { name: 'Song Ngư', en: 'Pisces', sym: '♓', el: 'Nước', range: '19/2 – 20/3', text: 'Sao Hải Vương nuôi dưỡng trực giác và sáng tạo nghệ thuật. Tình yêu thi vị, sâu lắng. Hãy giữ ranh giới để không bị cuốn theo cảm xúc người khác.' },
-];
+// Daily reading text được sinh runtime từ Deepseek qua /api/horoscope/daily
+// (cache 1 lần/ngày). HOROSCOPE chỉ giữ metadata; UI cần dùng
+// `useDailyHoroscope()` để lấy text — không có fallback hardcoded.
+export const HOROSCOPE: Horoscope[] = ALL_SIGNS_VI.map((s) => ({
+  name: s.name,
+  en: s.en,
+  sym: s.sym,
+  el: s.el,
+  range: s.range,
+}));
 
 export const LUC_DIEU: LucDieu[] = [
   { hour: '23:00–01:00', chi: 'Giờ Tý', name: 'Xích Khẩu', short: 'Tránh tranh cãi, khẩu thiệt', icon: '⚠' },

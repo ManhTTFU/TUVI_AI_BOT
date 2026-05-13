@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { ZodiacDetail } from '@/lib/zodiac-detail';
 import { HOROSCOPE } from '@/lib/home-data';
+import { useDailyHoroscope } from '@/lib/use-daily-horoscope';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -105,16 +106,25 @@ function TodayLine({ name }: { name: string }) {
     );
   }, []);
   const horoscope = HOROSCOPE.find((h) => h.name === name);
+  const daily = useDailyHoroscope();
   if (!horoscope) return null;
+  const reading = daily?.readings[horoscope.en];
   return (
     <div className="rounded-2xl border border-[#c89146]/45 bg-[#fbf3e2]/85 p-6 md:p-8">
       <div className="flex items-center gap-2 text-[11px] tracking-[0.3em] uppercase text-[#4a6c7a] font-semibold">
         <span className="w-1.5 h-1.5 rounded-full bg-[#c89146]" />
         Hôm nay <span suppressHydrationWarning>· {today}</span>
       </div>
-      <p className="mt-3 text-[15px] md:text-[16px] text-[#0f0a08] leading-relaxed">
-        {horoscope.text}
-      </p>
+      {reading ? (
+        <p className="mt-3 text-[15px] md:text-[16px] text-[#0f0a08] leading-relaxed">
+          {reading}
+        </p>
+      ) : (
+        <div className="mt-3 inline-flex items-center gap-2 text-[14px] text-[#4a6c7a] italic">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#c89146] animate-pulse" />
+          Hệ thống đang luận giải vận trình hôm nay…
+        </div>
+      )}
     </div>
   );
 }
@@ -240,6 +250,8 @@ function NavButtons({
 }
 
 function RelatedSection({ related }: { related: ZodiacDetail[] }) {
+  const daily = useDailyHoroscope();
+  const dailyReadings = daily?.readings ?? {};
   return (
     <section className="pt-2">
       <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
@@ -289,9 +301,9 @@ function RelatedSection({ related }: { related: ZodiacDetail[] }) {
                   </div>
                 </div>
               </div>
-              {horoscope && (
+              {horoscope && dailyReadings[horoscope.en] && (
                 <p className="text-[13px] text-[#0f0a08] leading-relaxed line-clamp-3">
-                  {horoscope.text}
+                  {dailyReadings[horoscope.en]}
                 </p>
               )}
               <div className="mt-4 text-[12px] text-[#4a6c7a] group-hover:text-[#5a3a1a] font-medium">

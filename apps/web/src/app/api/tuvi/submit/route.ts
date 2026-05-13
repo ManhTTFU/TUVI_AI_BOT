@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { calculateChart } from '@tuvi/astrology';
-import { CANH_GIO, makeChartSlug } from '@tuvi/core';
-import { getDb, users, charts, type Chart } from '@tuvi/db';
+import { CANH_GIO } from '@tuvi/core';
+import { getDb, users, charts } from '@tuvi/db';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { parseBirthPayload, birthHash } from '@/lib/birth';
@@ -52,7 +52,6 @@ export async function POST(req: Request) {
 
   const hash = birthHash(info);
   const chart = calculateChart(info);
-  const slug = makeChartSlug(info.name, info.birthDate);
 
   const [chartRow] = await db
     .insert(charts)
@@ -63,7 +62,6 @@ export async function POST(req: Request) {
       birthDate: info.birthDate,
       timeIndex: info.timeIndex,
       lunarMode: info.lunarMode,
-      slug,
       birthHash: hash,
       chartData: chart,
     })
@@ -72,7 +70,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     chartId: chartRow.id,
-    slug: chartRow.slug,
     chart,
   });
 }

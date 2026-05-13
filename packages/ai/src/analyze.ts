@@ -40,9 +40,18 @@ function chiOfYear(y: number): string {
 
 export interface AnalyzeOptions {
   onProgress?: (step: number, total: number, key: SectionKey) => void;
+  /**
+   * Seed deterministic cho Deepseek (cùng input → cùng output, ~95-98% reproducible).
+   * Truyền từ caller qua `seedFromHash(birthHash)`. Bỏ qua → output random mỗi lần.
+   */
+  seed?: number;
 }
 
-async function callOneSection(key: SectionKey, chartSummary: string): Promise<string> {
+async function callOneSection(
+  key: SectionKey,
+  chartSummary: string,
+  seed?: number,
+): Promise<string> {
   const client = getDeepseekClient();
   const model = getDeepseekModel();
 
@@ -50,6 +59,7 @@ async function callOneSection(key: SectionKey, chartSummary: string): Promise<st
     model,
     temperature: 0.7,
     max_tokens: 1500, // ~1000 từ VN — cap để section không phình quá dài (mỗi 1k token ~ 20-25s sinh)
+    seed,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
       {
@@ -74,14 +84,20 @@ export async function analyzeChart(
 
   // Parallel: 6 section gọi đồng thời, mỗi cái qua aiCall (limit + retry).
   // Progress emit theo thứ tự hoàn thành, không theo thứ tự gọi.
+  // Mỗi section dùng seed riêng = base_seed + section_index để output mỗi section
+  // có "fingerprint" khác nhau (tránh model dùng cùng pattern wording cho 6 section).
   const texts = await Promise.all(
-    SECTION_ORDER.map((key) =>
-      aiCall(() => callOneSection(key, chartSummary), `analyze:${key}`).then((text) => {
+    SECTION_ORDER.map((key, idx) => {
+      const sectionSeed = opts.seed !== undefined ? opts.seed + idx : undefined;
+      return aiCall(
+        () => callOneSection(key, chartSummary, sectionSeed),
+        `analyze:${key}`,
+      ).then((text) => {
         done++;
         opts.onProgress?.(done, total, key);
         return [key, text] as const;
-      }),
-    ),
+      });
+    }),
   );
 
   const result: Partial<AnalysisSections> = {};
@@ -108,6 +124,7 @@ async function callJsonSection<T>(
   chartSummary: string,
   extraContext?: string,
   label = 'json',
+  seed?: number,
 ): Promise<T> {
   return aiCall(async () => {
     const client = getDeepseekClient();
@@ -122,6 +139,7 @@ async function callJsonSection<T>(
       model,
       temperature: 0.7,
       max_tokens: JSON_MAX_TOKENS[label] ?? 2000,
+      seed,
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -213,6 +231,7 @@ function buildTieuHanContext(chart: ChartData, birthYear: number, currentYear: n
 export async function analyzeDaiHan(
   chart: ChartData,
   birthYear: number,
+  seed?: number,
 ): Promise<DaiHanReading[]> {
   const summary = summarizeChartForAI(chart);
   const ctx = buildDaiHanContext(chart, birthYear);
@@ -221,6 +240,7 @@ export async function analyzeDaiHan(
     summary,
     ctx,
     'daiHan',
+    seed,
   );
 
   // Merge AI readings vào meta tự build (đảm bảo đủ 12 mục, đúng năm sinh).
@@ -248,6 +268,7 @@ export async function analyzeTieuHan(
   chart: ChartData,
   birthYear: number,
   currentYear: number,
+  seed?: number,
 ): Promise<TieuHanReading[]> {
   const summary = summarizeChartForAI(chart);
   const { context, meta } = buildTieuHanContext(chart, birthYear, currentYear);
@@ -256,6 +277,7 @@ export async function analyzeTieuHan(
     summary,
     context,
     'tieuHan',
+    seed,
   );
 
   return meta.map((m) => {
@@ -266,6 +288,7 @@ export async function analyzeTieuHan(
 
 export async function analyzeTwelvePalaces(
   chart: ChartData,
+  seed?: number,
 ): Promise<TwelvePalaceReading[]> {
   const summary = summarizeChartForAI(chart);
   const out = await callJsonSection<{ palaces: TwelvePalaceReading[] }>(
@@ -273,6 +296,7 @@ export async function analyzeTwelvePalaces(
     summary,
     undefined,
     'twelvePalaces',
+    seed,
   );
 
   // Match theo name; fallback theo earthlyBranch nếu name lệch (Tử Nữ vs Tử Tức)
@@ -365,6 +389,7 @@ export async function analyzeNamHienTai(
   chart: ChartData,
   birthYear: number,
   currentYear: number,
+  seed?: number,
 ): Promise<NamHienTaiReading> {
   const summary = summarizeChartForAI(chart);
   const { context, tieuHanPalaceName, tieuHanBranch } = buildNamHienTaiContext(
@@ -375,18 +400,21 @@ export async function analyzeNamHienTai(
 
   // Split thành 2 call parallel: main (aspects + advice) + months (12 tháng).
   // Cùng share context, giảm thời gian từ ~50s → ~max(main, months) ≈ ~25-30s.
+  // 2 nhánh dùng seed lệch nhau (+0, +1) để output 2 nhánh không "đồng pha".
   const [main, monthsRes] = await Promise.all([
     callJsonSection<RawNamHienTaiMain>(
       NAM_HIEN_TAI_MAIN_PROMPT,
       summary,
       context,
       'namHienTaiMain',
+      seed,
     ),
     callJsonSection<RawNamHienTaiMonths>(
       NAM_HIEN_TAI_MONTHS_PROMPT,
       summary,
       context,
       'namHienTaiMonths',
+      seed !== undefined ? seed + 1 : undefined,
     ),
   ]);
 
@@ -454,6 +482,8 @@ export async function analyzeNamHienTai(
 
 export interface DeepAnalyzeOptions {
   onProgress?: (step: number, total: number, label: string) => void;
+  /** Seed deterministic — xem `AnalyzeOptions.seed`. */
+  seed?: number;
 }
 
 export async function analyzeDeepReadings(
@@ -463,16 +493,19 @@ export async function analyzeDeepReadings(
   opts: DeepAnalyzeOptions = {},
 ): Promise<DeepReadingsData> {
   // 4 deep section gọi đồng thời. Mỗi call đã wrap aiCall (limit + retry) trong callJsonSection.
+  // Mỗi section dùng seed offset khác để output không "đồng pha".
   let done = 0;
   const tick = (label: string) => {
     done++;
     opts.onProgress?.(done, 4, label);
   };
+  const baseSeed = opts.seed;
+  const sd = (offset: number) => (baseSeed !== undefined ? baseSeed + offset : undefined);
   const [daiHan, tieuHan, twelvePalaces, namHienTai] = await Promise.all([
-    analyzeDaiHan(chart, birthYear).then((r) => { tick('daiHan'); return r; }),
-    analyzeTieuHan(chart, birthYear, currentYear).then((r) => { tick('tieuHan'); return r; }),
-    analyzeTwelvePalaces(chart).then((r) => { tick('twelvePalaces'); return r; }),
-    analyzeNamHienTai(chart, birthYear, currentYear).then((r) => { tick('namHienTai'); return r; }),
+    analyzeDaiHan(chart, birthYear, sd(0)).then((r) => { tick('daiHan'); return r; }),
+    analyzeTieuHan(chart, birthYear, currentYear, sd(2)).then((r) => { tick('tieuHan'); return r; }),
+    analyzeTwelvePalaces(chart, sd(4)).then((r) => { tick('twelvePalaces'); return r; }),
+    analyzeNamHienTai(chart, birthYear, currentYear, sd(6)).then((r) => { tick('namHienTai'); return r; }),
   ]);
   return { daiHan, tieuHan, twelvePalaces, namHienTai };
 }
@@ -482,7 +515,7 @@ export async function analyzeDeepReadings(
 // `context` đã được caller format trước (tên/giới tính/dương lịch/âm lịch/4 trụ/Nhật chủ).
 // ============================================================================
 
-export async function analyzeBatTu(context: string): Promise<string> {
+export async function analyzeBatTu(context: string, seed?: number): Promise<string> {
   return aiCall(async () => {
     const client = getDeepseekClient();
     const model = getDeepseekModel();
@@ -491,6 +524,7 @@ export async function analyzeBatTu(context: string): Promise<string> {
       model,
       temperature: 0.7,
       max_tokens: 3500, // 1500-2200 từ VN — buffer tránh truncate ở phần cuối
+      seed,
       messages: [
         { role: 'system', content: BAT_TU_SYSTEM_PROMPT },
         {

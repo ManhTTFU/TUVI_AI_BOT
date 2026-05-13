@@ -40,8 +40,6 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified', { mode: 'date' }),
   image: text('image'),
   role: userRoleEnum('role').notNull().default('user'),
-  /** Legacy: số dư còn lại từ model cũ (per-chart). Không dùng cho gói PRO mới. */
-  balanceVnd: bigint('balance_vnd', { mode: 'number' }).notNull().default(0),
   /**
    * Tier PRO hết hạn lúc nào. null = chưa từng PRO (NORMAL).
    * pro_until > now → PRO. pro_until = year 9999 → lifetime.
@@ -115,14 +113,13 @@ export const charts = pgTable(
     birthDate: varchar('birth_date', { length: 10 }).notNull(), // DD/MM/YYYY
     timeIndex: integer('time_index').notNull(),
     lunarMode: boolean('lunar_mode').notNull().default(false),
-    slug: text('slug').notNull().unique(),
     /** sha256(gender|birthDate|timeIndex).slice(0,16) — key share cache */
     birthHash: varchar('birth_hash', { length: 32 }).notNull(),
     chartData: jsonb('chart_data').notNull(), // ChartData snapshot từ iztro
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    userIdx: index('charts_user_idx').on(t.userId),
+    userCreatedIdx: index('charts_user_created_idx').on(t.userId, t.createdAt),
     hashIdx: index('charts_hash_idx').on(t.birthHash),
   }),
 );
@@ -176,7 +173,7 @@ export const batTuCharts = pgTable(
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    userIdx: index('bat_tu_charts_user_idx').on(t.userId),
+    userCreatedIdx: index('bat_tu_charts_user_created_idx').on(t.userId, t.createdAt),
     hashIdx: index('bat_tu_charts_hash_idx').on(t.birthHash),
   }),
 );
@@ -264,6 +261,59 @@ export const subscriptionPlans = pgTable('subscription_plans', {
 });
 
 /**
+ * Submission record cho luận giải Hoàng Đạo. 1 row mỗi user × combo unique.
+ * KHÔNG chứa reading — reading nằm ở `hoang_dao_analyses` (share cross-user
+ * theo birthHash để tiết kiệm Deepseek call).
+ *
+ * Hash: sha256(signEn|gender|status|goal).slice(0,16). Cùng combo → cùng hash
+ * → cùng reading bất kể user nào. Match pattern `charts` + `analyses` của Tử Vi.
+ */
+export const hoangDaoCharts = pgTable(
+  'hoang_dao_charts',
+  {
+    id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    signEn: varchar('sign_en', { length: 16 }).notNull(),
+    gender: varchar('gender', { length: 8 }).notNull(),
+    status: varchar('status', { length: 12 }).notNull(),
+    goal: varchar('goal', { length: 12 }).notNull(),
+    /** sha256(signEn|gender|status|goal).slice(0,16) — key share AI cache */
+    birthHash: varchar('birth_hash', { length: 32 }).notNull(),
+    createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+  },
+  (t) => ({
+    userCreatedIdx: index('hoang_dao_charts_user_created_idx').on(t.userId, t.createdAt),
+    hashIdx: index('hoang_dao_charts_hash_idx').on(t.birthHash),
+    uniqUserHash: uniqueIndex('hoang_dao_charts_user_hash_uniq').on(t.userId, t.birthHash),
+  }),
+);
+
+/**
+ * Cache AI reading Hoàng Đạo. PK = birthHash → share cross-user.
+ * Reading là `PersonalizedReading` JSON structured (personality/love/career/advice).
+ */
+export const hoangDaoAnalyses = pgTable('hoang_dao_analyses', {
+  birthHash: varchar('birth_hash', { length: 32 }).primaryKey(),
+  reading: jsonb('reading').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+});
+
+/**
+ * Cache 12 reading hoàng đạo hôm nay (Deepseek sinh 1 lần/ngày).
+ * PK theo ngày VN (YYYY-MM-DD, UTC+7) → mọi instance share cache, tránh
+ * gọi Deepseek N lần khi scale ngang. INSERT ... ON CONFLICT DO NOTHING
+ * khi 2 instance cùng miss và race.
+ */
+export const dailyHoroscope = pgTable('daily_horoscope', {
+  date: varchar('date', { length: 10 }).primaryKey(), // YYYY-MM-DD
+  /** Map: tên cung tiếng Anh (Aries, ...) → đoạn 2-3 câu VN. */
+  readings: jsonb('readings').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+});
+
+/**
  * Lịch sử mua gói. Mỗi lần admin approve topup gói → 1 row ở đây + extend pro_until.
  */
 export const subscriptionPurchases = pgTable(
@@ -304,4 +354,7 @@ export type BankConfig = typeof bankConfig.$inferSelect;
 export type Price = typeof prices.$inferSelect;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 export type SubscriptionPurchase = typeof subscriptionPurchases.$inferSelect;
+export type DailyHoroscopeRow = typeof dailyHoroscope.$inferSelect;
+export type HoangDaoChartRow = typeof hoangDaoCharts.$inferSelect;
+export type HoangDaoAnalysisRow = typeof hoangDaoAnalyses.$inferSelect;
 export type Plan = (typeof planEnum.enumValues)[number]; // 'monthly' | 'semi_annual' | 'annual' | 'lifetime'

@@ -23,6 +23,104 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-13 (session 2)
+
+**Đang làm:** Bug fix — user Google login mất avatar trên header (UserMenu).
+
+**Đến đâu rồi:**
+- Verify DB: `users.image` lưu URL `lh3.googleusercontent.com/...` hợp lệ cho cả 2 Google user sampled → bug không phải ở storage, mà ở session payload hoặc render.
+- Fix `apps/web/src/auth.ts`: trong session callback (`strategy: 'database'`), explicit gán `session.user.name = user.name`, `session.user.email = user.email`, `session.user.image = user.image`. Phòng trường hợp `next-auth@5.0.0-beta.31` không auto-populate các field này từ adapter user khi có custom callback (trước đó callback chỉ set `id/role/proUntil/tier` → image có thể bị thiếu).
+- Fix `UserMenu.tsx` + admin `UsersClient.tsx`: thêm `referrerPolicy="no-referrer"` vào `<img src={u.image}>`. Lý do: Google CDN `lh3.googleusercontent.com` trả 429/403 khi browser gửi Referer từ origin lạ — nguyên nhân phổ biến nhất khi "avatar Google đột nhiên mất".
+- Restart dev (stop-dev → run-dev), cả 2 service ready, đang chờ user verify browser.
+
+**Files đã sửa:**
+- `apps/web/src/auth.ts` — explicit gán `name/email/image` vào `session.user` trong session callback.
+- `apps/web/src/components/layout/UserMenu.tsx` — thêm `referrerPolicy="no-referrer"`.
+- `apps/web/src/app/admin/users/UsersClient.tsx` — thêm `referrerPolicy="no-referrer"`.
+
+**Blocker:** Chưa có verify thực tế trên browser — em chỉ test được unauthenticated `/api/auth/session` (trả `null`). User cần hard refresh (Ctrl+Shift+R) để session cookie re-fetch payload mới.
+
+**Việc tiếp theo:**
+- Chờ user xác nhận avatar đã hiện. Nếu vẫn không: kiểm tra DevTools → Network response `/api/auth/session` xem `user.image` đã có chưa (phân biệt bug ở session callback vs CDN policy).
+- Nếu fix work → có thể cân nhắc lưu lại pattern này vào `bugs-solved.md` (next-auth v5 beta session callback + Google CDN referrerPolicy).
+
+---
+
+### 2026-05-13
+
+**Đang làm:** Loạt cải tiến quanh Hoàng Đạo + ví PRO + Tứ Trụ:
+(1) Real-time nâng cấp PRO trên trang ví khi admin duyệt giao dịch (SSE + toast 2 phía),
+(2) Refactor `subscribeWallet` thành singleton shared (UserMenu + WalletClient),
+(3) Tích hợp `horoscope` npm lib thay zodiac data hardcoded ở `/` + `/hoang-dao`,
+(4) Daily horoscope động bằng AI (Deepseek) với 2-tier cache L1 Map + L2 Postgres,
+(5) Form luận giải cá nhân hóa Hoàng Đạo (giới tính / trạng thái / mục tiêu) + trang chi tiết `/hoang-dao/luan-giai`,
+(6) PRO gate cho nút "Xem luận giải cá nhân",
+(7) Tu-tru dùng `@tuvi/lichvannien` để tính can chi (thay hardcode trong prompt).
+
+**Đến đâu rồi:**
+- **Real-time PRO trên ví**:
+  - `apps/web/src/lib/wallet-sse.ts` NEW: singleton EventSource `/api/wallet/stream`, export `subscribeWallet(fn) → unsubscribe`. Event types: `subscription | balance | topup-completed`.
+  - `WalletClient.tsx` dùng `subscribeWallet`, handler detect `wasPro` qua `setProUntil(prev => ...)` functional update để phân biệt "nâng cấp lần đầu" vs "gia hạn" → toast tương ứng.
+  - `UserMenu.tsx` đổi sang import từ shared lib (xoá EventSource cục bộ).
+  - `TxClient.tsx` (admin): `toast.success('Đã duyệt giao dịch thành công')` / `toast.error(...)` khi approve + reject.
+
+- **Horoscope lib + dynamic daily AI**:
+  - `apps/web/src/lib/horoscope-lib.ts` NEW: wrap npm `horoscope@2.0.1`, export `ALL_SIGNS_VI` (12 cung kèm symbol/element/range/slug), `getSignFromDate(month, day)`, `getSignToday()`.
+  - `apps/web/src/lib/daily-horoscope-server.ts` NEW: 2-tier cache. L1 `Map<dateStr, DailyHoroscope>` instance-local + inflight promise; L2 bảng Postgres `daily_horoscope` (PK date, JSONB readings). Flow: L1 miss → SELECT L2 → nếu miss thì gọi Deepseek → `INSERT ... ON CONFLICT DO NOTHING` (race-safe) → SELECT lại để đồng thuận multi-instance. Key date = `vnDateStr()` UTC+7. SYSTEM prompt + user prompt giới hạn "TỐI ĐA 2 câu ngắn ~25-35 từ/cung", `temperature: 0.7`, `max_tokens: 4000` (bump từ 2500 do 12-cung bị cắt cuối JSON), `response_format: json_object`, throw nếu `finish_reason === 'length'`.
+  - `apps/web/src/lib/use-daily-horoscope.ts` NEW: client hook fetch `/api/horoscope/daily` 1 lần/session, module-level cache để mọi component dùng chung.
+  - `apps/web/src/app/api/horoscope/daily/route.ts` NEW: GET endpoint trả `{ ok, daily }`.
+  - `packages/db/src/schema.ts`: thêm `dailyHoroscope` table. Migration `packages/db/migrations/0003_flat_sinister_six.sql` generate + apply Neon.
+
+- **Personalize form + PRO gate + detail page**:
+  - `apps/web/src/lib/horoscope-personalize-server.ts` NEW: prompt 4 sections (Tính cách cốt lõi / Tình yêu & mối quan hệ / Sự nghiệp & tài chính / Lời khuyên cá nhân hóa), 300-500 từ, `max_tokens: 1500`, `temperature: 0.8`. In-memory cache TTL 1h key `date|signEn|gender|status|goal`.
+  - `apps/web/src/app/api/horoscope/personalize/route.ts` NEW: POST, auth check (401) + PRO check qua `users.proUntil` + `isProActive` (402 `PRO_REQUIRED`), validate enum gender/status/goal, gọi `getPersonalizedHoroscope`.
+  - `apps/web/src/app/hoang-dao/luan-giai/page.tsx` + `LuanGiaiClient.tsx` NEW: trang chi tiết đọc `?sign=&gender=&status=&goal=`, validate params, fetch personalize, render sign card + chips + markdown qua `RenderTuviContent`. Handle 401 (redirect login), 402 (banner PRO).
+  - `HoangDaoClient.tsx` rewrite: Hero bỏ input ngày sinh, hiển thị "Cung hoàng đạo hôm nay" theo `getSignToday()`. Thêm `<HoroscopeForm>` đặt **trên** grid 12 cung; nhập DD/MM/YYYY + gender (nam/nữ) + status (4 option) + goal (6 option). Submit: chưa login → `/dang-nhap?callbackUrl=/hoang-dao`; login không PRO → banner inline link `/vi-cua-toi`; PRO → router push `/hoang-dao/luan-giai?...`. Bỏ "Xem chi tiết →" trên card.
+  - `HomeClient.tsx`: section 12 cung bỏ input + bỏ "Xem chi tiết →", card text dùng `daily?.readings[en]` (hook), fallback "Hệ thống đang luận giải vận trình hôm nay…".
+  - `HoangDaoDetail.tsx` (`TodayLine` + `RelatedSection`): dùng `useDailyHoroscope()`.
+  - `lib/home-data.ts`: xoá `DAILY_TEXT_BY_EN` hardcoded, `Horoscope` type bỏ field `text`, `HOROSCOPE` derive từ `ALL_SIGNS_VI`.
+
+- **Tu-tru can chi**:
+  - `TuTruClient.tsx` (+ prompt liên quan): dùng `@tuvi/lichvannien` để compute can chi năm/tháng/ngày/giờ thay hardcode trong prompt — ăn theo logic Hồ Ngọc Đức đã có sẵn trong package.
+
+**Files đã sửa:**
+- `apps/web/src/lib/wallet-sse.ts` NEW — singleton SSE subscriber.
+- `apps/web/src/lib/horoscope-lib.ts` NEW — wrapper `horoscope@2.0.1` + VN metadata.
+- `apps/web/src/lib/daily-horoscope-server.ts` NEW — 2-tier cache L1 Map + L2 Postgres cho 12 readings/ngày.
+- `apps/web/src/lib/use-daily-horoscope.ts` NEW — client hook session-level cache.
+- `apps/web/src/lib/horoscope-personalize-server.ts` NEW — personalize AI 4-section + in-memory cache.
+- `apps/web/src/app/api/horoscope/daily/route.ts` NEW — GET endpoint.
+- `apps/web/src/app/api/horoscope/personalize/route.ts` NEW — POST + auth + PRO gate.
+- `apps/web/src/app/hoang-dao/luan-giai/page.tsx` + `LuanGiaiClient.tsx` NEW — trang chi tiết personalize.
+- `apps/web/src/components/hoang-dao/HoangDaoClient.tsx` — Hero bỏ input, thêm form ngày/giới tính/trạng thái/mục tiêu trên grid 12 cung, PRO gate trước khi navigate.
+- `apps/web/src/components/hoang-dao/HoangDaoDetail.tsx` — TodayLine + RelatedSection chuyển dùng `useDailyHoroscope`.
+- `apps/web/src/components/home/HomeClient.tsx` — 12 cung dùng daily AI, bỏ input + bỏ "Xem chi tiết →".
+- `apps/web/src/components/layout/UserMenu.tsx` — refactor sang `subscribeWallet` singleton.
+- `apps/web/src/components/tu-tru/TuTruClient.tsx` — dùng `@tuvi/lichvannien` cho can chi trong prompt.
+- `apps/web/src/app/admin/transactions/TxClient.tsx` — toast success/error khi duyệt/từ chối.
+- `apps/web/src/app/vi-cua-toi/WalletClient.tsx` — SSE + toast "đã nâng cấp PRO" / "đã gia hạn".
+- `apps/web/src/lib/home-data.ts` — xoá `DAILY_TEXT_BY_EN`, `HOROSCOPE` derive từ `ALL_SIGNS_VI`.
+- `packages/db/src/schema.ts` — thêm `dailyHoroscope` table.
+- `packages/db/migrations/0003_flat_sinister_six.sql` NEW + `meta/_journal.json` update — generate + apply Neon.
+- `apps/web/package.json` + `pnpm-lock.yaml` — add `horoscope@2.0.1`.
+
+**Blocker:** không còn.
+
+**Việc tiếp theo:**
+- Tonal review trang `/hoang-dao` sau khi thêm form: form mới đang nằm trên grid — check rhythm bg/UI có cùng family với Hero không (xem patterns.md).
+- (đã fix sau session) Daily horoscope bị cắt `max_tokens` → tách 2 call × 6 cung song song qua `Promise.all`. Verify: 7.5s, đủ 12 cung. Lưu vào `bugs-solved.md`.
+- (đã fix sau session) Personalize JSON refactor: switch `RenderTuviContent` markdown → structured `PersonalizedReading` (4 sections fixed schema). `response_format: json_object`, `max_tokens: 3500`. Component `PersonalizedView` + `Section`/`Paragraph`/`BulletGroup` ngay trong `LuanGiaiClient.tsx`. Loại bỏ rủi ro "model quên `##`".
+- (đã làm sau session) **Lịch sử Hoàng Đạo**: thêm bảng `hoang_dao_charts` (PK uuid, FK user, unique index `(userId, signEn, gender, status, goal)`), migration `0004_misty_amazoness.sql` apply Neon.
+- (đã làm sau session) **Xoá 2 vấn đề khỏi backlog** (migration `0006_drop_balance_and_slug.sql`):
+  - **`balanceVnd` removed hoàn toàn:** drop column `users.balance_vnd`. Refactor 10 file gỡ mọi tham chiếu: `auth.ts` (bỏ session.user.balanceVnd typing + SELECT), `WalletClient.tsx` (bỏ initialBalance state), `vi-cua-toi/page.tsx` (bỏ SELECT balanceVnd), `UserMenu.tsx` (sửa comment), `admin/users/page.tsx` + `UsersClient.tsx` (bỏ field + xoá credit dialog dead code), `wallet-sse.ts` (chỉ giữ event 'subscription', bỏ 'balance' + 'topup-completed'), `approve/route.ts` (bỏ topup branch, chỉ xử lý subscription), `casso.ts` (rewrite: match `subscription` tx → extend proUntil thay vì credit balance). DELETE 2 file dead: `wallet/balance/route.ts`, `admin/credit/route.ts`.
+  - **`charts.slug` removed:** drop column `charts.slug`. Đổi URL `/tu-vi/[slug]` → `/tu-vi/[chartId]` (UUID, match pattern tu-tru). Rename folder Next.js + update internal references (param `slug` → `chartId`, query `eq(charts.slug, ...)` → `eq(charts.id, ...)`). Cập nhật caller: `TuviForm.tsx` push to `/tu-vi/${data.chartId}`, `/lich-su` `href` dùng `r.id`, `/api/tuvi/submit` route bỏ slug gen. DELETE `lib/api.ts` (unused `fetchChartBySlug`). Giữ `packages/core/src/slug.ts` (Express legacy còn import).
+- (đã làm sau session) **Tạo `.claude/memory/backlog.md`** — file mới cho tech debt + scaling todo (tách khỏi session-log/decisions/bugs-solved). Lưu 8 item: Tu-Vi concurrency 5 user/41s (P1, 6 options ranked), `balanceVnd` legacy 10 file (P1), `charts.slug` global unique collision (P1), AI cache thiếu `prompt_version` (P1), `prices` table zero reference (P2), `hoang_dao_charts` denormalization tradeoff (P2), `transactions` thiếu composite index (P2), AI metric/observability (P3), GPU non-determinism edge case (P3). Update `CLAUDE.md` để session sau biết đọc file này khi user hỏi "tech debt / scaling / performance".
+- (đã làm sau session) **Seed deterministic cho mọi Deepseek call (Option C)**: Thêm `seedFromHash(hash) = parseInt(hash.slice(0,7), 16)` vào `@tuvi/ai/limit.ts`. Mọi `client.chat.completions.create` truyền `seed` (cùng input → cùng output ~95-98%). Routes update: `/api/tuvi/[id]/analyze` (seed = birthHash + sectionIdx), `/api/tuvi/[id]/deep-readings` (seed = birthHash + year + nhánh offset), `/api/tu-tru/[id]/analyze` (seed = birthHash), personalize hoang-dao (seed = birthHash), daily horoscope (seed = `sha256(dateStr|groupTag).slice(0,7)`). Patterns codify rule trong `patterns.md` section "AI client". Mục đích: cache share-cross-user "chính danh" — không phải đông cứng random, mà memoize computation deterministic. Lợi ích thêm: debug dễ (reproduce by seed), A/B test prompt thuần.
+- (đã làm sau session) **Wrap hoang-dao calls qua `aiCall` + bump concurrency 16→64**: 2 file `daily-horoscope-server.ts` + `horoscope-personalize-server.ts` đang gọi `client.chat.completions.create` trực tiếp → vi phạm pattern CLAUDE.md "Mọi call PHẢI qua aiCall". Wrap lại, mark `finish_reason='length'` + schema fail là `status=500` để `withRetry` retry. Bump default `AI_CONCURRENCY` từ 16 → 64 trong `packages/ai/src/limit.ts` cho Deepseek paid tier. Codify rule vào `patterns.md` section "AI client".
+- (đã làm sau session) **Refactor DB hoang-dao về pattern 2 bảng** (migration `0005_refactor_hoang_dao_shared_cache.sql`): split `hoang_dao_charts` (submission per-user) + `hoang_dao_analyses` (shared cache PK birthHash) — match pattern Tu-Vi/Tu-Tru. 100 user cùng combo → 1 Deepseek call thay vì 100. Custom SQL backfill `birth_hash` qua `pgcrypto.digest()`, INSERT vào analyses dedup theo hash. Composite `(user_id, created_at)` index cho `charts`, `bat_tu_charts`, `hoang_dao_charts` (history listing index-only scan). Server `horoscope-personalize-server.ts` rewrite theo `resolveReading` + `ensureUserChart` parallel. Pattern codify vào `patterns.md` section "Data modeling — Shared AI cache pattern". Server `horoscope-personalize-server.ts` đổi sang DB-backed dedup per-user: tìm row có sẵn → trả luôn; miss → gọi Deepseek + INSERT ON CONFLICT + re-SELECT. Inflight Map cùng key chống race trong instance. Route trả `{ id, reading }`. `/lich-su` merge thêm `kind: 'hoang-dao'` (badge `#c8361d` chu sa, icon ♆, link query-param tới `/hoang-dao/luan-giai`). Header + empty state thêm CTA "Xem Hoàng Đạo".
+
+---
+
 ### 2026-05-12 — tối
 
 **Đang làm:** 4 mảng độc lập liên quan UX + persistence cho Tứ Trụ + homepage:

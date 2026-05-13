@@ -13,7 +13,6 @@ export default async function AdminUsersPage() {
       name: users.name,
       image: users.image,
       role: users.role,
-      balanceVnd: users.balanceVnd,
       proUntil: users.proUntil,
       createdAt: users.createdAt,
     })

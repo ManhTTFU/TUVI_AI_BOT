@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { analyzeDeepReadings } from '@tuvi/ai';
+import { analyzeDeepReadings, seedFromHash } from '@tuvi/ai';
 import type { ChartData, DeepReadingsData } from '@tuvi/core';
 import { getDb, charts, deepReadings } from '@tuvi/db';
 import { and, eq } from 'drizzle-orm';
@@ -50,10 +50,13 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
   }
 
   try {
+    // Seed = hash(birthHash) + year offset → cache key (birthHash, year) khác nhau
+    // → mỗi năm 1 reading deterministic riêng, không "đông cứng" thành cùng output.
     const data = await analyzeDeepReadings(
       chartRow.chartData as ChartData,
       birthYear,
       currentYear,
+      { seed: seedFromHash(chartRow.birthHash) + currentYear },
     );
 
     await db
