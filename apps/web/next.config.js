@@ -12,7 +12,17 @@ const nextConfig = {
     '@tuvi/ai',
     '@tuvi/astrology',
     '@tuvi/pdf',
+    '@tuvi/tarot',
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        pathname: '/metabismuth/tarot-json/**',
+      },
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',

@@ -12,7 +12,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   return {
-    title: `Lá số · Diễn Cầm Tam Thế`,
+    title: `Lá số · Vận Mệnh`,
     alternates: { canonical: `/tu-vi/${params.chartId}` },
     robots: { index: false, follow: false },
   };

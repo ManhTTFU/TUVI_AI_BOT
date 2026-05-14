@@ -11,10 +11,8 @@ declare module 'next-auth' {
     user: {
       id: string;
       role: 'user' | 'admin';
-      /** ISO string của thời điểm gói PRO hết hạn. null = chưa từng PRO. */
-      proUntil: string | null;
-      /** Derived: 'PRO' nếu proUntil > now, else 'NORMAL'. */
-      tier: 'PRO' | 'NORMAL';
+      /** Số dư ví VND realtime. Đọc DB mỗi request. */
+      balanceVnd: number;
     } & DefaultSession['user'];
   }
 }
@@ -81,26 +79,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'database' },
   callbacks: {
     async session({ session, user }) {
-      // Inject role + proUntil từ DB (read mỗi request để realtime).
+      // Inject role + balanceVnd từ DB (read mỗi request để realtime).
       const [u] = await db
         .select({
           role: users.role,
-          proUntil: users.proUntil,
+          balanceVnd: users.balanceVnd,
         })
         .from(users)
         .where(eq(users.id, user.id))
         .limit(1);
       if (session.user) {
         session.user.id = user.id;
-        // Auth.js v5 beta đôi khi không tự populate name/email/image từ adapter
-        // user vào session.user — gán tay để chắc chắn FE có avatar/tên.
         session.user.name = user.name ?? null;
         session.user.email = user.email ?? '';
         session.user.image = user.image ?? null;
         session.user.role = u?.role ?? 'user';
-        session.user.proUntil = u?.proUntil ? u.proUntil.toISOString() : null;
-        session.user.tier =
-          u?.proUntil && u.proUntil.getTime() > Date.now() ? 'PRO' : 'NORMAL';
+        session.user.balanceVnd = u?.balanceVnd ?? 0;
       }
       return session;
     },

@@ -1,10 +1,11 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { getDb, bankConfig, users, subscriptionPlans } from '@tuvi/db';
-import { asc, eq } from 'drizzle-orm';
+import { getDb, bankConfig, users } from '@tuvi/db';
+import { eq } from 'drizzle-orm';
 import WalletClient from './WalletClient';
+import { getReadingPriceVnd, MIN_TOPUP_VND } from '@/lib/wallet';
 
-export const metadata = { title: 'Ví của tôi · Diễn Cầm Tam Thế' };
+export const metadata = { title: 'Ví của tôi · Vận Mệnh' };
 export const dynamic = 'force-dynamic';
 
 export default async function WalletPage() {
@@ -13,7 +14,7 @@ export default async function WalletPage() {
 
   const db = getDb();
   const [u] = await db
-    .select({ proUntil: users.proUntil })
+    .select({ balanceVnd: users.balanceVnd })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
@@ -24,25 +25,16 @@ export default async function WalletPage() {
     .where(eq(bankConfig.key, 'default'))
     .limit(1);
 
-  const plans = await db
-    .select()
-    .from(subscriptionPlans)
-    .orderBy(asc(subscriptionPlans.sortOrder));
+  const readingPrice = await getReadingPriceVnd();
 
   return (
     <WalletClient
-      initialProUntil={u?.proUntil ? u.proUntil.toISOString() : null}
+      initialBalance={u?.balanceVnd ?? 0}
       bank={cfg ?? null}
-      plans={plans.map((p) => ({
-        plan: p.plan,
-        amountVnd: p.amountVnd,
-        durationDays: p.durationDays,
-        label: p.label,
-        description: p.description,
-        sortOrder: p.sortOrder,
-      }))}
       userName={session.user.name ?? session.user.email ?? ''}
       userEmail={session.user.email ?? ''}
+      minTopup={MIN_TOPUP_VND}
+      readingPrice={readingPrice}
     />
   );
 }

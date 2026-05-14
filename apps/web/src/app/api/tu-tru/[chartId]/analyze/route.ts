@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
-import { getDb, users, batTuCharts, batTuAnalyses } from '@tuvi/db';
+import { getDb, batTuCharts, batTuAnalyses } from '@tuvi/db';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { isProActive } from '@/lib/tier';
 import { analyzeBatTu, seedFromHash } from '@tuvi/ai';
 import { formatBatTuForAI, type BatTuChart } from '@/lib/bat-tu';
 
@@ -17,18 +16,8 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
 
   const db = getDb();
 
-  const [u] = await db
-    .select({ proUntil: users.proUntil })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-  if (!u || !isProActive(u.proUntil)) {
-    return NextResponse.json(
-      { ok: false, error: 'Cần gói PRO để xem luận giải Bát Tự', code: 'PRO_REQUIRED' },
-      { status: 402 },
-    );
-  }
-
+  // Không gate / không charge ở đây — đã charge ở /submit. Endpoint này là
+  // "lấy luận giải cho chart đã tồn tại của tôi", chỉ check ownership.
   const [chartRow] = await db
     .select()
     .from(batTuCharts)
@@ -63,7 +52,7 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
 
     return NextResponse.json({ ok: true, markdown, cached: false });
   } catch (e) {
-    const msg = (e as Error).message ?? 'Lỗi không xác định khi gọi AI';
+    const msg = (e as Error).message ?? 'Lỗi không xác định khi sinh luận giải';
     console.error(`[bat-tu:analyze] ${msg}`);
     return NextResponse.json({ ok: false, error: msg }, { status: 502 });
   }

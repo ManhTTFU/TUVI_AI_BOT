@@ -206,7 +206,7 @@ export default function TuTruResultView({
         <div className="rounded-2xl border border-[#c89146]/45 bg-[#fbf3e2]/85 p-6 text-center text-[#4a3a30]">
           <div className="inline-flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-[#c89146] animate-pulse" />
-            AI đang luận giải Bát Tự — bám vào dụng thần, kỵ thần, xung hợp…
+            Hệ thống đang luận giải Bát Tự — bám vào dụng thần, kỵ thần, xung hợp…
           </div>
           <div className="mt-1 text-[12px] text-[#7a6a52]">
             Mất khoảng 30–60 giây tùy độ tải.

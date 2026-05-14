@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getDb, users } from '@tuvi/db';
-import { eq } from 'drizzle-orm';
-import { isProActive } from '@/lib/tier';
+import { chargeReading, InsufficientBalanceError } from '@/lib/wallet';
 import {
   getPersonalizedHoroscope,
   type Gender,
@@ -21,20 +19,6 @@ export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Chưa đăng nhập' }, { status: 401 });
-  }
-
-  // PRO gate: chỉ tài khoản PRO mới được luận giải cá nhân hóa.
-  const db = getDb();
-  const [u] = await db
-    .select({ proUntil: users.proUntil })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-  if (!u || !isProActive(u.proUntil)) {
-    return NextResponse.json(
-      { ok: false, error: 'Cần tài khoản PRO để xem luận giải cá nhân', code: 'PRO_REQUIRED' },
-      { status: 402 },
-    );
   }
 
   let body: Record<string, unknown>;
@@ -62,6 +46,30 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Mục tiêu không hợp lệ' }, { status: 400 });
   }
 
+  // Charge 5k trước khi gọi AI. Tarot/Hoàng Đạo cache cross-user, nhưng user
+  // vẫn trả 5k cho luận giải cá nhân hóa của họ — không phân biệt cache hit/miss.
+  let charge: Awaited<ReturnType<typeof chargeReading>>;
+  try {
+    charge = await chargeReading(session.user.id, {
+      service: 'hoang-dao',
+      metadata: { signEn, gender, status, goal },
+    });
+  } catch (e) {
+    if (e instanceof InsufficientBalanceError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Số dư không đủ để xem luận giải cá nhân',
+          code: 'INSUFFICIENT_BALANCE',
+          balanceVnd: e.balance,
+          requiredVnd: e.required,
+        },
+        { status: 402 },
+      );
+    }
+    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
+  }
+
   try {
     const result = await getPersonalizedHoroscope(session.user.id, {
       signEn,
@@ -69,7 +77,13 @@ export async function POST(req: Request) {
       status,
       goal,
     });
-    return NextResponse.json({ ok: true, id: result.id, reading: result.reading });
+    return NextResponse.json({
+      ok: true,
+      id: result.id,
+      reading: result.reading,
+      balanceVnd: charge.balanceAfter,
+      chargedVnd: charge.amountCharged,
+    });
   } catch (e) {
     const msg = (e as Error).message ?? 'Lỗi không xác định';
     console.error(`[horoscope/personalize] ${msg}`);

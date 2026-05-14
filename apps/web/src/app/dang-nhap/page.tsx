@@ -6,7 +6,7 @@ import LoginClient from './LoginClient';
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
 export const metadata = {
-  title: 'Đăng nhập · Diễn Cầm Tam Thế',
+  title: 'Đăng nhập · Vận Mệnh',
 };
 
 export default async function LoginPage({
@@ -53,7 +53,7 @@ export default async function LoginPage({
 
         <p className="mt-6 text-center text-[12px] text-[#4a3a30] leading-relaxed">
           Bằng việc đăng nhập, bạn đồng ý với điều khoản sử dụng và chính sách
-          bảo mật của Diễn Cầm Tam Thế.
+          bảo mật của Vận Mệnh.
         </p>
       </div>
     </div>

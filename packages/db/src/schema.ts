@@ -15,6 +15,9 @@ import {
 import { sql } from 'drizzle-orm';
 
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
+// 'subscription' và 'admin_extend' giữ lại cho historical rows từ model PRO cũ
+// (Postgres không hỗ trợ drop enum value khi còn row dùng). Code mới KHÔNG tạo
+// hai loại này — chỉ dùng topup/charge/refund/admin_credit.
 export const txTypeEnum = pgEnum('tx_type', [
   'topup',
   'charge',
@@ -25,7 +28,6 @@ export const txTypeEnum = pgEnum('tx_type', [
 ]);
 export const txStatusEnum = pgEnum('tx_status', ['pending', 'completed', 'rejected', 'cancelled']);
 export const chartActionEnum = pgEnum('chart_action', ['analyze', 'deep_readings', 'combo']);
-export const planEnum = pgEnum('plan', ['monthly', 'semi_annual', 'annual', 'lifetime']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auth.js tables (theo chuẩn @auth/drizzle-adapter pg dialect)
@@ -41,10 +43,11 @@ export const users = pgTable('users', {
   image: text('image'),
   role: userRoleEnum('role').notNull().default('user'),
   /**
-   * Tier PRO hết hạn lúc nào. null = chưa từng PRO (NORMAL).
-   * pro_until > now → PRO. pro_until = year 9999 → lifetime.
+   * Số dư ví VND. Cache denormalized của ledger `transactions` — source of truth
+   * vẫn là ledger; mỗi lần charge/topup phải UPDATE balance + INSERT row trong
+   * cùng db.transaction() để giữ atomic. Backfill ban đầu trong migration 0008.
    */
-  proUntil: timestamp('pro_until', { mode: 'date' }),
+  balanceVnd: bigint('balance_vnd', { mode: 'number' }).notNull().default(0),
   createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
 });
 
@@ -234,30 +237,14 @@ export const bankConfig = pgTable('bank_config', {
 });
 
 /**
- * Bảng giá (LEGACY — model per-chart cũ). Giữ lại để rollback nếu cần.
+ * Bảng giá hành động — chỉ còn 1 row 'analyze' = giá 1 lần luận giải (5k VND).
+ * Tách ra bảng để admin có thể đổi giá runtime mà không phải redeploy. Code
+ * lookup qua `wallet.getReadingPriceVnd()` (fallback constant nếu DB rỗng).
  */
 export const prices = pgTable('prices', {
   action: chartActionEnum('action').primaryKey(),
   amountVnd: bigint('amount_vnd', { mode: 'number' }).notNull(),
   description: text('description'),
-});
-
-/**
- * Gói đăng ký PRO. Default seed bằng migration:
- *  - monthly:      20.000đ → 30 ngày
- *  - semi_annual:  50.000đ → 180 ngày
- *  - annual:      100.000đ → 365 ngày
- *  - lifetime:    500.000đ → vĩnh viễn (durationDays=null)
- */
-export const subscriptionPlans = pgTable('subscription_plans', {
-  plan: planEnum('plan').primaryKey(),
-  amountVnd: bigint('amount_vnd', { mode: 'number' }).notNull(),
-  /** Số ngày mở rộng pro_until. null = trọn đời. */
-  durationDays: integer('duration_days'),
-  label: text('label').notNull(),
-  description: text('description'),
-  /** Hiển thị thứ tự trên UI (asc) */
-  sortOrder: integer('sort_order').notNull().default(0),
 });
 
 /**
@@ -314,30 +301,57 @@ export const dailyHoroscope = pgTable('daily_horoscope', {
 });
 
 /**
- * Lịch sử mua gói. Mỗi lần admin approve topup gói → 1 row ở đây + extend pro_until.
+ * Submission record cho Tarot. 1 row mỗi phiên rút bài (cùng user có thể rút
+ * cùng combo nhiều lần — mỗi phiên là 1 row riêng, KHÔNG dedup theo hash).
+ *
+ * Lý do khác `hoang_dao_charts` (unique user+hash): hoàng đạo input cố định
+ * (4 axes) nên 1 user 1 combo logic = 1 lịch sử. Tarot là rút ngẫu nhiên 78
+ * chọn N, không gian combination quá lớn (~12M cho n=5) → unique không hữu
+ * ích, user có thể muốn rút lại cùng câu hỏi nhiều lần để xem khác biệt.
+ *
+ * Hash: sha256(sortedCards|reversed|field).slice(0,16) — share AI reading
+ * cache cross-user. Cùng tập lá + cùng field → cùng base reading.
+ * name + question đi qua personalize layer riêng (KHÔNG cache).
  */
-export const subscriptionPurchases = pgTable(
-  'subscription_purchases',
+export const tarotCharts = pgTable(
+  'tarot_charts',
   {
-    id: text('id')
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
+    id: text('id').primaryKey().default(sql`gen_random_uuid()`),
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    plan: planEnum('plan').notNull(),
-    amountVnd: bigint('amount_vnd', { mode: 'number' }).notNull(),
-    transactionId: text('transaction_id').references(() => transactions.id, {
-      onDelete: 'set null',
-    }),
-    /** pro_until sau khi áp dụng purchase này (snapshot, không update lùi). */
-    proUntilAfter: timestamp('pro_until_after', { mode: 'date' }),
+    name: text('name').notNull(),
+    gender: varchar('gender', { length: 8 }).notNull(), // 'male' | 'female'
+    field: varchar('field', { length: 16 }).notNull(), // love|career|finance|health|general
+    question: text('question'), // optional câu hỏi cụ thể
+    numCards: integer('num_cards').notNull(), // 1|3|5|7|10
+    cards: jsonb('cards').notNull(), // DrawnCard[] = [{cardId, reversed}, ...]
+    /** sha256(sortedCards|reversed|field).slice(0,16) */
+    readingHash: varchar('reading_hash', { length: 32 }).notNull(),
     createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
   },
   (t) => ({
-    userIdx: index('sub_purchase_user_idx').on(t.userId),
+    userCreatedIdx: index('tarot_charts_user_created_idx').on(t.userId, t.createdAt),
+    hashIdx: index('tarot_charts_hash_idx').on(t.readingHash),
   }),
 );
+
+/**
+ * Cache AI reading Tarot. PK = readingHash → share cross-user.
+ * Reading lưu cả per-card paragraphs + overall markdown.
+ * Personalize layer (gọi tên user, trả lời câu hỏi) chạy per-request, KHÔNG cache ở đây.
+ */
+export const tarotReadings = pgTable('tarot_readings', {
+  readingHash: varchar('reading_hash', { length: 32 }).primaryKey(),
+  /** Snapshot lá rút để regenerate khi miss + audit. */
+  cardsJson: jsonb('cards_json').notNull(),
+  field: varchar('field', { length: 16 }).notNull(),
+  /** [{cardId, reversed, paragraph (VN markdown)}] — 1 entry mỗi lá. */
+  perCard: jsonb('per_card').notNull(),
+  /** Markdown tổng kết 5-7 câu cho cả trải bài. */
+  overallMarkdown: text('overall_markdown').notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).notNull().defaultNow(),
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -352,9 +366,8 @@ export type Transaction = typeof transactions.$inferSelect;
 export type NewTransaction = typeof transactions.$inferInsert;
 export type BankConfig = typeof bankConfig.$inferSelect;
 export type Price = typeof prices.$inferSelect;
-export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
-export type SubscriptionPurchase = typeof subscriptionPurchases.$inferSelect;
 export type DailyHoroscopeRow = typeof dailyHoroscope.$inferSelect;
 export type HoangDaoChartRow = typeof hoangDaoCharts.$inferSelect;
 export type HoangDaoAnalysisRow = typeof hoangDaoAnalyses.$inferSelect;
-export type Plan = (typeof planEnum.enumValues)[number]; // 'monthly' | 'semi_annual' | 'annual' | 'lifetime'
+export type TarotChartRow = typeof tarotCharts.$inferSelect;
+export type TarotReadingRow = typeof tarotReadings.$inferSelect;

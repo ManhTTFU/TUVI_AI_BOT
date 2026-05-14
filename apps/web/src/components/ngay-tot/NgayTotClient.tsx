@@ -494,7 +494,7 @@ function DeepReading() {
     setLoading(true);
     setText('');
     try {
-      // TODO: thay bằng call thật tới AI endpoint, ví dụ:
+      // TODO: thay bằng call thật tới endpoint luận giải, ví dụ:
       //   const res = await fetch('/api/tuvi/ngay-tot/luangiai', {
       //     method: 'POST',
       //     headers: { 'Content-Type': 'application/json' },
@@ -502,7 +502,7 @@ function DeepReading() {
       //   });
       //   const { text } = await res.json();
       //   setText(text);
-      throw new Error('AI endpoint chưa wire — dùng fallback');
+      throw new Error('Endpoint chưa wire — dùng fallback');
     } catch {
       setText(fallback);
     } finally {
@@ -592,7 +592,7 @@ function DeepReading() {
                   className="text-[#0f0a08] mb-4 italic font-serif text-lg"
                   style={{ fontFamily: SERIF_FONT }}
                 >
-                  Diễn Cầm sẽ luận giải sâu sắc về ngày này — kết hợp Can Chi,
+                  Hệ thống sẽ luận giải sâu sắc về ngày này — kết hợp Can Chi,
                   sao chiếu và phong thủy.
                 </p>
                 <button
@@ -636,7 +636,7 @@ function DeepReading() {
                   <div className="text-xs text-[#0f0a08]">
                     Diễn giải bởi{' '}
                     <span className="text-[#5a3a1a] font-semibold italic">
-                      Diễn Cầm
+                      Vận Mệnh
                     </span>{' '}
                     · {dateStr}
                   </div>

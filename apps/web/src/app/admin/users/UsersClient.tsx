@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { daysRemaining, isLifetime, isProActive } from '@/lib/tier';
-import type { Plan } from '@tuvi/db';
+import { formatVnd } from '@/lib/money';
+import { toast } from '@/components/ui/toast';
+import Pagination from '@/components/Pagination';
 
 type AdminUser = {
   id: string;
@@ -11,85 +13,157 @@ type AdminUser = {
   name: string | null;
   image: string | null;
   role: 'user' | 'admin';
-  proUntil: string | null;
+  balanceVnd: number;
   createdAt: string;
 };
 
-const PLAN_LABELS: Record<Plan, string> = {
-  monthly: 'Tháng (20k)',
-  semi_annual: 'Nửa năm (50k)',
-  annual: 'Năm (100k)',
-  lifetime: 'Trọn đời (500k)',
-};
+const QUICK_AMOUNTS = [20_000, 50_000, 100_000, 200_000, 500_000];
 
-export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[] }) {
+export default function UsersClient({
+  initialUsers,
+  page,
+  pageSize,
+  total,
+  searchQuery,
+}: {
+  initialUsers: AdminUser[];
+  page: number;
+  pageSize: number;
+  total: number;
+  searchQuery: string;
+}) {
   const { data: session } = useSession();
   const meId = session?.user?.id ?? '';
-  const [users, setUsers] = useState(initialUsers);
-  const [filter, setFilter] = useState('');
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  // Hiển thị `initialUsers` trực tiếp từ server (đã filter + paginate).
+  // Mutation (credit/debit/role) update array tại chỗ — không cần reload toàn page.
+  const [usersList, setUsersList] = useState(initialUsers);
+  useEffect(() => setUsersList(initialUsers), [initialUsers]);
+
+  // Search input — debounce 350ms rồi push URL, server re-fetch.
+  const [query, setQuery] = useState(searchQuery);
+  useEffect(() => {
+    if (query === searchQuery) return;
+    const t = setTimeout(() => {
+      const np = new URLSearchParams(params);
+      if (query.trim()) np.set('q', query.trim());
+      else np.delete('q');
+      np.set('page', '1');
+      startTransition(() => router.push(`${pathname}?${np.toString()}`));
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   const [error, setError] = useState<string | null>(null);
   const [busyRole, setBusyRole] = useState<string | null>(null);
-  const [extendFor, setExtendFor] = useState<AdminUser | null>(null);
-  const [extendPlan, setExtendPlan] = useState<Plan>('monthly');
-  const [extendNote, setExtendNote] = useState('');
-  const [extendBusy, setExtendBusy] = useState(false);
-  const [revokeBusy, setRevokeBusy] = useState<string | null>(null);
 
-  const filtered = users.filter((u) => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      u.email.toLowerCase().includes(q) ||
-      (u.name ?? '').toLowerCase().includes(q) ||
-      u.id.toLowerCase().includes(q)
+  const [creditFor, setCreditFor] = useState<AdminUser | null>(null);
+  const [creditAmount, setCreditAmount] = useState<string>('20000');
+  const [creditNote, setCreditNote] = useState('');
+  const [creditBusy, setCreditBusy] = useState(false);
+
+  const [debitFor, setDebitFor] = useState<AdminUser | null>(null);
+  const [debitAmount, setDebitAmount] = useState<string>('0');
+  const [debitNote, setDebitNote] = useState('');
+  const [debitBusy, setDebitBusy] = useState(false);
+
+  const submitCredit = async () => {
+    if (!creditFor) return;
+    const amount = Number(creditAmount);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setError('Số tiền không hợp lệ');
+      return;
+    }
+    // Optimistic: update row + đóng modal NGAY, không đợi server. API round-trip
+    // Neon DB ~200-500ms → user cảm thấy "lâu" nếu chờ. Pattern này khớp với
+    // optimistic UI ở client charge (xem TarotClient/TuviClient).
+    const target = creditFor;
+    const oldBalance = target.balanceVnd;
+    const optimisticBalance = oldBalance + amount;
+    const note = creditNote || null;
+
+    setUsersList((prev) =>
+      prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: optimisticBalance } : u)),
     );
-  });
-
-  const submitExtend = async () => {
-    if (!extendFor) return;
-    setExtendBusy(true);
+    setCreditFor(null);
+    setCreditAmount('20000');
+    setCreditNote('');
     setError(null);
+    setCreditBusy(true);
+    toast.success(`Đã cộng ${formatVnd(amount)} cho ${target.email}`);
+
     try {
       const res = await fetch('/api/admin/users/extend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: extendFor.id,
-          plan: extendPlan,
-          note: extendNote || null,
-        }),
+        body: JSON.stringify({ userId: target.id, amountVnd: amount, note }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === extendFor.id ? { ...u, proUntil: data.proUntil } : u)),
+      // Sync số dư thật từ server (phòng trường hợp concurrent change từ tab khác).
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: data.balanceVnd } : u)),
       );
-      setExtendFor(null);
-      setExtendPlan('monthly');
-      setExtendNote('');
     } catch (e) {
-      setError((e as Error).message);
+      // Revert optimistic
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: oldBalance } : u)),
+      );
+      toast.error(`Cộng tiền thất bại: ${(e as Error).message}`);
     } finally {
-      setExtendBusy(false);
+      setCreditBusy(false);
     }
   };
 
-  const revokePro = async (u: AdminUser) => {
-    if (!confirm(`Hủy gói PRO của ${u.email}? Sau khi hủy, user về NORMAL ngay lập tức.`)) return;
-    setRevokeBusy(u.id);
+  const submitDebit = async () => {
+    if (!debitFor) return;
+    const amount = Number(debitAmount);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      setError('Số tiền không hợp lệ');
+      return;
+    }
+    if (amount > debitFor.balanceVnd) {
+      setError(`User chỉ còn ${formatVnd(debitFor.balanceVnd)} — không trừ quá số dư`);
+      return;
+    }
+    const target = debitFor;
+    const oldBalance = target.balanceVnd;
+    const optimisticBalance = oldBalance - amount;
+    const note = debitNote || null;
+
+    setUsersList((prev) =>
+      prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: optimisticBalance } : u)),
+    );
+    setDebitFor(null);
+    setDebitAmount('0');
+    setDebitNote('');
+    setError(null);
+    setDebitBusy(true);
+    toast.success(`Đã trừ ${formatVnd(amount)} của ${target.email}`);
+
     try {
       const res = await fetch('/api/admin/users/revoke-pro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: u.id }),
+        body: JSON.stringify({ userId: target.id, amountVnd: amount, note }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, proUntil: null } : x)));
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: data.balanceVnd } : u)),
+      );
     } catch (e) {
-      alert('Lỗi: ' + (e as Error).message);
+      setUsersList((prev) =>
+        prev.map((u) => (u.id === target.id ? { ...u, balanceVnd: oldBalance } : u)),
+      );
+      toast.error(`Trừ tiền thất bại: ${(e as Error).message}`);
     } finally {
-      setRevokeBusy(null);
+      setDebitBusy(false);
     }
   };
 
@@ -113,7 +187,7 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
       });
       const data = await res.json();
       if (!res.ok || !data.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: data.role } : x)));
+      setUsersList((prev) => prev.map((x) => (x.id === u.id ? { ...x, role: data.role } : x)));
     } catch (e) {
       alert('Lỗi: ' + (e as Error).message);
     } finally {
@@ -125,30 +199,35 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
     <div className="rounded-3xl border border-[#4a6c7a]/45 bg-[#fbf3e2]/95 p-5 md:p-7">
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
         <h2 className="text-xl font-semibold text-[#0f0a08]">
-          Người dùng ({filtered.length}/{users.length})
+          Người dùng <span className="text-[#4a3a30] font-normal text-[14px]">({total})</span>
         </h2>
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Tìm theo email / tên / id"
-          className="h-10 px-4 rounded-full border border-[#4a6c7a]/35 bg-[#fbf3e2] text-[13px] w-72 max-w-full focus:outline-none focus:border-[#4a6c7a]"
-        />
+        <div className="relative w-72 max-w-full">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Tìm theo email / tên / id"
+            className="h-10 w-full pl-4 pr-9 rounded-full border border-[#4a6c7a]/35 bg-[#fbf3e2] text-[13px] focus:outline-none focus:border-[#4a6c7a]"
+          />
+          {isPending && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#c89146] animate-pulse" />
+          )}
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className={`overflow-x-auto transition-opacity ${isPending ? 'opacity-60' : ''}`}>
         <table className="w-full text-[13.5px]">
           <thead>
             <tr className="border-b border-[#4a6c7a]/30 text-left text-[#4a3a30] uppercase tracking-[0.15em] text-[10px]">
               <th className="py-2 pr-3">User</th>
               <th className="py-2 pr-3">Email</th>
               <th className="py-2 pr-3">Role</th>
-              <th className="py-2 pr-3">Gói PRO</th>
+              <th className="py-2 pr-3 text-right">Số dư</th>
               <th className="py-2 pr-3">Tạo lúc</th>
               <th className="py-2 pr-3 text-right">Hành động</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((u) => (
+            {usersList.map((u) => (
               <tr key={u.id} className="border-b border-[#4a6c7a]/15 hover:bg-[#fbf3e2]/60">
                 <td className="py-2.5 pr-3">
                   <div className="flex items-center gap-2 min-w-0">
@@ -185,21 +264,14 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
                     {busyRole === u.id ? '…' : u.role}
                   </button>
                 </td>
-                <td className="py-2.5 pr-3">
-                  {isProActive(u.proUntil) ? (
-                    <div>
-                      <span className="inline-block px-2 py-0.5 rounded-full bg-[#c8361d]/15 text-[#c8361d] text-[10px] tracking-wider font-bold uppercase border border-[#c8361d]/40">
-                        PRO
-                      </span>
-                      <div className="text-[11px] text-[#4a3a30] mt-0.5">
-                        {isLifetime(u.proUntil)
-                          ? 'Trọn đời'
-                          : `Còn ${daysRemaining(u.proUntil)} ngày`}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-[#4a3a30]">NORMAL</span>
-                  )}
+                <td className="py-2.5 pr-3 text-right">
+                  <span
+                    className={`font-bold tabular-nums ${
+                      u.balanceVnd >= 5000 ? 'text-[#3a8a5e]' : 'text-[#c8361d]'
+                    }`}
+                  >
+                    {formatVnd(u.balanceVnd)}
+                  </span>
                 </td>
                 <td className="py-2.5 pr-3 text-[#4a3a30] text-[12px]">
                   {new Date(u.createdAt).toLocaleDateString('vi-VN')}
@@ -209,34 +281,37 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
                     <button
                       type="button"
                       onClick={() => {
-                        setExtendFor(u);
-                        setExtendPlan('monthly');
-                        setExtendNote('');
+                        setCreditFor(u);
+                        setCreditAmount('20000');
+                        setCreditNote('');
                         setError(null);
                       }}
-                      className="px-3 py-1.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[12px] hover:bg-[#a52a16] transition"
+                      className="px-3 py-1.5 rounded-full bg-[#3a8a5e] text-[#fbf3e2] text-[12px] hover:bg-[#2a6e48] transition"
                     >
-                      Tặng gói
+                      Cộng tiền
                     </button>
-                    {isProActive(u.proUntil) && u.id !== meId && (
+                    {u.balanceVnd > 0 && u.id !== meId && (
                       <button
                         type="button"
-                        onClick={() => revokePro(u)}
-                        disabled={revokeBusy === u.id}
-                        title="Hủy gói PRO của user này, đặt về NORMAL"
-                        className="px-3 py-1.5 rounded-full border border-[#c8361d]/45 text-[#c8361d] text-[12px] font-semibold hover:bg-[#c8361d]/10 transition disabled:opacity-50"
+                        onClick={() => {
+                          setDebitFor(u);
+                          setDebitAmount(String(Math.min(u.balanceVnd, 5000)));
+                          setDebitNote('');
+                          setError(null);
+                        }}
+                        className="px-3 py-1.5 rounded-full border border-[#c8361d]/45 text-[#c8361d] text-[12px] font-semibold hover:bg-[#c8361d]/10 transition"
                       >
-                        {revokeBusy === u.id ? '…' : 'Hủy PRO'}
+                        Trừ tiền
                       </button>
                     )}
                   </div>
                 </td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {usersList.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-[#4a3a30] italic">
-                  Không có user nào.
+                  {searchQuery ? `Không có user nào khớp "${searchQuery}".` : 'Không có user nào.'}
                 </td>
               </tr>
             )}
@@ -244,88 +319,148 @@ export default function UsersClient({ initialUsers }: { initialUsers: AdminUser[
         </table>
       </div>
 
-      {extendFor && (
-        <div
-          className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
-          onClick={() => !extendBusy && setExtendFor(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl border border-[#4a6c7a]/55 bg-[#fbf3e2] p-6 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold mb-1">Tặng gói PRO</h3>
-            <p className="text-[12.5px] text-[#4a3a30] mb-4">
-              User: <strong>{extendFor.email}</strong>
-              {isProActive(extendFor.proUntil) && (
-                <>
-                  {' '}
-                  · Gói hiện tại{' '}
-                  <strong className="text-[#c8361d]">PRO</strong>{' '}
-                  {isLifetime(extendFor.proUntil)
-                    ? '(Trọn đời)'
-                    : `(còn ${daysRemaining(extendFor.proUntil)} ngày)`}
-                </>
-              )}
-            </p>
-            <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mb-1">
-              Chọn gói
-            </label>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              {(Object.keys(PLAN_LABELS) as Plan[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setExtendPlan(p)}
-                  className={`p-2 rounded-xl border-2 text-[12px] font-semibold transition ${
-                    extendPlan === p
-                      ? 'border-[#c8361d] bg-[#c8361d]/10 text-[#c8361d]'
-                      : 'border-[#4a6c7a]/30 bg-[#fbf3e2]/85 text-[#0f0a08] hover:border-[#4a6c7a]/55'
-                  }`}
-                >
-                  {PLAN_LABELS[p]}
-                </button>
-              ))}
-            </div>
-            <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mb-1">
-              Ghi chú (tuỳ chọn)
-            </label>
-            <input
-              value={extendNote}
-              onChange={(e) => setExtendNote(e.target.value)}
-              placeholder="VD: Tặng khách VIP / bù lỗi sai admin..."
-              className="w-full h-11 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] focus:outline-none focus:border-[#4a6c7a]"
-            />
-            {error && (
-              <div className="mt-3 rounded-xl border border-[#c8361d]/40 bg-[#c8361d]/10 px-3 py-2 text-[#c8361d] text-[13px]">
-                ⚠ {error}
-              </div>
-            )}
-            <p className="mt-3 text-[12px] text-[#4a3a30]">
-              Thời hạn sẽ cộng dồn vào gói hiện tại của user (nếu còn). Trọn đời
-              sẽ ghi đè. Realtime SSE.
-            </p>
-            <div className="mt-4 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setExtendFor(null)}
-                disabled={extendBusy}
-                className="px-4 py-2 rounded-full border border-[#4a6c7a]/40 hover:bg-[#fbf3e2]/60 text-[13px]"
-              >
-                Huỷ
-              </button>
-              <button
-                type="button"
-                onClick={submitExtend}
-                disabled={extendBusy}
-                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#c8361d] to-[#5a3a1a] text-[#fbf3e2] text-[13px] font-semibold disabled:opacity-50"
-              >
-                {extendBusy ? 'Đang xử lý…' : 'Xác nhận tặng'}
-              </button>
-            </div>
-          </div>
-        </div>
+      <Pagination page={page} pageSize={pageSize} total={total} />
+
+      {creditFor && (
+        <BalanceModal
+          title="Cộng tiền vào ví user"
+          user={creditFor}
+          amount={creditAmount}
+          setAmount={setCreditAmount}
+          note={creditNote}
+          setNote={setCreditNote}
+          busy={creditBusy}
+          error={error}
+          onCancel={() => setCreditFor(null)}
+          onSubmit={submitCredit}
+          submitLabel="Cộng tiền"
+          submitColor="from-[#3a8a5e] to-[#2a6e48]"
+        />
       )}
 
+      {debitFor && (
+        <BalanceModal
+          title="Trừ tiền khỏi ví user"
+          user={debitFor}
+          amount={debitAmount}
+          setAmount={setDebitAmount}
+          note={debitNote}
+          setNote={setDebitNote}
+          busy={debitBusy}
+          error={error}
+          onCancel={() => setDebitFor(null)}
+          onSubmit={submitDebit}
+          submitLabel="Trừ tiền"
+          submitColor="from-[#c8361d] to-[#5a3a1a]"
+        />
+      )}
+    </div>
+  );
+}
+
+function BalanceModal({
+  title,
+  user,
+  amount,
+  setAmount,
+  note,
+  setNote,
+  busy,
+  error,
+  onCancel,
+  onSubmit,
+  submitLabel,
+  submitColor,
+}: {
+  title: string;
+  user: { email: string; balanceVnd: number };
+  amount: string;
+  setAmount: (s: string) => void;
+  note: string;
+  setNote: (s: string) => void;
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onSubmit: () => void;
+  submitLabel: string;
+  submitColor: string;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={() => !busy && onCancel()}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border border-[#4a6c7a]/55 bg-[#fbf3e2] p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="text-lg font-semibold mb-1">{title}</h3>
+        <p className="text-[12.5px] text-[#4a3a30] mb-4">
+          User: <strong>{user.email}</strong> · Số dư hiện tại:{' '}
+          <strong className="text-[#5a3a1a]">{formatVnd(user.balanceVnd)}</strong>
+        </p>
+
+        <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mb-1">
+          Số tiền (VND)
+        </label>
+        <div className="grid grid-cols-5 gap-2 mb-2">
+          {QUICK_AMOUNTS.map((a) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => setAmount(String(a))}
+              className={`py-1.5 rounded-lg text-[11px] font-semibold border ${
+                Number(amount) === a
+                  ? 'border-[#5a3a1a] bg-[#f5e3c0] text-[#5a3a1a]'
+                  : 'border-[#4a6c7a]/30 bg-[#fbf3e2] text-[#0f0a08] hover:border-[#4a6c7a]/55'
+              }`}
+            >
+              {a / 1000}k
+            </button>
+          ))}
+        </div>
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))}
+          placeholder="Số tiền"
+          className="w-full h-11 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] font-mono text-lg focus:outline-none focus:border-[#4a6c7a]"
+        />
+        <label className="block text-[11px] tracking-[0.2em] uppercase text-[#4a3a30] font-semibold mt-3 mb-1">
+          Ghi chú (tuỳ chọn)
+        </label>
+        <input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="VD: Tặng khách VIP / Hoàn lỗi sai admin..."
+          className="w-full h-11 px-4 rounded-2xl border border-[#4a6c7a]/35 bg-[#fbf3e2] focus:outline-none focus:border-[#4a6c7a]"
+        />
+        {error && (
+          <div className="mt-3 rounded-xl border border-[#c8361d]/40 bg-[#c8361d]/10 px-3 py-2 text-[#c8361d] text-[13px]">
+            ⚠ {error}
+          </div>
+        )}
+        <p className="mt-3 text-[12px] text-[#4a3a30]">
+          Thay đổi áp dụng realtime qua SSE. Ghi vào ledger transactions.
+        </p>
+        <div className="mt-4 flex gap-2 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="px-4 py-2 rounded-full border border-[#4a6c7a]/40 hover:bg-[#fbf3e2]/60 text-[13px]"
+          >
+            Huỷ
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={busy}
+            className={`px-5 py-2 rounded-full bg-gradient-to-r ${submitColor} text-[#fbf3e2] text-[13px] font-semibold disabled:opacity-50`}
+          >
+            {busy ? 'Đang xử lý…' : submitLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

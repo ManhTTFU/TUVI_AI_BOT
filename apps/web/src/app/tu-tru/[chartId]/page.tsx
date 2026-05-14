@@ -12,7 +12,7 @@ interface PageProps {
 }
 
 export const metadata: Metadata = {
-  title: 'Tứ Trụ Bát Tự · Diễn Cầm Tam Thế',
+  title: 'Tứ Trụ Bát Tự · Vận Mệnh',
   robots: { index: false, follow: false },
 };
 

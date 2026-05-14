@@ -143,9 +143,9 @@ async function callDeepseek(
     });
     const finishReason = completion.choices[0]?.finish_reason;
     const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error('Deepseek không trả lời');
+    if (!text) throw new Error('Hệ thống không trả lời');
     if (finishReason === 'length') {
-      const err = new Error(`Deepseek bị cắt do max_tokens (${label}); thử retry`) as Error & {
+      const err = new Error(`Hệ thống bị cắt do max_tokens (${label}); thử retry`) as Error & {
         status: number;
       };
       err.status = 500;

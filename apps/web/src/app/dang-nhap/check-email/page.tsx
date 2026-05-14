@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
-export const metadata = { title: 'Kiểm tra email · Diễn Cầm Tam Thế' };
+export const metadata = { title: 'Kiểm tra email · Vận Mệnh' };
 
 export default function CheckEmail() {
   return (

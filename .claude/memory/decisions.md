@@ -20,6 +20,54 @@
 
 <!-- Entry mới thêm ở TRÊN cùng (mới nhất đầu tiên) -->
 
+**Date:** 2026-05-14
+**Module:** db + web (full-stack billing refactor)
+**File:** packages/db/migrations/0008_wallet_pay_per_use.sql, packages/db/src/schema.ts, packages/db/src/migrate.ts, apps/web/src/lib/wallet.ts (mới), apps/web/src/auth.ts, apps/web/src/app/api/wallet/topup-request/route.ts, apps/web/src/app/api/admin/transactions/approve/route.ts, apps/web/src/app/api/{tuvi,tu-tru,tarot}/submit/route.ts, apps/web/src/app/api/horoscope/personalize/route.ts, apps/web/src/app/vi-cua-toi/*, apps/web/src/components/layout/UserMenu.tsx, apps/web/src/components/{tu-vi,tu-tru,hoang-dao}/*Client.tsx, apps/web/src/app/{xem-tarot,hoang-dao/luan-giai}/*Client.tsx, apps/web/src/app/admin/users/*, apps/web/src/lib/casso.ts, apps/web/src/lib/wallet-sse.ts; **xoá** apps/web/src/lib/tier.ts
+**Decision:** Bỏ hoàn toàn model subscription PRO/NORMAL (monthly/semi_annual/annual/lifetime) đã chạy từ migration 0001, chuyển sang model wallet pay-per-use: user nạp tối thiểu 20k, mỗi lần luận giải (Tử Vi / Tứ Trụ / Tarot / Hoàng Đạo cá nhân hóa) trừ 5k, real-time qua SSE.
+**Reason:** (1) User yêu cầu — model subscription tier không hợp với hành vi tiêu dùng "thỉnh thoảng xem 1 lá số". (2) Pay-per-use minh bạch: user thấy mỗi action trừ bao nhiêu, không lo "không dùng hết gói". (3) Casso reconcile đơn giản hơn — match bankRef + số tiền → cộng balance, không phải match plan.
+
+Architecture:
+- `users.balance_vnd bigint NOT NULL DEFAULT 0` — cache denormalized của ledger. Backfill migration 0008 từ SUM(transactions completed) loại topup/admin_credit/refund/charge. **Subscription txs cũ KHÔNG cộng vào balance** vì đã "tiêu" sang proUntil — coi như sunk cost.
+- Source of truth vẫn là `transactions` table. Mọi mutation balance đi qua `chargeReading()` / `creditBalance()` / `debitBalance()` ở `apps/web/src/lib/wallet.ts`. Atomic: `UPDATE ... WHERE balance >= price RETURNING balance` → check + deduct trong 1 SQL statement, chống race 2 request concurrent đồng thời (chỉ user vừa đủ tiền với 1 charge mới deduct được, request 2 throws InsufficientBalanceError).
+- Drop tables: `subscription_plans`, `subscription_purchases`. Drop column `users.pro_until`. Drop enum type `plan`. **GIỮ** enum values `'subscription'` và `'admin_extend'` trong `tx_type` vì Postgres không drop được value khi còn row dùng (history txs từ user trả gói cũ vẫn cần audit).
+- Bảng `prices` repurposed: 1 row `action='analyze'` = 5000đ. Code đọc qua `getReadingPriceVnd()` với cache in-process 60s — admin có thể UPDATE bảng để đổi giá runtime mà không redeploy.
+- Session payload: bỏ `proUntil` + `tier`, thay bằng `balanceVnd`. Auth.js v5 callback đọc DB mỗi request nên balance trong session luôn fresh (chỉ stale tới khi reload session — SSE bù real-time delta).
+- SSE event: bỏ `'subscription'`, dùng `'balance'` với payload `{balanceVnd, delta, reason, service?}`. Reason ∈ topup | admin_credit | refund | charge | admin_debit.
+- FE: header (`UserMenu`) hiển thị số dư realtime, đỏ khi < 5k với CTA "Nạp ngay". Wallet page (`/vi-cua-toi`) thay plan picker bằng custom amount input + 6 chip preset (20k/50k/100k/200k/500k/1M). Mọi submit form (Tử Vi / Tứ Trụ / Tarot / Hoàng Đạo) handle 402 INSUFFICIENT_BALANCE thay vì PRO_REQUIRED.
+- Admin: `extend` rename ý nghĩa thành "cộng tiền VND tùy ý", `revoke-pro` rename thành "trừ tiền VND". Endpoint URL giữ nguyên để khỏi đổi FE/script cũ; FE label đổi sang "Cộng tiền" / "Trừ tiền". UsersClient table show số dư thay vì proUntil days.
+- Tu-Tru `/analyze` route: bỏ PRO check, không charge nữa — đã charge ở `/submit`. Endpoint giờ chỉ là "lấy luận giải cho chart đã tồn tại của tôi". Tu-Vi `/analyze` + `/deep-readings` đã không gate PRO sẵn nên không sửa.
+- Charge `service` tag: `'tu-vi' | 'tu-tru' | 'tarot' | 'hoang-dao'` — lưu trong tx.metadata.service để hiển thị lịch sử "Luận giải Tử Vi" / "Luận giải Tarot" thay vì generic "Trừ phí".
+
+**Rejected alternatives:**
+1. **Per-view charge thay per-submit:** Charge mỗi lần user mở lại lá số trong `/lich-su`. Loại bỏ vì user sẽ tránh xem lại → mâu thuẫn với việc đã trả tiền. Per-submit (1 lần / lá số mới) = mua data lần đầu, xem lại miễn phí — match expectation.
+2. **Cache miss → charge, cache hit → free:** Tránh "user khác cùng birth-hash xem ké free". Loại bỏ vì FE/UX: user không cần biết tech detail cache, payment phải deterministic. Cache vẫn share cross-user cho AI efficiency (giảm Deepseek call), nhưng billing per-user per-submit.
+3. **Giữ subscription làm option song song:** User mua PRO unlimited HOẶC pay-per-use. Loại bỏ vì product complexity tăng (2 model, 2 gating logic, double FE branches). MVP đơn giản.
+4. **Drop tx enum values 'subscription' và 'admin_extend':** Postgres không hỗ trợ `DROP VALUE` khi còn row dùng. Force-drop sẽ mất history audit. Giữ làm "frozen" enum value — code không tạo mới nhưng đọc được history.
+5. **Backfill balance từ unused proUntil:** Tính "ngày PRO còn lại × giá trung bình mỗi ngày" → refund vào balance. Loại bỏ vì model cũ user trả 1 cục cho thời hạn không phải pay-per-use, quy đổi vô nghĩa. User đã trả → coi như đã xài. Admin có thể manual top-up cho VIP nếu muốn.
+6. **`balance_vnd` chỉ là VIEW computed từ ledger SUM:** "Source of truth thuần". Loại bỏ vì mỗi request đọc balance phải SUM toàn bộ ledger, slow khi user có hàng nghìn tx. Denormalized column + atomic update trong cùng db.transaction() vẫn giữ consistency, performance tốt hơn nhiều.
+
+Pattern shared cache 2-bảng (charts + analyses theo birthHash) trong `patterns.md` vẫn áp dụng nguyên — chỉ thay "PRO gate" → "charge balance" ở entry point. Không thay đổi schema cache.
+
+---
+
+
+**Date:** 2026-05-14
+**Module:** packages/tarot (mới) + web + db
+**File:** packages/tarot/*, apps/web/src/lib/tarot-server.ts, apps/web/src/app/xem-tarot/*, apps/web/src/app/api/tarot/*, packages/db/migrations/0007_add_tarot_tables.sql
+**Decision:** Feature Tarot (78 lá Rider-Waite-Smith). Tách thành 3 layer: (1) `@tuvi/tarot` client-safe data + helpers, (2) `tarot-server.ts` AI orchestration server-only, (3) Next.js routes/pages. Schema 2-bảng: `tarot_charts` (per-user submission, KHÔNG có unique user+hash) + `tarot_readings` (shared AI cache PK readingHash). Gate PRO subscription (giống Hoàng Đạo/Tử Vi mới), KHÔNG charge per-use.
+**Reason:** (1) Tách package giúp reuse 78-card data ở các feature tương lai. (2) Hash node:crypto chỉ ở server-only file, vì client bundling Next.js không resolve `node:` protocol → đã vấp lần đầu, fix bằng export `buildReadingHashRaw` (pure JS) ở package, `createHash` ở server. (3) KHÔNG unique user+hash vì tarot rút ngẫu nhiên, không gian combo lớn (~12M cho n=5), user có thể muốn rút lại cùng combo nhiều lần để thấy đoạn personalize khác. (4) PRO gate align với pattern hiện tại của project (đã bỏ per-charge từ tháng 4).
+**Rejected alternatives:** (1) Per-charge 30k/lần như prompt user ban đầu — KHÔNG còn align project hiện tại. (2) Bundle 78 ảnh vào `public/tarot/` — thêm ~10MB build, dùng CDN raw.githubusercontent.com/metabismuth/tarot-json tiện hơn (1 hop, public domain RWS). (3) `data.totl.net/tarot-rwcs-images/` mà prompt user đưa ra → URL 404, không tồn tại. (4) Wikipedia Special:FilePath → 2 redirects, chậm hơn. (5) Bundle hash function vào `@tuvi/tarot/helpers.ts` chung với client-safe code → fail vì webpack bundle node:crypto vào client. Fix bằng export raw string + tự hash server-side. (6) `react-tinder-card` swipe UX (đã thử) — phải import `@react-spring/web` peer dep, render từng lá riêng lẻ không có "cảm giác bộ bài đầy đủ" như casino. Đã loại bỏ.
+
+Architecture detail:
+- **Pick UX (casino-style)**: render full 78 lá thành grid responsive `repeat(auto-fill, minmax(46px, 1fr))`. Khi vào pick step → mỗi lá có CSS `animation-delay: idx * 12ms` chạy keyframe `deck-deal-in` (scale 0.3 → 1 + translateY + rotateZ), tạo cảm giác dealer rải bài. User CLICK 1 lá → lá đó nhận class `flying` chạy keyframe `deck-fly-up` (translateY -160px + rotateY 180deg + fade out 0.55s), đồng thời 1 lá face-up xuất hiện trong tray phía trên với keyframe `tray-flip-in`. Sau khi animation xong, lá bị `visibility: hidden` trong grid (giữ chỗ để layout không nhảy). Đủ numCards → delay 1.2s rồi auto-submit.
+- AI: parallel N call per-card + 1 call overall + 1 call personalize. Seed = seedFromHash(readingHash) + offset. Per-card cache shared cross-user; personalize per-call no-cache (gắn tên + câu hỏi).
+- Image: CDN `raw.githubusercontent.com/metabismuth/tarot-json/master/cards/{m00..p14}.jpg`, configured trong `next.config.js` remotePatterns + transpilePackages.
+
+Deps: thuần React + CSS animation, KHÔNG thư viện animation ngoài. Bỏ `react-tinder-card` + `@react-spring/web` (đã thử swipe UX nhưng đổi sang casino-style click-to-pick).
+
+---
+
+
 **Date:** 2026-04-24
 **Module:** web
 **File:** apps/web/src/components/ParticlesBg.tsx, apps/web/src/components/ZodiacConstellations.tsx

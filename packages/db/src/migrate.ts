@@ -12,7 +12,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
-import { prices, subscriptionPlans } from './schema.js';
+import { prices } from './schema.js';
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -24,57 +24,24 @@ async function main() {
   console.log('[migrate] đang chạy migrations...');
   await migrate(db, { migrationsFolder: resolve(process.cwd(), 'migrations') });
 
-  console.log('[migrate] seed prices (idempotent)...');
   // pgcrypto cần cho gen_random_uuid()
   await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
 
+  console.log('[migrate] seed prices (upsert)...');
+  // Model pay-per-use: 1 lần luận giải = 5000 VND. Dùng action='analyze' (đã có
+  // trong enum chart_action). 'deep_readings' và 'combo' từ model cũ — DELETE
+  // để chỉ còn 1 row giá. Dùng UPSERT (KHÔNG `onConflictDoNothing`) để khi đổi
+  // giá ở source code + redeploy, bảng tự cập nhật theo.
+  await db.execute(sql`DELETE FROM prices WHERE action IN ('deep_readings', 'combo')`);
   await db
     .insert(prices)
     .values([
-      { action: 'analyze', amountVnd: 30000, description: 'Lập lá số + 6 phần luận' },
-      { action: 'deep_readings', amountVnd: 20000, description: 'Đại hạn + 12 cung + năm hiện tại' },
-      { action: 'combo', amountVnd: 40000, description: 'Combo cả 2 (giảm 20%)' },
+      { action: 'analyze', amountVnd: 5000, description: 'Một lần luận giải (Tử Vi / Tứ Trụ / Tarot / Hoàng Đạo)' },
     ])
-    .onConflictDoNothing();
-
-  console.log('[migrate] seed subscription_plans (idempotent)...');
-  await db
-    .insert(subscriptionPlans)
-    .values([
-      {
-        plan: 'monthly',
-        amountVnd: 20000,
-        durationDays: 30,
-        label: 'Gói Tháng',
-        description: '30 ngày sử dụng không giới hạn',
-        sortOrder: 1,
-      },
-      {
-        plan: 'semi_annual',
-        amountVnd: 50000,
-        durationDays: 180,
-        label: 'Gói Nửa Năm',
-        description: '180 ngày — tiết kiệm 17% so với mua từng tháng',
-        sortOrder: 2,
-      },
-      {
-        plan: 'annual',
-        amountVnd: 100000,
-        durationDays: 365,
-        label: 'Gói Năm',
-        description: '365 ngày — tiết kiệm 58% so với mua từng tháng',
-        sortOrder: 3,
-      },
-      {
-        plan: 'lifetime',
-        amountVnd: 500000,
-        durationDays: null,
-        label: 'Gói Trọn Đời',
-        description: 'Truy cập vĩnh viễn — mua 1 lần dùng mãi mãi',
-        sortOrder: 4,
-      },
-    ])
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: prices.action,
+      set: { amountVnd: 5000, description: 'Một lần luận giải (Tử Vi / Tứ Trụ / Tarot / Hoàng Đạo)' },
+    });
 
   console.log('[migrate] xong');
   await client.end();

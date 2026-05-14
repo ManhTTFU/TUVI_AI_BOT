@@ -3,7 +3,7 @@ import Link from 'next/link';
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
 export const metadata = {
-  title: 'Xóa dữ liệu · Diễn Cầm Tam Thế',
+  title: 'Xóa dữ liệu · Vận Mệnh',
   description: 'Cách yêu cầu xóa toàn bộ dữ liệu cá nhân khỏi hệ thống.',
 };
 
@@ -44,7 +44,7 @@ export default function DataDeletion() {
         >
           Yêu cầu xóa qua email
         </h2>
-        <p>Gửi email tới <strong>support@diencam.vn</strong> với nội dung:</p>
+        <p>Gửi email tới <strong>support@vanmenh.vn</strong> với nội dung:</p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>Tiêu đề: <strong>Yêu cầu xóa dữ liệu cá nhân</strong></li>
           <li>Email đăng ký tài khoản</li>
@@ -80,12 +80,11 @@ export default function DataDeletion() {
         </h2>
         <p>
           Nếu bạn đăng nhập bằng Facebook hoặc Google và muốn xóa quyền truy cập
-          của Diễn Cầm Tam Thế:
+          của Vận Mệnh:
         </p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            <strong>Facebook:</strong> Settings → Business Integrations → Diễn
-            Cầm Tam Thế → Remove
+            <strong>Facebook:</strong> Settings → Business Integrations → Vận Mệnh → Remove
           </li>
           <li>
             <strong>Google:</strong>{' '}
@@ -97,7 +96,7 @@ export default function DataDeletion() {
             >
               myaccount.google.com/permissions
             </a>{' '}
-            → Diễn Cầm Tam Thế → Remove access
+            → Vận Mệnh → Remove access
           </li>
         </ul>
         <p>

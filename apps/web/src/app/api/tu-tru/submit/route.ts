@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
-import { getDb, users, batTuCharts } from '@tuvi/db';
-import { eq } from 'drizzle-orm';
+import { getDb, batTuCharts } from '@tuvi/db';
 import { NextResponse } from 'next/server';
-import { isProActive } from '@/lib/tier';
+import { chargeReading, InsufficientBalanceError } from '@/lib/wallet';
 import { calculateBatTu, type BatTuInput } from '@/lib/bat-tu';
 import { batTuBirthHash } from '@/lib/bat-tu-hash';
 
@@ -57,23 +56,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 400 });
   }
 
-  const db = getDb();
-  const [u] = await db
-    .select({ proUntil: users.proUntil })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-  if (!u || !isProActive(u.proUntil)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'Cần gói PRO để xem Tứ Trụ Bát Tự',
-        code: 'PRO_REQUIRED',
-        proUntil: u?.proUntil ?? null,
-      },
-      { status: 402 },
-    );
+  let charge: Awaited<ReturnType<typeof chargeReading>>;
+  try {
+    charge = await chargeReading(session.user.id, { service: 'tu-tru' });
+  } catch (e) {
+    if (e instanceof InsufficientBalanceError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Số dư không đủ để xem Tứ Trụ Bát Tự',
+          code: 'INSUFFICIENT_BALANCE',
+          balanceVnd: e.balance,
+          requiredVnd: e.required,
+        },
+        { status: 402 },
+      );
+    }
+    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
+
+  const db = getDb();
 
   const input: BatTuInput = {
     year: payload.year,
@@ -114,5 +116,7 @@ export async function POST(req: Request) {
     name: payload.name,
     gender: payload.gender,
     chart,
+    balanceVnd: charge.balanceAfter,
+    chargedVnd: charge.amountCharged,
   });
 }

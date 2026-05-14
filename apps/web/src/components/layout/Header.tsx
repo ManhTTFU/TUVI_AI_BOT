@@ -16,6 +16,7 @@ const NAV_LINKS: NavLink[] = [
   { label: 'Tứ Trụ', href: '/tu-tru-bat-tu' },
   { label: 'Xem Ngày Tốt', href: '/ngay-tot' },
   { label: 'Hoàng Đạo', href: '/hoang-dao' },
+  { label: 'Tarot', href: '/xem-tarot' },
   { label: 'Lục Diệu', href: '/#lucdieu' },
 ];
 
@@ -37,17 +38,17 @@ export default function Header() {
             className="w-9 h-9 rounded-full bg-[#5a3a1a] text-[#d4af6a] flex items-center justify-center font-serif italic text-xl shadow-md"
             style={{ fontFamily: SERIF_FONT }}
           >
-            D
+            命
           </div>
           <div>
             <div className="text-[11px] tracking-[0.35em] text-[#4a6c7a] font-semibold uppercase leading-none">
-              Diễn Cầm
+              Mệnh Lý
             </div>
             <div
               className="text-base font-serif italic text-[#0f0a08] leading-tight"
               style={{ fontFamily: SERIF_FONT }}
             >
-              Tam Thế
+              Vận Mệnh
             </div>
           </div>
         </Link>
@@ -126,6 +127,13 @@ export default function Header() {
                     className="text-[#c8361d] hover:text-[#5a3a1a] font-medium"
                   >
                     💳 Admin · Giao dịch
+                  </Link>
+                  <Link
+                    href="/admin/thong-ke"
+                    onClick={() => setOpen(false)}
+                    className="text-[#c8361d] hover:text-[#5a3a1a] font-medium"
+                  >
+                    📊 Admin · Thống kê
                   </Link>
                 </>
               )}

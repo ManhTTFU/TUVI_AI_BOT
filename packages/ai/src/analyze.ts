@@ -70,7 +70,7 @@ async function callOneSection(
   });
 
   const text = completion.choices[0]?.message?.content?.trim();
-  if (!text) throw new Error(`Deepseek không trả lời phần ${key}`);
+  if (!text) throw new Error(`Hệ thống không trả lời phần ${key}`);
   return text;
 }
 
@@ -149,13 +149,13 @@ async function callJsonSection<T>(
 
     const finishReason = completion.choices[0]?.finish_reason;
     const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error('Deepseek không trả lời (JSON)');
+    if (!text) throw new Error('Hệ thống không trả lời (JSON)');
 
     // finish_reason='length' = bị cắt do max_tokens → JSON gần như chắc chắn truncate.
     // Throw kèm status 500 để withRetry retry (may have shorter output lần sau).
     if (finishReason === 'length') {
       const err = new Error(
-        `Deepseek bị cắt do max_tokens (label=${label}); thử retry với output ngắn hơn`,
+        `Hệ thống bị cắt do max_tokens (label=${label}); thử retry với output ngắn hơn`,
       ) as Error & { status: number };
       err.status = 500;
       throw err;
@@ -164,7 +164,7 @@ async function callJsonSection<T>(
       return JSON.parse(text) as T;
     } catch (e) {
       const err = new Error(
-        `Deepseek trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 300)}`,
+        `Hệ thống trả JSON không hợp lệ: ${(e as Error).message}\n${text.slice(0, 300)}`,
       ) as Error & { status: number };
       err.status = 500; // mark retryable — model temperature 0.7, lần sau có thể OK
       throw err;
@@ -259,7 +259,7 @@ export async function analyzeDaiHan(
       yearEnd: birthYear + ae,
       palaceName: p.name,
       earthlyBranch: p.earthlyBranch,
-      reading: aiItem?.reading?.trim() || '(AI không trả lời cho vận này)',
+      reading: aiItem?.reading?.trim() || '(Hệ thống không trả lời cho vận này)',
     };
   });
 }
@@ -282,7 +282,7 @@ export async function analyzeTieuHan(
 
   return meta.map((m) => {
     const aiItem = out.years?.find((x) => x.year === m.year);
-    return { ...m, reading: aiItem?.reading?.trim() || '(AI không trả lời cho năm này)' };
+    return { ...m, reading: aiItem?.reading?.trim() || '(Hệ thống không trả lời cho năm này)' };
   });
 }
 
@@ -308,7 +308,7 @@ export async function analyzeTwelvePalaces(
     return {
       name: p.name,
       earthlyBranch: p.earthlyBranch,
-      reading: aiItem?.reading?.trim() || '(AI không trả lời cho cung này)',
+      reading: aiItem?.reading?.trim() || '(Hệ thống không trả lời cho cung này)',
     };
   });
 }
@@ -429,7 +429,7 @@ export async function analyzeNamHienTai(
     months.push({
       month: m,
       label: found?.label ?? 'Bình',
-      text: found?.text?.trim() || '(AI không trả lời tháng này)',
+      text: found?.text?.trim() || '(Hệ thống không trả lời tháng này)',
     });
   }
 
@@ -452,27 +452,27 @@ export async function analyzeNamHienTai(
     palaceName: tieuHanPalaceName,
     earthlyBranch: tieuHanBranch,
     category: main.category ?? 'Bình Hòa',
-    overview: main.overview?.trim() || '(AI không trả lời tổng quan năm)',
+    overview: main.overview?.trim() || '(Hệ thống không trả lời tổng quan năm)',
     aspects: {
       career: {
         rating: clampRating(main.aspects?.career?.rating),
-        text: main.aspects?.career?.text?.trim() || '(AI không trả lời)',
+        text: main.aspects?.career?.text?.trim() || '(Hệ thống không trả lời)',
       },
       wealth: {
         rating: clampRating(main.aspects?.wealth?.rating),
-        text: main.aspects?.wealth?.text?.trim() || '(AI không trả lời)',
+        text: main.aspects?.wealth?.text?.trim() || '(Hệ thống không trả lời)',
       },
       love: {
         rating: clampRating(main.aspects?.love?.rating),
-        text: main.aspects?.love?.text?.trim() || '(AI không trả lời)',
+        text: main.aspects?.love?.text?.trim() || '(Hệ thống không trả lời)',
       },
       health: {
         rating: clampRating(main.aspects?.health?.rating),
-        text: main.aspects?.health?.text?.trim() || '(AI không trả lời)',
+        text: main.aspects?.health?.text?.trim() || '(Hệ thống không trả lời)',
       },
       family: {
         rating: clampRating(main.aspects?.family?.rating),
-        text: main.aspects?.family?.text?.trim() || '(AI không trả lời)',
+        text: main.aspects?.family?.text?.trim() || '(Hệ thống không trả lời)',
       },
     },
     months,
@@ -536,10 +536,10 @@ export async function analyzeBatTu(context: string, seed?: number): Promise<stri
 
     const finishReason = completion.choices[0]?.finish_reason;
     const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error('Deepseek không trả lời (bat-tu)');
+    if (!text) throw new Error('Hệ thống không trả lời (bat-tu)');
     if (finishReason === 'length') {
       const err = new Error(
-        `Deepseek bị cắt do max_tokens (bat-tu); thử retry`,
+        `Hệ thống bị cắt do max_tokens (bat-tu); thử retry`,
       ) as Error & { status: number };
       err.status = 500;
       throw err;

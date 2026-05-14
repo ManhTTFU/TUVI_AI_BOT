@@ -37,7 +37,7 @@ export async function GET(_req: Request, ctx: { params: { chartId: string } }) {
     .limit(1);
   if (!analysisRow) {
     return NextResponse.json(
-      { error: 'Chưa có luận giải — chờ AI sinh xong rồi tải PDF' },
+      { error: 'Chưa có luận giải — chờ hệ thống sinh xong rồi tải PDF' },
       { status: 409 },
     );
   }

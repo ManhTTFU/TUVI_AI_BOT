@@ -1,11 +1,10 @@
 import { auth } from '@/auth';
 import { calculateChart } from '@tuvi/astrology';
 import { CANH_GIO } from '@tuvi/core';
-import { getDb, users, charts } from '@tuvi/db';
-import { eq } from 'drizzle-orm';
+import { getDb, charts } from '@tuvi/db';
 import { NextResponse } from 'next/server';
 import { parseBirthPayload, birthHash } from '@/lib/birth';
-import { isProActive } from '@/lib/tier';
+import { chargeReading, InsufficientBalanceError } from '@/lib/wallet';
 
 export const runtime = 'nodejs';
 
@@ -30,26 +29,29 @@ export async function POST(req: Request) {
   }
   if (!info.timeName) info.timeName = CANH_GIO[info.timeIndex].name;
 
-  const db = getDb();
-
-  // Tier check: PRO mới được lập lá số.
-  const [u] = await db
-    .select({ proUntil: users.proUntil })
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
-  if (!u || !isProActive(u.proUntil)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'Cần gói PRO để lập lá số',
-        code: 'PRO_REQUIRED',
-        proUntil: u?.proUntil ?? null,
-      },
-      { status: 402 },
-    );
+  // Charge ví trước khi tính chart (chart calc cheap, nhưng charge trước = nếu
+  // user thiếu tiền không tốn cycle, và nếu charge ok mà insert lỗi → còn ledger
+  // truy vết được).
+  let charge: Awaited<ReturnType<typeof chargeReading>>;
+  try {
+    charge = await chargeReading(session.user.id, { service: 'tu-vi' });
+  } catch (e) {
+    if (e instanceof InsufficientBalanceError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Số dư không đủ để lập lá số',
+          code: 'INSUFFICIENT_BALANCE',
+          balanceVnd: e.balance,
+          requiredVnd: e.required,
+        },
+        { status: 402 },
+      );
+    }
+    return NextResponse.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
 
+  const db = getDb();
   const hash = birthHash(info);
   const chart = calculateChart(info);
 
@@ -71,5 +73,7 @@ export async function POST(req: Request) {
     ok: true,
     chartId: chartRow.id,
     chart,
+    balanceVnd: charge.balanceAfter,
+    chargedVnd: charge.amountCharged,
   });
 }

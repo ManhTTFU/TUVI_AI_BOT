@@ -61,11 +61,11 @@ export const SERVICES: Service[] = [
   { key: 'tuvi', title: 'Tử Vi Trọn Đời', sub: 'Lá số 12 cung — luận giải vận trình', glyph: '紫微', href: '/xem-tu-vi' },
   { key: 'tutru', title: 'Tứ Trụ — Bát Tự', sub: 'Năm Tháng Ngày Giờ — Ngũ hành sinh khắc', glyph: '四柱', href: '/tu-tru-bat-tu' },
   { key: 'xemngay', title: 'Xem Ngày Vạn Sự', sub: 'Hoàng đạo, hắc đạo, giờ tốt giờ xấu', glyph: '擇日', href: '/ngay-tot' },
-  { key: 'tarot', title: 'Bói Bài Tarot', sub: 'Trải bài 3 lá — Quá khứ, Hiện tại, Tương lai', glyph: '塔羅', comingSoon: true },
+  { key: 'tarot', title: 'Bói Bài Tarot', sub: 'Trải bài 1·3·5·7·10 lá — luận giải cá nhân hóa', glyph: '塔羅', href: '/xem-tarot' },
   { key: 'phongthuy', title: 'Phong Thủy Bát Trạch', sub: 'Hướng nhà, hướng giường, bài trí nội thất', glyph: '風水', comingSoon: true },
   { key: 'xemtuong', title: 'Xem Tướng — Chỉ Tay', sub: 'Khuôn mặt, lòng bàn tay, dáng đi', glyph: '相術', comingSoon: true },
   { key: 'gieoque', title: 'Gieo Quẻ Dịch Số', sub: 'Mai Hoa, Kinh Dịch, Quan Âm Linh Quẻ', glyph: '易經', comingSoon: true },
-  { key: 'duyenso', title: 'Duyên Số Vợ Chồng', sub: 'Diễn Cầm Tam Thế — xem tuổi đôi lứa', glyph: '姻緣', comingSoon: true },
+  { key: 'duyenso', title: 'Duyên Số Vợ Chồng', sub: 'Vận Mệnh — xem tuổi đôi lứa', glyph: '姻緣', comingSoon: true },
 ];
 
 export const ZODIAC: Zodiac[] = [

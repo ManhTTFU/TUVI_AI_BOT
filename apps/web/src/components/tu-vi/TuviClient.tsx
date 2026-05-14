@@ -12,7 +12,7 @@ import type {
   DeepReadingsData,
 } from '@tuvi/core';
 import { formatVnd } from '@/lib/money';
-import { isProActive } from '@/lib/tier';
+import { emitOptimisticBalance } from '@/lib/wallet-sse';
 import DeepReadings, { BasicInfo } from './DeepReadings';
 import VietnameseCenter from './VietnameseCenter';
 import { toast } from '@/components/ui/toast';
@@ -168,13 +168,13 @@ export default function TuviClient() {
     birthPlace: '',
   });
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [chart, setChart] = useState<ChartData | null>(null);
   const [iztroSnap, setIztroSnap] = useState<IztroSnap | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
   const [deep, setDeep] = useState<DeepReadingsData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [proRequired, setProRequired] = useState(false);
+  const [insufficient, setInsufficient] = useState<{ balance: number; required: number } | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [deepLoading, setDeepLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -279,7 +279,7 @@ export default function TuviClient() {
     setError(null);
     setAiError(null);
     setDeepError(null);
-    setProRequired(false);
+    setInsufficient(null);
 
     if (!session?.user) {
       router.push('/dang-nhap?callbackUrl=/xem-tu-vi');
@@ -301,6 +301,17 @@ export default function TuviClient() {
     setChart(null);
     setAnalysis(null);
     setDeep(null);
+
+    // Optimistic: drop balance trong header trước khi fetch hoàn thành.
+    const PRICE = 5000;
+    const currentBalance = session?.user?.balanceVnd ?? 0;
+    emitOptimisticBalance({
+      balanceVnd: Math.max(0, currentBalance - PRICE),
+      delta: -PRICE,
+      reason: 'charge',
+      service: 'tu-vi',
+    });
+
     try {
       const res = await fetch(`/api/tuvi/submit`, {
         method: 'POST',
@@ -308,17 +319,26 @@ export default function TuviClient() {
         body: JSON.stringify(info),
       });
       const data = await res.json();
-      if (res.status === 402 && data?.code === 'PRO_REQUIRED') {
-        setProRequired(true);
+      if (res.status === 402 && data?.code === 'INSUFFICIENT_BALANCE') {
+        await updateSession();
+        setInsufficient({
+          balance: Number(data.balanceVnd ?? 0),
+          required: Number(data.requiredVnd ?? 5000),
+        });
         setIztroSnap(null);
+        toast.error('Số dư không đủ — nạp thêm để lập lá số');
         return;
       }
       if (!res.ok || !data?.ok) {
+        await updateSession();
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
       setChart(data.chart as ChartData);
-      toast.success('Đã lập lá số Tử Vi — đang chờ AI luận giải');
-      // Fire AI parallel — chart already saved + balance đã trừ.
+      toast.success(
+        typeof data.chargedVnd === 'number'
+          ? `Đã lập lá số — trừ ${formatVnd(data.chargedVnd)}, còn lại ${formatVnd(data.balanceVnd ?? 0)}`
+          : 'Đã lập lá số Tử Vi — đang chờ hệ thống luận giải',
+      );
       fetchAnalysis(data.chartId as string);
       fetchDeep(data.chartId as string);
     } catch (err) {
@@ -467,17 +487,18 @@ export default function TuviClient() {
               </div>
             )}
 
-            {proRequired && (
+            {insufficient && (
               <div className="rounded-xl border border-[#c89146]/55 bg-[#f5e3c0]/50 px-4 py-3 text-[#5a3a1a] text-[13.5px] space-y-2">
                 <div>
-                  ⚠ <strong>Cần tài khoản PRO.</strong> Đăng ký gói (từ 20.000đ/tháng)
-                  để lập lá số không giới hạn.
+                  ⚠ <strong>Số dư không đủ.</strong> Cần{' '}
+                  <strong>{formatVnd(insufficient.required)}</strong> cho 1 lần lập lá số,
+                  bạn còn <strong>{formatVnd(insufficient.balance)}</strong>.
                 </div>
                 <Link
                   href="/vi-cua-toi"
                   className="inline-block px-4 py-1.5 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[12.5px] font-semibold hover:bg-[#4a6c7a]"
                 >
-                  Đăng ký gói PRO →
+                  Nạp tiền vào ví →
                 </Link>
               </div>
             )}
@@ -486,17 +507,18 @@ export default function TuviClient() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <span className="text-[10px] tracking-[0.25em] uppercase font-bold">
-                    Cần gói PRO
+                    Phí dịch vụ
                   </span>
                   <div className="text-[#0f0a08]">
-                    Mua 1 lần, lập lá số không giới hạn trong thời hạn gói
+                    Trừ <strong>{formatVnd(5_000)}</strong> mỗi lần lập lá số. Tối thiểu nạp{' '}
+                    {formatVnd(20_000)}.
                   </div>
                 </div>
                 <div
                   className="text-2xl font-serif italic text-[#5a3a1a]"
                   style={{ fontFamily: SERIF_FONT }}
                 >
-                  từ {formatVnd(20_000)}/tháng
+                  {formatVnd(5_000)}/lần
                 </div>
               </div>
             </div>

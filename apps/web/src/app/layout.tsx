@@ -8,8 +8,8 @@ import { Toaster } from '@/components/ui/toast';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Diễn Cầm Tam Thế — Tử Vi, Tứ Trụ, Tarot, Phong Thủy',
-    template: '%s | Diễn Cầm Tam Thế',
+    default: 'Vận Mệnh — Tử Vi, Tứ Trụ, Tarot, Phong Thủy',
+    template: '%s | Vận Mệnh',
   },
   description:
     'Nơi hội tụ tinh hoa của khoa Chiêm Tinh và Huyền Học Á Đông — Tử Vi Trọn Đời, Tứ Trụ Bát Tự, Bói Bài Tarot, Xem Ngày Vạn Sự, Phong Thủy Bát Trạch.',
@@ -25,17 +25,17 @@ export const metadata: Metadata = {
     'cung hoàng đạo',
   ],
   openGraph: {
-    title: 'Diễn Cầm Tam Thế',
+    title: 'Vận Mệnh',
     description:
       'Khoa Chiêm Tinh & Huyền Học Á Đông — Tử Vi, Tứ Trụ, Tarot, Phong Thủy.',
     url: SITE_URL,
-    siteName: 'Diễn Cầm Tam Thế',
+    siteName: 'Vận Mệnh',
     locale: 'vi_VN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Diễn Cầm Tam Thế',
+    title: 'Vận Mệnh',
     description: 'Khoa Chiêm Tinh & Huyền Học Á Đông.',
   },
   alternates: { canonical: '/' },

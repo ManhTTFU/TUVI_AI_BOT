@@ -8,7 +8,7 @@ import { HOROSCOPE } from '@/lib/home-data';
 import { ZODIAC_DETAILS } from '@/lib/zodiac-detail';
 import { getSignFromDate, getSignToday } from '@/lib/horoscope-lib';
 import { useDailyHoroscope } from '@/lib/use-daily-horoscope';
-import { isProActive } from '@/lib/tier';
+import { formatVnd } from '@/lib/money';
 
 const SLUG_BY_NAME: Record<string, string> = Object.fromEntries(
   ZODIAC_DETAILS.map((z) => [z.name, z.slug])
@@ -62,59 +62,52 @@ function Hero() {
     : null;
 
   return (
-    <section className="relative overflow-hidden">
-      {/* brand dark gradient: mực tàu → bronze → đồng cổ (warm sumi), gold accents */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0f0a08] via-[#2a1c14] to-[#5a3a1a]" />
-      <div
-        aria-hidden
-        className="absolute inset-0 opacity-[0.18]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 20% 25%, #c89146 0px, transparent 1.5px), radial-gradient(circle at 70% 60%, #e9d4b6 0px, transparent 1.2px), radial-gradient(circle at 40% 80%, #c89146 0px, transparent 1.4px), radial-gradient(circle at 88% 20%, #e9d4b6 0px, transparent 1.2px)',
-          backgroundSize: '180px 180px, 240px 240px, 200px 200px, 260px 260px',
-        }}
-      />
-      <div className="relative max-w-6xl mx-auto px-6 py-20 text-center">
-        <div className="inline-flex items-center gap-3 text-[11px] tracking-[0.4em] uppercase text-[#c89146]">
-          <span className="w-8 h-px bg-[#c89146]/60" />
-          十 二 星 座 · Tinh Tọa
-          <span className="w-8 h-px bg-[#c89146]/60" />
-        </div>
-        <h1
-          className="mt-5 font-serif text-[#fbf3e2] leading-[0.95] text-[clamp(48px,7.5vw,96px)]"
-          style={{ fontFamily: SERIF_FONT }}
-        >
-          12 Cung <em className="text-[#c89146]">Hoàng Đạo</em>
-        </h1>
-        <p className="mt-6 max-w-2xl mx-auto text-[#e9d4b6] text-base md:text-lg leading-relaxed">
-          Mỗi cung mang một nguyên tố — Lửa, Đất, Khí, Nước — định hình tính
-          cách, vận trình, tình duyên và sự nghiệp. Khám phá năng lượng dẫn dắt
-          ngày hôm nay.
-        </p>
-        {todayLabel && (
-          <div
-            className="mt-8 inline-flex flex-wrap items-center justify-center gap-4 px-5 py-2.5 rounded-full border border-[#c89146]/40 bg-[#0f0a08]/40 text-[12px] text-[#e9d4b6] backdrop-blur-sm"
-            suppressHydrationWarning
-          >
-            <span className="text-[#c89146] font-semibold tracking-wide uppercase text-[10px]">
-              Hôm nay
-            </span>
-            <span className="w-px h-3.5 bg-[#c89146]/40" />
-            <span>{todayLabel}</span>
-            {todaySign && (
-              <>
-                <span className="w-px h-3.5 bg-[#c89146]/40" />
-                <span>
-                  Mặt Trời chiếu cung{' '}
-                  <strong className="text-[#fbf3e2]">
-                    {todaySign.name} {todaySign.sym}
-                  </strong>
-                </span>
-              </>
-            )}
-          </div>
-        )}
+    <section className="pt-12 pb-8 px-6 text-center">
+      <Link
+        href="/"
+        className="inline-block text-[11px] tracking-[0.3em] text-[#4a6c7a] hover:text-[#5a3a1a] uppercase"
+      >
+        ← Trang chủ
+      </Link>
+      <div className="mt-4 inline-flex items-center gap-3 text-[11px] tracking-[0.4em] uppercase text-[#4a6c7a]">
+        <span className="w-8 h-px bg-[#4a6c7a]/60" />
+        十 二 星 座 · Tinh Tọa
+        <span className="w-8 h-px bg-[#4a6c7a]/60" />
       </div>
+      <h1
+        className="mt-4 font-serif text-[#0f0a08] leading-[0.95] text-[clamp(48px,7vw,96px)]"
+        style={{ fontFamily: SERIF_FONT }}
+      >
+        12 Cung <em className="text-[#5a3a1a]">Hoàng Đạo</em>
+      </h1>
+      <p className="mt-4 max-w-2xl mx-auto text-[#4a3a30]">
+        Mỗi cung mang một nguyên tố — Lửa, Đất, Khí, Nước — định hình tính
+        cách, vận trình, tình duyên và sự nghiệp. Khám phá năng lượng dẫn dắt
+        ngày hôm nay.
+      </p>
+      {todayLabel && (
+        <div
+          className="mt-6 inline-flex flex-wrap items-center justify-center gap-4 px-5 py-2.5 rounded-full border border-[#c89146]/45 bg-[#f5e3c0]/45 text-[12px] text-[#4a3a30]"
+          suppressHydrationWarning
+        >
+          <span className="text-[#5a3a1a] font-semibold tracking-wide uppercase text-[10px]">
+            Hôm nay
+          </span>
+          <span className="w-px h-3.5 bg-[#c89146]/55" />
+          <span>{todayLabel}</span>
+          {todaySign && (
+            <>
+              <span className="w-px h-3.5 bg-[#c89146]/55" />
+              <span>
+                Mặt Trời chiếu cung{' '}
+                <strong className="text-[#5a3a1a]">
+                  {todaySign.name} {todaySign.sym}
+                </strong>
+              </span>
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }
@@ -319,14 +312,15 @@ function HoroscopeForm({ onSignChange }: { onSignChange: (signEn: string | null)
     goal: 'career',
   });
   const [error, setError] = useState<string | null>(null);
-  const [proRequired, setProRequired] = useState(false);
+  const [lowBalance, setLowBalance] = useState(false);
 
-  const isPro = isProActive(session?.user?.proUntil);
+  const balance = session?.user?.balanceVnd ?? 0;
+  const hasFunds = balance >= 5000;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setProRequired(false);
+    setLowBalance(false);
     const d = +form.day,
       m = +form.month,
       y = +form.year;
@@ -350,12 +344,11 @@ function HoroscopeForm({ onSignChange }: { onSignChange: (signEn: string | null)
       router.push(`/dang-nhap?callbackUrl=${encodeURIComponent('/hoang-dao')}`);
       return;
     }
-    // Đăng nhập nhưng chưa PRO → show banner.
-    if (!isPro) {
-      setProRequired(true);
+    // Số dư không đủ → show banner.
+    if (!hasFunds) {
+      setLowBalance(true);
       return;
     }
-    // PRO → route sang trang chi tiết.
     const qs = new URLSearchParams({
       sign: sign.en,
       gender: form.gender,
@@ -455,17 +448,17 @@ function HoroscopeForm({ onSignChange }: { onSignChange: (signEn: string | null)
             </div>
           )}
 
-          {proRequired && (
+          {lowBalance && (
             <div className="rounded-xl border border-[#c89146]/55 bg-[#f5e3c0]/50 px-4 py-3 text-[#5a3a1a] text-[13px] space-y-2">
               <div>
-                ⚠ <strong>Cần tài khoản PRO.</strong> Đăng ký gói (từ
-                20.000đ/tháng) để xem luận giải cá nhân hóa.
+                ⚠ <strong>Số dư không đủ.</strong> Cần {formatVnd(5_000)} cho 1 lần luận giải,
+                bạn còn <strong>{formatVnd(balance)}</strong>.
               </div>
               <Link
                 href="/vi-cua-toi"
                 className="inline-block px-4 py-1.5 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[12px] font-semibold hover:bg-[#4a6c7a]"
               >
-                Đăng ký gói PRO →
+                Nạp tiền vào ví →
               </Link>
             </div>
           )}
@@ -474,17 +467,17 @@ function HoroscopeForm({ onSignChange }: { onSignChange: (signEn: string | null)
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <span className="text-[10px] tracking-[0.25em] uppercase font-bold">
-                  Cần gói PRO
+                  Phí dịch vụ
                 </span>
                 <div className="text-[#0f0a08]">
-                  Đăng ký 1 lần, luận giải cá nhân không giới hạn trong thời hạn gói
+                  Trừ <strong>{formatVnd(5_000)}</strong> mỗi lần luận giải cá nhân
                 </div>
               </div>
               <div
                 className="text-2xl font-serif italic text-[#5a3a1a]"
                 style={{ fontFamily: SERIF_FONT }}
               >
-                từ 20.000đ/tháng
+                {formatVnd(5_000)}/lần
               </div>
             </div>
           </div>
@@ -497,9 +490,9 @@ function HoroscopeForm({ onSignChange }: { onSignChange: (signEn: string | null)
             <span>
               {!session?.user
                 ? 'Đăng nhập để xem luận giải'
-                : isPro
-                  ? 'Xem luận giải cá nhân'
-                  : 'Xem luận giải cá nhân (cần PRO)'}
+                : hasFunds
+                  ? `Xem luận giải cá nhân (${formatVnd(5_000)})`
+                  : 'Xem luận giải cá nhân (cần nạp tiền)'}
             </span>
           </button>
         </form>

@@ -19,17 +19,17 @@ export default function Footer() {
               className="w-10 h-10 rounded-full bg-[#5a3a1a] text-[#d4af6a] flex items-center justify-center font-serif italic text-xl"
               style={{ fontFamily: SERIF_FONT }}
             >
-              D
+              命
             </div>
             <div>
               <div className="text-[11px] tracking-[0.35em] text-[#d4af6a] uppercase">
-                Diễn Cầm
+                Mệnh Lý
               </div>
               <div
                 className="text-xl font-serif italic"
                 style={{ fontFamily: SERIF_FONT }}
               >
-                Tam Thế
+                Vận Mệnh
               </div>
             </div>
           </div>
@@ -65,13 +65,13 @@ export default function Footer() {
             Liên hệ
           </div>
           <ul className="space-y-2 text-sm text-[#e8d8b8]/80">
-            <li>Email · diencam@tamthe.vn</li>
+            <li>Email · lienhe@vanmenh.vn</li>
             <li>Hotline · 1900 1881</li>
           </ul>
         </div>
       </div>
       <div className="border-t border-[#e8d8b8]/10 px-6 py-5 text-center text-xs text-[#e8d8b8]/50">
-        © <span suppressHydrationWarning>{year}</span> Diễn Cầm Tam Thế · Khoa
+        © <span suppressHydrationWarning>{year}</span> Vận Mệnh · Khoa
         Chiêm Tinh & Huyền Học Á Đông
       </div>
     </footer>

@@ -3,38 +3,31 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  daysRemaining,
-  formatProExpiry,
-  isLifetime,
-  tierFromProUntil,
-} from '@/lib/tier';
 import { subscribeWallet } from '@/lib/wallet-sse';
+import { formatVnd } from '@/lib/money';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
 export default function UserMenu() {
   const { data: session, status, update } = useSession();
   const [open, setOpen] = useState(false);
-  const [proUntil, setProUntil] = useState<string | null>(null);
+  const [balance, setBalance] = useState<number>(0);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Init proUntil từ session payload.
+  // Init balance từ session.
   useEffect(() => {
-    if (session?.user) setProUntil(session.user.proUntil ?? null);
-  }, [session?.user?.proUntil]);
+    if (session?.user) setBalance(session.user.balanceVnd ?? 0);
+  }, [session?.user?.balanceVnd]);
 
-  // Subscribe SSE — khi admin approve subscription → tự update tier.
-  // Đồng thời gọi update() để force re-fetch session từ server (auth callback
-  // đọc DB tươi, đảm bảo role/tier sync khi user mở tab mới hoặc reload).
+  // Subscribe SSE — realtime balance khi admin credit, user nạp, charge.
   useEffect(() => {
     if (!session?.user) return;
     const unsubscribe = subscribeWallet((event, data) => {
-      if (event === 'subscription' && data && typeof data.proUntil !== 'undefined') {
-        setProUntil(data.proUntil ?? null);
+      if (event === 'balance' && typeof data.balanceVnd === 'number') {
+        setBalance(data.balanceVnd);
       }
-      // Refresh session cookie → useSession() ở mọi component trong app sẽ
-      // nhận giá trị mới (role, proUntil, tier).
+      // Refresh session cookie để các component khác nhận balanceVnd mới khi
+      // reload (auth callback đọc DB tươi).
       update().catch(() => {});
     });
     return unsubscribe;
@@ -67,10 +60,7 @@ export default function UserMenu() {
   const u = session.user;
   const initial = (u.name ?? u.email ?? 'U').trim().charAt(0).toUpperCase();
   const isAdmin = u.role === 'admin';
-  const tier = tierFromProUntil(proUntil);
-  const isPro = tier === 'PRO';
-  const lifetime = isLifetime(proUntil);
-  const days = daysRemaining(proUntil);
+  const lowBalance = balance < 5000;
 
   return (
     <div className="relative" ref={ref}>
@@ -93,16 +83,12 @@ export default function UserMenu() {
           </span>
         )}
         <span
-          className={`text-[11px] tracking-[0.15em] uppercase font-bold ${
-            isPro ? 'text-[#c8361d]' : 'text-[#4a3a30]'
+          className={`text-[12px] tracking-[0.05em] font-bold tabular-nums ${
+            lowBalance ? 'text-[#c8361d]' : 'text-[#5a3a1a]'
           }`}
-          title={isPro ? `Hết hạn: ${formatProExpiry(proUntil)}` : 'Tài khoản chưa PRO'}
+          title="Số dư ví"
         >
-          {isPro
-            ? lifetime
-              ? 'PRO · ∞'
-              : `PRO · ${days}d`
-            : 'NORMAL'}
+          {formatVnd(balance)}
         </span>
         <span
           className={`text-[#4a3a30] text-xs transition-transform ${
@@ -121,26 +107,25 @@ export default function UserMenu() {
             <div className="text-[11px] text-[#4a3a30] truncate">{u.email}</div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-[10px] tracking-[0.25em] uppercase text-[#4a3a30]">
-                Gói
+                Số dư
               </span>
               <span
-                className={`text-lg font-serif italic ${
-                  isPro ? 'text-[#c8361d]' : 'text-[#4a3a30]'
+                className={`text-2xl font-serif italic tabular-nums ${
+                  lowBalance ? 'text-[#c8361d]' : 'text-[#5a3a1a]'
                 }`}
                 style={{ fontFamily: SERIF_FONT }}
               >
-                {tier}
+                {formatVnd(balance)}
               </span>
             </div>
-            {isPro && (
-              <div className="mt-1 flex items-center justify-between text-[11px]">
-                <span className="text-[#4a3a30]">
-                  {lifetime ? 'Trọn đời' : 'Còn lại'}
-                </span>
-                <span className="font-semibold text-[#5a3a1a]">
-                  {lifetime ? '∞' : `${days} ngày`}
-                </span>
-              </div>
+            {lowBalance && (
+              <Link
+                href="/vi-cua-toi"
+                onClick={() => setOpen(false)}
+                className="mt-2 inline-block w-full text-center px-3 py-1.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[11px] font-semibold tracking-wider uppercase hover:bg-[#a52a16]"
+              >
+                Nạp ngay
+              </Link>
             )}
             {isAdmin && (
               <span className="mt-2 inline-block px-2 py-0.5 rounded-full bg-[#c8361d] text-[#fbf3e2] text-[9px] tracking-wider font-bold">
@@ -178,6 +163,13 @@ export default function UserMenu() {
                 className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#c8361d] hover:bg-[#fbf3e2]/60 font-medium"
               >
                 <span>💳</span> Duyệt giao dịch
+              </Link>
+              <Link
+                href="/admin/thong-ke"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-[#c8361d] hover:bg-[#fbf3e2]/60 font-medium"
+              >
+                <span>📊</span> Thống kê
               </Link>
             </>
           )}

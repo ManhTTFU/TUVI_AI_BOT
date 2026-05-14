@@ -1,9 +1,12 @@
 import { auth } from '@/auth';
-import { getDb, users, transactions } from '@tuvi/db';
-import { eq } from 'drizzle-orm';
-import { publish } from '@/lib/sse-bus';
+import { debitBalance } from '@/lib/wallet';
 import { NextResponse } from 'next/server';
 
+/**
+ * Admin trừ tiền ví user. Endpoint name là legacy `/revoke-pro` từ model PRO;
+ * model mới: admin debit theo `amountVnd`. KHÔNG hỗ trợ trừ về âm theo mặc định
+ * (`requirePositive: true`) — admin muốn override phải qua tool khác.
+ */
 export async function POST(req: Request) {
   const session = await auth();
   if (session?.user?.role !== 'admin') {
@@ -12,50 +15,34 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const userId = String(body.userId ?? '').trim();
-  const note = String(body.note ?? '').trim() || null;
+  const amountVnd = Number(body.amountVnd);
+  const note = String(body.note ?? '').trim() || undefined;
 
   if (!userId) {
     return NextResponse.json({ ok: false, error: 'Thiếu userId' }, { status: 400 });
   }
   if (userId === session.user.id) {
     return NextResponse.json(
-      { ok: false, error: 'Không thể hủy gói PRO của chính mình' },
+      { ok: false, error: 'Không thể trừ tiền của chính mình' },
       { status: 400 },
     );
   }
+  if (!Number.isInteger(amountVnd) || amountVnd <= 0) {
+    return NextResponse.json({ ok: false, error: 'Số tiền không hợp lệ' }, { status: 400 });
+  }
 
-  const db = getDb();
-  await db.transaction(async (tx) => {
-    const [u] = await tx
-      .select({ proUntil: users.proUntil })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    if (!u) throw new Error('User không tồn tại');
-
-    await tx.update(users).set({ proUntil: null }).where(eq(users.id, userId));
-
-    await tx.insert(transactions).values({
-      userId,
-      type: 'admin_extend',
-      status: 'completed',
-      amountVnd: 0,
+  try {
+    const result = await debitBalance(userId, amountVnd, {
       note,
       metadata: {
-        action: 'revoke',
-        previousProUntil: u.proUntil ? u.proUntil.toISOString() : null,
         adminId: session.user.id,
         adminEmail: session.user.email,
       },
-      completedAt: new Date(),
+      requirePositive: true,
     });
-  });
-
-  publish(userId, 'subscription', {
-    proUntil: null,
-    tier: 'NORMAL',
-    source: 'admin_revoke',
-  });
-
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, balanceVnd: result.balanceAfter });
+  } catch (e) {
+    const msg = (e as Error).message ?? 'Lỗi trừ tiền';
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
 }

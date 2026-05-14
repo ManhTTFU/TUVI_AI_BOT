@@ -1,15 +1,12 @@
 import { auth } from '@/auth';
-import {
-  getDb,
-  subscriptionPlans,
-  transactions,
-  type Plan,
-} from '@tuvi/db';
+import { getDb, transactions } from '@tuvi/db';
 import { and, eq } from 'drizzle-orm';
 import { makeBankRef } from '@/lib/money';
+import { MIN_TOPUP_VND } from '@/lib/wallet';
 import { NextResponse } from 'next/server';
 
-const VALID_PLANS: Plan[] = ['monthly', 'semi_annual', 'annual', 'lifetime'];
+/** Topup tối đa 1 lần (chống user gõ nhầm 10000000 hoặc spam). */
+const MAX_TOPUP_VND = 10_000_000;
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -17,35 +14,40 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'Chưa đăng nhập' }, { status: 401 });
   }
 
-  let body: { plan?: string };
+  let body: { amountVnd?: number };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ ok: false, error: 'JSON không hợp lệ' }, { status: 400 });
   }
-  const plan = body.plan as Plan;
-  if (!plan || !VALID_PLANS.includes(plan)) {
-    return NextResponse.json({ ok: false, error: 'Gói không hợp lệ' }, { status: 400 });
+
+  const amount = Number(body.amountVnd);
+  if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
+    return NextResponse.json({ ok: false, error: 'Số tiền không hợp lệ' }, { status: 400 });
+  }
+  if (amount < MIN_TOPUP_VND) {
+    return NextResponse.json(
+      { ok: false, error: `Số tiền nạp tối thiểu ${MIN_TOPUP_VND.toLocaleString('vi-VN')}đ` },
+      { status: 400 },
+    );
+  }
+  if (amount > MAX_TOPUP_VND) {
+    return NextResponse.json(
+      { ok: false, error: `Số tiền nạp vượt giới hạn ${MAX_TOPUP_VND.toLocaleString('vi-VN')}đ — liên hệ admin` },
+      { status: 400 },
+    );
   }
 
   const db = getDb();
-  const [planRow] = await db
-    .select()
-    .from(subscriptionPlans)
-    .where(eq(subscriptionPlans.plan, plan))
-    .limit(1);
-  if (!planRow) {
-    return NextResponse.json({ ok: false, error: 'Gói không tồn tại' }, { status: 404 });
-  }
 
-  // Chống spam: tối đa 5 pending tx subscription cùng lúc.
+  // Chống spam: tối đa 5 pending topup cùng lúc.
   const pending = await db
     .select({ id: transactions.id })
     .from(transactions)
     .where(
       and(
         eq(transactions.userId, session.user.id),
-        eq(transactions.type, 'subscription'),
+        eq(transactions.type, 'topup'),
         eq(transactions.status, 'pending'),
       ),
     );
@@ -61,21 +63,12 @@ export async function POST(req: Request) {
     .insert(transactions)
     .values({
       userId: session.user.id,
-      type: 'subscription',
+      type: 'topup',
       status: 'pending',
-      amountVnd: planRow.amountVnd,
+      amountVnd: amount,
       bankRef,
-      metadata: {
-        plan: planRow.plan,
-        durationDays: planRow.durationDays,
-        label: planRow.label,
-      },
     })
     .returning();
 
-  return NextResponse.json({
-    ok: true,
-    transaction: tx,
-    plan: planRow,
-  });
+  return NextResponse.json({ ok: true, transaction: tx });
 }

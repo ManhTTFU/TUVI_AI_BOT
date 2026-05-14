@@ -24,7 +24,7 @@ function createDoc(): PDFKit.PDFDocument {
     autoFirstPage: false,
     info: {
       Title: 'Lá số Tử Vi Đẩu Số',
-      Author: 'Tử Vi AI',
+      Author: 'Vận Mệnh',
       Subject: 'Luận giải lá số tử vi',
     },
   });

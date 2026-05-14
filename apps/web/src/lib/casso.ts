@@ -1,24 +1,16 @@
 /**
- * Casso webhook adapter — auto reconcile bank transfer thành PRO subscription
- * approved. Mặc định OFF (CASSO_ENABLED=false). Bật khi admin đăng ký Casso +
- * cấu hình webhook trỏ tới /api/casso/webhook.
+ * Casso webhook adapter — auto reconcile bank transfer thành topup completed.
+ * Mặc định OFF (CASSO_ENABLED=false). Bật khi admin đăng ký Casso + cấu hình
+ * webhook trỏ tới /api/casso/webhook.
  *
- * Logic: Casso đọc SMS bank → tìm "memo" chứa bankRef của transaction pending
- * type='subscription' → match số tiền → extend pro_until + insert
- * subscription_purchases + publish SSE.
+ * Logic: Casso đọc SMS bank → tìm bankRef trong description của tx pending
+ * type='topup' → match số tiền chính xác → atomic credit qua creditBalance().
  *
  * Doc: https://docs.casso.vn
  */
-import {
-  getDb,
-  transactions,
-  users,
-  subscriptionPurchases,
-  type Plan,
-} from '@tuvi/db';
+import { getDb, transactions } from '@tuvi/db';
 import { eq, and } from 'drizzle-orm';
-import { publish } from './sse-bus';
-import { LIFETIME_DATE } from './tier';
+import { creditBalance } from './wallet';
 
 export interface CassoTxPayload {
   /** ID giao dịch ngân hàng từ Casso */
@@ -27,7 +19,6 @@ export interface CassoTxPayload {
   description: string;
   /** Số tiền (VND, dương = vào, âm = ra) */
   amount: number;
-  /** Tên TK gửi */
   cusum_balance?: number;
   when: string;
 }
@@ -37,8 +28,8 @@ export function isCassoEnabled(): boolean {
 }
 
 /**
- * Match incoming Casso tx với pending subscription theo bankRef nằm trong
- * description. Trả về số transaction đã reconcile.
+ * Match incoming Casso tx với pending topup theo bankRef nằm trong description.
+ * Trả về số transaction đã reconcile.
  */
 export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promise<number> {
   if (!isCassoEnabled()) return 0;
@@ -49,8 +40,9 @@ export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promi
   for (const item of items) {
     if (item.amount <= 0) continue; // chỉ xử lý tiền vào.
 
-    // Tìm bankRef trong description (Casso không enforce format, nên grep upper alphanumeric).
-    const refMatches = item.description.toUpperCase().match(/[A-Z]{2,6}[A-Z0-9]{4,12}/g);
+    // Tìm bankRef trong description. makeBankRef sinh 5 ký tự A-Z0-9 — grep
+    // các token uppercase 4-12 ký tự để bao phủ format hiện tại + biến thể.
+    const refMatches = item.description.toUpperCase().match(/[A-Z0-9]{4,12}/g);
     if (!refMatches) continue;
 
     for (const ref of refMatches) {
@@ -60,68 +52,24 @@ export async function reconcileCassoTransactions(items: CassoTxPayload[]): Promi
         .where(
           and(
             eq(transactions.bankRef, ref),
-            eq(transactions.type, 'subscription'),
+            eq(transactions.type, 'topup'),
             eq(transactions.status, 'pending'),
           ),
         )
         .limit(1);
 
       if (!pending) continue;
-      if (pending.amountVnd !== item.amount) continue; // số tiền không khớp → bỏ qua, admin duyệt tay.
+      if (pending.amountVnd !== item.amount) continue; // số tiền không khớp → để admin duyệt tay
 
-      const meta = (pending.metadata ?? {}) as { plan?: Plan; durationDays?: number | null };
-      const plan = meta.plan;
-      const durationDays = meta.durationDays ?? null;
-      if (!plan) continue;
-
-      const result = await db.transaction(async (tx) => {
-        const [u] = await tx
-          .select({ proUntil: users.proUntil })
-          .from(users)
-          .where(eq(users.id, pending.userId))
-          .limit(1);
-        if (!u) throw new Error('User không tồn tại');
-
-        const now = new Date();
-        const base = u.proUntil && u.proUntil > now ? u.proUntil : now;
-        const newProUntil =
-          durationDays == null || plan === 'lifetime'
-            ? LIFETIME_DATE
-            : new Date(base.getTime() + durationDays * 24 * 60 * 60 * 1000);
-
-        await tx.update(users).set({ proUntil: newProUntil }).where(eq(users.id, pending.userId));
-
-        const [purchase] = await tx
-          .insert(subscriptionPurchases)
-          .values({
-            userId: pending.userId,
-            plan,
-            amountVnd: pending.amountVnd,
-            transactionId: pending.id,
-            proUntilAfter: newProUntil,
-          })
-          .returning({ id: subscriptionPurchases.id });
-
-        await tx
-          .update(transactions)
-          .set({
-            status: 'completed',
-            completedAt: new Date(),
-            metadata: {
-              ...((pending.metadata as Record<string, unknown>) ?? {}),
-              cassoTxId: item.id,
-              cassoDescription: item.description,
-              purchaseId: purchase.id,
-            },
-          })
-          .where(eq(transactions.id, pending.id));
-
-        return { userId: pending.userId, proUntil: newProUntil };
-      });
-
-      publish(result.userId, 'subscription', {
-        proUntil: result.proUntil.toISOString(),
-        tier: 'PRO',
+      await creditBalance(pending.userId, {
+        type: 'topup',
+        amountVnd: pending.amountVnd,
+        approveTxId: pending.id,
+        metadata: {
+          ...((pending.metadata as Record<string, unknown>) ?? {}),
+          cassoTxId: item.id,
+          cassoDescription: item.description,
+        },
       });
 
       count++;

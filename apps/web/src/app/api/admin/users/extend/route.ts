@@ -1,17 +1,11 @@
 import { auth } from '@/auth';
-import {
-  getDb,
-  users,
-  transactions,
-  subscriptionPlans,
-  subscriptionPurchases,
-  type Plan,
-} from '@tuvi/db';
-import { eq } from 'drizzle-orm';
-import { publish } from '@/lib/sse-bus';
-import { LIFETIME_DATE } from '@/lib/tier';
+import { creditBalance } from '@/lib/wallet';
 import { NextResponse } from 'next/server';
 
+/**
+ * Admin cộng tiền vào ví user (thay endpoint cũ "tặng gói PRO"). Endpoint name
+ * giữ nguyên `/extend` để khỏi đổi FE call site — sẽ rename trong refactor sau.
+ */
 export async function POST(req: Request) {
   const session = await auth();
   if (session?.user?.role !== 'admin') {
@@ -20,79 +14,31 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const userId = String(body.userId ?? '').trim();
-  const plan = body.plan as Plan;
-  const note = String(body.note ?? '').trim() || null;
+  const amountVnd = Number(body.amountVnd);
+  const note = String(body.note ?? '').trim() || undefined;
 
   if (!userId) {
     return NextResponse.json({ ok: false, error: 'Thiếu userId' }, { status: 400 });
   }
-  if (!['monthly', 'semi_annual', 'annual', 'lifetime'].includes(plan)) {
-    return NextResponse.json({ ok: false, error: 'Plan không hợp lệ' }, { status: 400 });
+  if (!Number.isInteger(amountVnd) || amountVnd <= 0) {
+    return NextResponse.json({ ok: false, error: 'Số tiền không hợp lệ' }, { status: 400 });
   }
 
-  const db = getDb();
-  const result = await db.transaction(async (tx) => {
-    const [planRow] = await tx
-      .select()
-      .from(subscriptionPlans)
-      .where(eq(subscriptionPlans.plan, plan))
-      .limit(1);
-    if (!planRow) throw new Error('Plan không tồn tại');
-
-    const [u] = await tx
-      .select({ proUntil: users.proUntil })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-    if (!u) throw new Error('User không tồn tại');
-
-    const now = new Date();
-    const base = u.proUntil && u.proUntil > now ? u.proUntil : now;
-    const newProUntil =
-      planRow.durationDays == null
-        ? LIFETIME_DATE
-        : new Date(base.getTime() + planRow.durationDays * 24 * 60 * 60 * 1000);
-
-    await tx.update(users).set({ proUntil: newProUntil }).where(eq(users.id, userId));
-
-    const [txn] = await tx
-      .insert(transactions)
-      .values({
-        userId,
-        type: 'admin_extend',
-        status: 'completed',
-        amountVnd: 0,
-        note,
-        metadata: {
-          plan,
-          label: planRow.label,
-          durationDays: planRow.durationDays,
-          adminId: session.user.id,
-          adminEmail: session.user.email,
-        },
-        completedAt: now,
-      })
-      .returning();
-
-    await tx.insert(subscriptionPurchases).values({
-      userId,
-      plan,
-      amountVnd: 0,
-      transactionId: txn.id,
-      proUntilAfter: newProUntil,
+  try {
+    const result = await creditBalance(userId, {
+      type: 'admin_credit',
+      amountVnd,
+      note,
+      metadata: {
+        adminId: session.user.id,
+        adminEmail: session.user.email,
+      },
     });
-
-    return { newProUntil };
-  });
-
-  publish(userId, 'subscription', {
-    proUntil: result.newProUntil.toISOString(),
-    tier: 'PRO',
-    source: 'admin_extend',
-  });
-
-  return NextResponse.json({
-    ok: true,
-    proUntil: result.newProUntil.toISOString(),
-  });
+    return NextResponse.json({ ok: true, balanceVnd: result.balanceAfter });
+  } catch (e) {
+    return NextResponse.json(
+      { ok: false, error: (e as Error).message ?? 'Lỗi cộng tiền' },
+      { status: 500 },
+    );
+  }
 }

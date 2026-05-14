@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { ALL_SIGNS_VI, type SignVi } from '@/lib/horoscope-lib';
 import { toast } from '@/components/ui/toast';
+import { formatVnd } from '@/lib/money';
+import { useSession } from 'next-auth/react';
+import { emitOptimisticBalance } from '@/lib/wallet-sse';
 
 interface PersonalizedReading {
   personality: { strengths: string[]; weaknesses: string[]; thinkingStyle: string };
@@ -48,10 +51,11 @@ const VALID_GOAL: Goal[] = ['career', 'love', 'wealth', 'health', 'study', 'fami
 export default function LuanGiaiClient() {
   const router = useRouter();
   const params = useSearchParams();
+  const { data: session, update: updateSession } = useSession();
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState<PersonalizedReading | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [proRequired, setProRequired] = useState(false);
+  const [insufficient, setInsufficient] = useState<{ balance: number; required: number } | null>(null);
 
   const input = useMemo(() => {
     const signEn = params.get('sign') ?? '';
@@ -82,7 +86,18 @@ export default function LuanGiaiClient() {
     setLoading(true);
     setReading(null);
     setError(null);
-    setProRequired(false);
+    setInsufficient(null);
+
+    // Optimistic balance drop — đồng bộ với SSE thực ~200-500ms sau.
+    const PRICE = 5000;
+    const currentBalance = session?.user?.balanceVnd ?? 0;
+    emitOptimisticBalance({
+      balanceVnd: Math.max(0, currentBalance - PRICE),
+      delta: -PRICE,
+      reason: 'charge',
+      service: 'hoang-dao',
+    });
+
     fetch('/api/horoscope/personalize', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -96,17 +111,28 @@ export default function LuanGiaiClient() {
       .then(async (res) => {
         const body = await res.json();
         if (aborted) return;
-        if (res.status === 402 && body?.code === 'PRO_REQUIRED') {
-          setProRequired(true);
+        if (res.status === 402 && body?.code === 'INSUFFICIENT_BALANCE') {
+          await updateSession();
+          setInsufficient({
+            balance: Number(body.balanceVnd ?? 0),
+            required: Number(body.requiredVnd ?? 5000),
+          });
           return;
         }
         if (res.status === 401) {
           router.push(`/dang-nhap?callbackUrl=${encodeURIComponent('/hoang-dao')}`);
           return;
         }
-        if (!res.ok || !body?.ok) throw new Error(body?.error ?? `HTTP ${res.status}`);
+        if (!res.ok || !body?.ok) {
+          await updateSession();
+          throw new Error(body?.error ?? `HTTP ${res.status}`);
+        }
         setReading(body.reading as PersonalizedReading);
-        toast.success('Đã luận giải xong');
+        toast.success(
+          typeof body.chargedVnd === 'number'
+            ? `Đã luận giải xong — trừ ${formatVnd(body.chargedVnd)}`
+            : 'Đã luận giải xong',
+        );
       })
       .catch((e: Error) => {
         if (aborted) return;
@@ -211,22 +237,23 @@ export default function LuanGiaiClient() {
             </div>
           )}
 
-          {proRequired && (
+          {insufficient && (
             <div className="rounded-2xl border border-[#c89146]/55 bg-[#f5e3c0]/50 p-5 text-[#5a3a1a] text-[13.5px] space-y-2">
               <div>
-                ⚠ <strong>Cần tài khoản PRO.</strong> Đăng ký gói (từ 20.000đ/tháng)
-                để xem luận giải cá nhân không giới hạn.
+                ⚠ <strong>Số dư không đủ.</strong> Cần{' '}
+                <strong>{formatVnd(insufficient.required)}</strong> cho 1 lần luận giải,
+                bạn còn <strong>{formatVnd(insufficient.balance)}</strong>.
               </div>
               <Link
                 href="/vi-cua-toi"
                 className="inline-block px-4 py-1.5 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[12px] font-semibold hover:bg-[#4a6c7a]"
               >
-                Đăng ký gói PRO →
+                Nạp tiền vào ví →
               </Link>
             </div>
           )}
 
-          {error && !proRequired && (
+          {error && !insufficient && (
             <div className="rounded-2xl border border-[#c8361d]/40 bg-[#c8361d]/10 p-4 text-[#c8361d] text-[13.5px]">
               ⚠ {error}
             </div>

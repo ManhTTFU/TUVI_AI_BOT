@@ -201,10 +201,10 @@ function AnalysisCards({
           className="text-2xl font-serif text-[#0f0a08]"
           style={{ fontFamily: SERIF_FONT }}
         >
-          Diễn Cầm Luận Giải
+          Vận Mệnh Luận Giải
         </h3>
         <span className="px-2.5 py-1 rounded-full bg-[#3a8a5e]/15 text-[#2a6e48] text-[10px] tracking-[0.2em] font-bold uppercase">
-          6 phần · AI
+          6 phần · Cá nhân hóa
         </span>
       </div>
 
@@ -220,7 +220,7 @@ function AnalysisCards({
             style={{ animationDelay: "0.4s" }}
           />
           <span className="ml-2">
-            Đang lắng nghe linh khí… (AI đang viết 6 đoạn)
+            Đang lắng nghe linh khí… (hệ thống đang viết 6 đoạn)
           </span>
         </div>
       )}
@@ -1488,7 +1488,7 @@ export default function DeepReadings({
                 style={{ animationDelay: "0.4s" }}
               />
               <span className="text-[13px]">
-                AI đang luận giải chi tiết 12 cung, đại hạn và tiểu hạn…
+                Hệ thống đang luận giải chi tiết 12 cung, đại hạn và tiểu hạn…
                 (30–60s)
               </span>
             </div>

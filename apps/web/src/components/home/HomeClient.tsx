@@ -33,14 +33,14 @@ function Hero() {
       <div className="max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center gap-3 text-[11px] tracking-[0.4em] uppercase text-[#4a6c7a]">
           <span className="w-8 h-px bg-[#4a6c7a]/60" />
-          演 琴 三 世
+          運 命 · Mệnh Lý
           <span className="w-8 h-px bg-[#4a6c7a]/60" />
         </div>
         <h1
           className="mt-6 font-serif text-[#0f0a08] leading-[0.95] text-[clamp(56px,9vw,128px)]"
           style={{ fontFamily: SERIF_FONT }}
         >
-          Diễn Cầm <em className="text-[#4a6c7a]">Tam Thế</em>
+          Vận <em className="text-[#4a6c7a]">Mệnh</em>
         </h1>
         <p className="mt-6 max-w-2xl mx-auto text-[#0f0a08] text-lg leading-relaxed">
           Nơi hội tụ tinh hoa của khoa Chiêm Tinh và Huyền Học Á Đông — giải mã{' '}

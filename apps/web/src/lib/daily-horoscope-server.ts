@@ -100,11 +100,11 @@ async function callDeepseekGroup(
     });
     const finishReason = completion.choices[0]?.finish_reason;
     const text = completion.choices[0]?.message?.content?.trim();
-    if (!text) throw new Error('Deepseek không trả lời (daily-horoscope)');
+    if (!text) throw new Error('Hệ thống không trả lời (daily-horoscope)');
     if (finishReason === 'length') {
       // Mark status=500 → withRetry sẽ retry (model có thể viết ngắn hơn lần sau).
       const err = new Error(
-        `Deepseek bị cắt do max_tokens (${label}); thử retry`,
+        `Hệ thống bị cắt do max_tokens (${label}); thử retry`,
       ) as Error & { status: number };
       err.status = 500;
       throw err;
@@ -117,7 +117,7 @@ async function callDeepseekGroup(
         out[en] = v.trim();
       } else {
         // Schema sai → throw retryable, model có thể fix lần sau.
-        const err = new Error(`Thiếu reading cho ${en} trong response Deepseek`) as Error & {
+        const err = new Error(`Thiếu reading cho ${en} trong response hệ thống`) as Error & {
           status: number;
         };
         err.status = 500;

@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import type { BatTuChart } from "@/lib/bat-tu";
 import TuTruResultView from "./TuTruResultView";
 import { toast } from "@/components/ui/toast";
+import { formatVnd } from "@/lib/money";
+import { emitOptimisticBalance } from "@/lib/wallet-sse";
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -142,7 +144,7 @@ function TruIntroCards() {
 
 export default function TuTruClient() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [form, setForm] = useState<FormState>({
     name: "",
     gender: "male",
@@ -160,12 +162,12 @@ export default function TuTruClient() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [proRequired, setProRequired] = useState(false);
+  const [insufficient, setInsufficient] = useState<{ balance: number; required: number } | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setProRequired(false);
+    setInsufficient(null);
 
     if (!session?.user) {
       router.push("/dang-nhap?callbackUrl=/tu-tru-bat-tu");
@@ -190,6 +192,17 @@ export default function TuTruClient() {
     setLoading(true);
     setChart(null);
     setChartId(null);
+
+    // Optimistic balance drop — đồng bộ với SSE thực ~200-500ms sau.
+    const PRICE = 5000;
+    const currentBalance = session?.user?.balanceVnd ?? 0;
+    emitOptimisticBalance({
+      balanceVnd: Math.max(0, currentBalance - PRICE),
+      delta: -PRICE,
+      reason: 'charge',
+      service: 'tu-tru',
+    });
+
     try {
       const res = await fetch("/api/tu-tru/submit", {
         method: "POST",
@@ -206,18 +219,28 @@ export default function TuTruClient() {
         }),
       });
       const body = await res.json();
-      if (res.status === 402 && body?.code === "PRO_REQUIRED") {
-        setProRequired(true);
+      if (res.status === 402 && body?.code === "INSUFFICIENT_BALANCE") {
+        await updateSession();
+        setInsufficient({
+          balance: Number(body.balanceVnd ?? 0),
+          required: Number(body.requiredVnd ?? 5000),
+        });
+        toast.error("Số dư không đủ — nạp thêm để xem Tứ Trụ");
         return;
       }
       if (!res.ok || !body?.ok) {
+        await updateSession();
         throw new Error(body?.error ?? `HTTP ${res.status}`);
       }
       const c = body.chart as BatTuChart;
       setChart(c);
       setChartId(body.chartId);
       setChartMeta({ name: body.name, gender: body.gender });
-      toast.success("Đã lập Tứ Trụ Bát Tự — đang chờ hệ thống luận giải");
+      toast.success(
+        typeof body.chargedVnd === "number"
+          ? `Đã lập Tứ Trụ — trừ ${formatVnd(body.chargedVnd)}, còn lại ${formatVnd(body.balanceVnd ?? 0)}`
+          : "Đã lập Tứ Trụ Bát Tự — đang chờ hệ thống luận giải",
+      );
     } catch (err) {
       const msg = (err as Error).message;
       setError(`Không lập được Tứ Trụ: ${msg}`);
@@ -251,7 +274,7 @@ export default function TuTruClient() {
         <p className="mt-4 max-w-2xl mx-auto text-[#4a3a30]">
           Lập 4 trụ Năm – Tháng – Ngày – Giờ theo Can Chi. Luận giải Nhật chủ,
           dụng thần, kỵ thần, ngũ hành nạp âm, sự nghiệp, tài lộc, tình duyên
-          qua AI.
+          cá nhân hóa.
         </p>
       </section>
 
@@ -366,17 +389,18 @@ export default function TuTruClient() {
               </div>
             )}
 
-            {proRequired && (
+            {insufficient && (
               <div className="rounded-xl border border-[#c89146]/55 bg-[#f5e3c0]/50 px-4 py-3 text-[#5a3a1a] text-[13px] space-y-2">
                 <div>
-                  ⚠ <strong>Cần tài khoản PRO.</strong> Đăng ký gói (từ
-                  20.000đ/tháng) để xem Tứ Trụ Bát Tự không giới hạn.
+                  ⚠ <strong>Số dư không đủ.</strong> Cần{" "}
+                  <strong>{formatVnd(insufficient.required)}</strong> cho 1 lần xem Tứ Trụ,
+                  bạn còn <strong>{formatVnd(insufficient.balance)}</strong>.
                 </div>
                 <Link
                   href="/vi-cua-toi"
                   className="inline-block px-4 py-1.5 rounded-full bg-[#5a3a1a] text-[#fbf3e2] text-[12px] font-semibold hover:bg-[#4a6c7a]"
                 >
-                  Đăng ký gói PRO →
+                  Nạp tiền vào ví →
                 </Link>
               </div>
             )}
@@ -385,17 +409,17 @@ export default function TuTruClient() {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div>
                   <span className="text-[10px] tracking-[0.25em] uppercase font-bold">
-                    Cần gói PRO
+                    Phí dịch vụ
                   </span>
                   <div className="text-[#0f0a08]">
-                    Đăng ký 1 lần, xem Bát Tự không giới hạn trong thời hạn gói
+                    Trừ <strong>{formatVnd(5_000)}</strong> mỗi lần xem Tứ Trụ Bát Tự
                   </div>
                 </div>
                 <div
                   className="text-2xl font-serif italic text-[#5a3a1a]"
                   style={{ fontFamily: SERIF_FONT }}
                 >
-                  từ 20.000đ/tháng
+                  {formatVnd(5_000)}/lần
                 </div>
               </div>
             </div>

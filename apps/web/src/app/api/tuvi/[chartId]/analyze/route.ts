@@ -55,7 +55,7 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
 
     return NextResponse.json({ ok: true, analysis: sections, cached: false });
   } catch (e) {
-    const msg = (e as Error).message ?? 'Lỗi không xác định khi gọi AI';
+    const msg = (e as Error).message ?? 'Lỗi không xác định khi sinh luận giải';
     console.error(`[analyze] ${msg}`);
     return NextResponse.json({ ok: false, error: msg }, { status: 502 });
   }

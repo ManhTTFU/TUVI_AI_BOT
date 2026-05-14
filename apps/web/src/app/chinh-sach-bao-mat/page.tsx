@@ -3,9 +3,9 @@ import Link from 'next/link';
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
 export const metadata = {
-  title: 'Chính sách bảo mật · Diễn Cầm Tam Thế',
+  title: 'Chính sách bảo mật · Vận Mệnh',
   description:
-    'Cách Diễn Cầm Tam Thế thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn.',
+    'Cách Vận Mệnh thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn.',
 };
 
 export default function PrivacyPolicy() {
@@ -35,7 +35,7 @@ export default function PrivacyPolicy() {
           1. Thông tin chúng tôi thu thập
         </h2>
         <p>
-          Diễn Cầm Tam Thế thu thập các thông tin tối thiểu để cung cấp dịch vụ
+          Vận Mệnh thu thập các thông tin tối thiểu để cung cấp dịch vụ
           luận giải Tử Vi Đẩu Số:
         </p>
         <ul className="list-disc pl-6 space-y-1.5">
@@ -63,7 +63,7 @@ export default function PrivacyPolicy() {
         </h2>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>Tính toán và lưu trữ lá số tử vi cá nhân của bạn.</li>
-          <li>Gửi nội dung luận giải đến AI (Deepseek API) để sinh văn luận giải.</li>
+          <li>Gửi nội dung tóm tắt lá số đến nhà cung cấp dịch vụ sinh văn để tạo bản luận giải cá nhân hóa.</li>
           <li>Quản lý số dư ví và giao dịch.</li>
           <li>Cải thiện chất lượng dịch vụ.</li>
         </ul>
@@ -81,8 +81,8 @@ export default function PrivacyPolicy() {
         <p>Một số nội dung được gửi đến đối tác kỹ thuật:</p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            <strong>Deepseek (DeepSeek AI):</strong> nội dung tóm tắt lá số (KHÔNG
-            kèm email/tên) được gửi để sinh văn luận giải.
+            <strong>Deepseek:</strong> đối tác kỹ thuật xử lý nội dung tóm tắt lá số
+            (KHÔNG kèm email/tên) để sinh văn luận giải.
           </li>
           <li>
             <strong>Google / Facebook:</strong> chỉ trong quá trình xác thực
@@ -131,7 +131,7 @@ export default function PrivacyPolicy() {
           6. Liên hệ
         </h2>
         <p>
-          Email: <strong>support@diencam.vn</strong> (sẽ cập nhật khi launch).
+          Email: <strong>support@vanmenh.vn</strong> (sẽ cập nhật khi launch).
         </p>
       </section>
     </article>

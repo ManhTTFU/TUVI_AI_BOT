@@ -53,7 +53,7 @@ export default function TuviForm() {
     if (!valid || loading) return;
     setLoading(true);
     setError(null);
-    setProgress('Đang lập lá số và gọi AI (1–2 phút)...');
+    setProgress('Đang lập lá số và sinh luận giải (1–2 phút)...');
     try {
       const res = await fetch(`${API_BASE_URL}/api/tuvi/full`, {
         method: 'POST',
