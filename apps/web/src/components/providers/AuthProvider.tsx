@@ -3,9 +3,10 @@
 import { SessionProvider } from 'next-auth/react';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // refetchInterval=60s: backup khi SSE miss; tab focus cũng tự refetch.
+  // Không poll — SSE handle balance real-time, updateSession() gọi sau mỗi submit.
+  // refetchOnWindowFocus giữ để sync khi user quay lại từ tab khác.
   return (
-    <SessionProvider refetchInterval={60} refetchOnWindowFocus>
+    <SessionProvider refetchOnWindowFocus>
       {children}
     </SessionProvider>
   );
