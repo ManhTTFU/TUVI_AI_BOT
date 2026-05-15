@@ -11,7 +11,6 @@
  */
 import { getDb, users, transactions, prices } from '@tuvi/db';
 import { eq, and, gte, sql } from 'drizzle-orm';
-import { publish } from './sse-bus';
 
 /** Mức nạp tối thiểu (VND). */
 export const MIN_TOPUP_VND = 20_000;
@@ -116,13 +115,6 @@ export async function chargeReading(
     return { txId: txn.id, balanceAfter: updated.balanceVnd, amountCharged: price };
   });
 
-  publish(userId, 'balance', {
-    balanceVnd: result.balanceAfter,
-    delta: -result.amountCharged,
-    reason: 'charge',
-    service: opts.service,
-  });
-
   return result;
 }
 
@@ -147,7 +139,8 @@ export interface CreditResult {
  *  2. Không có `approveTxId` → INSERT row mới completed (admin_credit thủ công,
  *     refund tự động).
  *
- * Đều atomic với UPDATE users.balance_vnd trong cùng tx + publish SSE.
+ * Đều atomic với UPDATE users.balance_vnd trong cùng tx. FE pickup balance mới
+ * qua polling `/api/wallet/balance`.
  */
 export async function creditBalance(
   userId: string,
@@ -195,12 +188,6 @@ export async function creditBalance(
     }
 
     return { txId, balanceAfter: updated.balanceVnd };
-  });
-
-  publish(userId, 'balance', {
-    balanceVnd: result.balanceAfter,
-    delta: opts.amountVnd,
-    reason: opts.type,
   });
 
   return result;
@@ -254,12 +241,6 @@ export async function debitBalance(
       .returning({ id: transactions.id });
 
     return { txId: txn.id, balanceAfter: updated.balanceVnd };
-  });
-
-  publish(userId, 'balance', {
-    balanceVnd: result.balanceAfter,
-    delta: -amountVnd,
-    reason: 'admin_debit',
   });
 
   return result;

@@ -7,19 +7,23 @@
  * Cách 2 (đã wire trong package.json): pnpm --filter @tuvi/db migrate
  *   (cần thêm flag --env-file ở scripts nếu chạy chuẩn)
  */
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { migrate } from 'drizzle-orm/neon-serverless/migrator';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { resolve } from 'node:path';
 import { sql } from 'drizzle-orm';
+import ws from 'ws';
 import { prices } from './schema.js';
+
+// Migrate chạy Node.js (CI/local), luôn cần ws polyfill.
+neonConfig.webSocketConstructor = ws as unknown as typeof WebSocket;
 
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL chưa được set');
 
-  const client = postgres(url, { max: 1, prepare: false });
-  const db = drizzle(client);
+  const pool = new Pool({ connectionString: url });
+  const db = drizzle(pool);
 
   console.log('[migrate] đang chạy migrations...');
   await migrate(db, { migrationsFolder: resolve(process.cwd(), 'migrations') });
@@ -28,10 +32,6 @@ async function main() {
   await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
 
   console.log('[migrate] seed prices (upsert)...');
-  // Model pay-per-use: 1 lần luận giải = 5000 VND. Dùng action='analyze' (đã có
-  // trong enum chart_action). 'deep_readings' và 'combo' từ model cũ — DELETE
-  // để chỉ còn 1 row giá. Dùng UPSERT (KHÔNG `onConflictDoNothing`) để khi đổi
-  // giá ở source code + redeploy, bảng tự cập nhật theo.
   await db.execute(sql`DELETE FROM prices WHERE action IN ('deep_readings', 'combo')`);
   await db
     .insert(prices)
@@ -44,7 +44,7 @@ async function main() {
     });
 
   console.log('[migrate] xong');
-  await client.end();
+  await pool.end();
 }
 
 main().catch((e) => {

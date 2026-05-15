@@ -70,7 +70,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     FROM transactions
     WHERE type = 'topup' AND status = 'completed'
   `);
-  const t = topupTotals[0] ?? { today: '0', today_count: '0', month: '0', month_count: '0', total: '0', total_count: '0' };
+  const t = topupTotals.rows[0] ?? { today: '0', today_count: '0', month: '0', month_count: '0', total: '0', total_count: '0' };
 
   // Số lượt charge (luận giải) hôm nay / tháng / tổng
   const chargeCounts = await db.execute<{ today: string; month: string; total: string }>(sql`
@@ -81,7 +81,7 @@ export async function getAdminStats(): Promise<AdminStats> {
     FROM transactions
     WHERE type = 'charge' AND status = 'completed'
   `);
-  const c = chargeCounts[0] ?? { today: '0', month: '0', total: '0' };
+  const c = chargeCounts.rows[0] ?? { today: '0', month: '0', total: '0' };
 
   // User counts
   const userCounts = await db.execute<{ total: string; today: string; month: string }>(sql`
@@ -91,7 +91,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       COUNT(*) FILTER (WHERE date_trunc('month', created_at AT TIME ZONE 'Asia/Ho_Chi_Minh') = date_trunc('month', now() AT TIME ZONE 'Asia/Ho_Chi_Minh')) AS month
     FROM users
   `);
-  const u = userCounts[0] ?? { total: '0', today: '0', month: '0' };
+  const u = userCounts.rows[0] ?? { total: '0', today: '0', month: '0' };
 
   // Daily revenue 30 ngày gần nhất
   const dailyRows = await db.execute<{ day: string; total: string; count: string }>(sql`
@@ -146,8 +146,8 @@ export async function getAdminStats(): Promise<AdminStats> {
     usersToday: Number(u.today),
     usersMonth: Number(u.month),
 
-    daily: dailyRows.map((r) => ({ day: r.day, totalVnd: Number(r.total), count: Number(r.count) })),
-    monthly: monthlyRows.map((r) => ({ month: r.month, totalVnd: Number(r.total), count: Number(r.count) })),
-    usersDaily: userDailyRows.map((r) => ({ day: r.day, count: Number(r.count) })),
+    daily: dailyRows.rows.map((r) => ({ day: r.day, totalVnd: Number(r.total), count: Number(r.count) })),
+    monthly: monthlyRows.rows.map((r) => ({ month: r.month, totalVnd: Number(r.total), count: Number(r.count) })),
+    usersDaily: userDailyRows.rows.map((r) => ({ day: r.day, count: Number(r.count) })),
   };
 }

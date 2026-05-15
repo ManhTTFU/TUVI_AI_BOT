@@ -6,11 +6,10 @@
   "packageManager": "pnpm@10.27.0",
   "scripts": {
     "postinstall": "tsx scripts/download-fonts.ts",
-    "dev": "pnpm -r --parallel run dev",
-    "dev:api": "pnpm --filter @tuvi/api dev",
+    "dev": "pnpm --filter @tuvi/web dev",
     "dev:web": "pnpm --filter @tuvi/web dev",
     "build": "pnpm -r run build",
-    "start": "pnpm --filter @tuvi/api start & pnpm --filter @tuvi/web start",
+    "start": "pnpm --filter @tuvi/web start",
     "download-fonts": "tsx scripts/download-fonts.ts"
   },
   "devDependencies": {

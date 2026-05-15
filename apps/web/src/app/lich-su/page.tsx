@@ -141,7 +141,7 @@ export default async function HistoryPage({
     `),
   ]);
 
-  const c = countsRes[0] ?? { tu_vi: '0', tu_tru: '0', hoang_dao: '0', tarot: '0' };
+  const c = countsRes.rows[0] ?? { tu_vi: '0', tu_tru: '0', hoang_dao: '0', tarot: '0' };
   const counts: CountsByKind = {
     tuVi: Number(c.tu_vi),
     tuTru: Number(c.tu_tru),
@@ -159,7 +159,7 @@ export default async function HistoryPage({
   };
   const total = totalForKind[kind];
 
-  const items = rowsRes.map(buildHistoryItem);
+  const items = rowsRes.rows.map(buildHistoryItem);
 
   return (
     <div className="min-h-screen px-6 py-12 text-[#0f0a08]">

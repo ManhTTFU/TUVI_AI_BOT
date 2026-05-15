@@ -17,86 +17,82 @@ declare module 'next-auth' {
   }
 }
 
-const db = getDb();
+export const { handlers, auth, signIn, signOut } = NextAuth(() => {
+  const db = getDb();
 
-const providers: any[] = [];
+  const providers: any[] = [];
 
-// Google OAuth — chỉ enable nếu có cả 2 env.
-if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-  providers.push(
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-  );
-}
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    providers.push(
+      Google({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      }),
+    );
+  }
 
-// Facebook OAuth — phổ biến ở VN. Enable nếu có App ID + Secret.
-if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
-  providers.push(
-    Facebook({
-      clientId: process.env.FACEBOOK_CLIENT_ID,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-      // Facebook v18+ Graph: phải request explicitly public_profile + email,
-      // không gửi tham số `scope` đơn lẻ (gây "Invalid Scopes" warning dev).
-      authorization: {
-        params: { scope: 'public_profile,email' },
-      },
-    }),
-  );
-}
-
-// Email magic link — chỉ enable nếu có SMTP config + EMAIL_FROM.
-if (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_FROM) {
-  providers.push(
-    Nodemailer({
-      server: {
-        host: process.env.EMAIL_SERVER_HOST,
-        port: Number(process.env.EMAIL_SERVER_PORT) || 587,
-        auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD,
+  if (process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET) {
+    providers.push(
+      Facebook({
+        clientId: process.env.FACEBOOK_CLIENT_ID,
+        clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+        authorization: {
+          params: { scope: 'public_profile,email' },
         },
-      },
-      from: process.env.EMAIL_FROM,
-    }),
-  );
-}
+      }),
+    );
+  }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
-  }),
-  providers,
-  pages: {
-    signIn: '/dang-nhap',
-    verifyRequest: '/dang-nhap/check-email',
-  },
-  trustHost: true,
-  session: { strategy: 'database' },
-  callbacks: {
-    async session({ session, user }) {
-      // Inject role + balanceVnd từ DB (read mỗi request để realtime).
-      const [u] = await db
-        .select({
-          role: users.role,
-          balanceVnd: users.balanceVnd,
-        })
-        .from(users)
-        .where(eq(users.id, user.id))
-        .limit(1);
-      if (session.user) {
-        session.user.id = user.id;
-        session.user.name = user.name ?? null;
-        session.user.email = user.email ?? '';
-        session.user.image = user.image ?? null;
-        session.user.role = u?.role ?? 'user';
-        session.user.balanceVnd = u?.balanceVnd ?? 0;
-      }
-      return session;
+  if (process.env.EMAIL_SERVER_HOST && process.env.EMAIL_FROM) {
+    providers.push(
+      Nodemailer({
+        server: {
+          host: process.env.EMAIL_SERVER_HOST,
+          port: Number(process.env.EMAIL_SERVER_PORT) || 587,
+          auth: {
+            user: process.env.EMAIL_SERVER_USER,
+            pass: process.env.EMAIL_SERVER_PASSWORD,
+          },
+        },
+        from: process.env.EMAIL_FROM,
+      }),
+    );
+  }
+
+  return {
+    adapter: DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      sessionsTable: sessions,
+      verificationTokensTable: verificationTokens,
+    }),
+    providers,
+    pages: {
+      signIn: '/dang-nhap',
+      verifyRequest: '/dang-nhap/check-email',
     },
-  },
+    trustHost: true,
+    session: { strategy: 'database' },
+    callbacks: {
+      async session({ session, user }) {
+        const [u] = await db
+          .select({
+            role: users.role,
+            balanceVnd: users.balanceVnd,
+          })
+          .from(users)
+          .where(eq(users.id, user.id))
+          .limit(1);
+        if (session.user) {
+          session.user.id = user.id;
+          session.user.name = user.name ?? null;
+          session.user.email = user.email ?? '';
+          session.user.image = user.image ?? null;
+          session.user.role = u?.role ?? 'user';
+          session.user.balanceVnd = u?.balanceVnd ?? 0;
+        }
+        return session;
+      },
+    },
+  };
 });

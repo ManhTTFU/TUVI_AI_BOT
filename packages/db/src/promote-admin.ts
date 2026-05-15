@@ -4,10 +4,13 @@
  *
  * Dùng sau khi đăng nhập lần đầu (Google) để biến user đầu tiên thành admin.
  */
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { eq } from 'drizzle-orm';
+import ws from 'ws';
 import { users } from './schema.js';
+
+neonConfig.webSocketConstructor = ws as unknown as typeof WebSocket;
 
 async function main() {
   const email = process.argv[2];
@@ -18,8 +21,8 @@ async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('DATABASE_URL chưa được set');
 
-  const client = postgres(url, { max: 1, prepare: false });
-  const db = drizzle(client);
+  const pool = new Pool({ connectionString: url });
+  const db = drizzle(pool);
 
   const [updated] = await db
     .update(users)
@@ -33,7 +36,7 @@ async function main() {
   }
 
   console.log(`Đã promote ${updated.email} (${updated.id}) thành ${updated.role}`);
-  await client.end();
+  await pool.end();
 }
 
 main().catch((e) => {

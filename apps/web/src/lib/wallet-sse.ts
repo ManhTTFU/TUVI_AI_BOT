@@ -1,9 +1,12 @@
 /**
- * Singleton EventSource cho /api/wallet/stream — tránh nhiều component
- * (UserMenu navbar, WalletClient trang ví, ...) cùng mở connection.
+ * Client polling balance — thay thế EventSource SSE để chạy được trên CF Workers
+ * stateless. Singleton timer dùng window globals, mọi component subscribe chung
+ * 1 interval (UserMenu navbar + WalletClient + submit form ...).
  *
- * Event: 'balance' { balanceVnd: number, delta: number, reason: string }
- *   - reason ∈ 'topup' | 'admin_credit' | 'refund' | 'charge' | 'admin_debit'
+ * Event 'balance' fire khi:
+ *  - Khởi tạo (lần poll đầu, delta=0, reason='init') — snapshot từ DB.
+ *  - Phát hiện balance đổi so với last poll (delta ≠ 0, reason='topup'/'charge').
+ *  - Gọi `emitOptimisticBalance` từ submit form (delta + reason caller cung cấp).
  */
 
 export type WalletEvent = 'balance';
@@ -18,64 +21,74 @@ export type WalletListener = (event: WalletEvent, data: BalanceEventData) => voi
 declare global {
   interface Window {
     __walletListeners?: Set<WalletListener>;
-    __walletES?: EventSource;
+    __walletPollTimer?: number;
+    __walletLastBalance?: number;
   }
 }
 
-const EVENTS: WalletEvent[] = ['balance'];
+const POLL_INTERVAL_MS = 5_000;
+
+async function pollBalance(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  try {
+    const res = await fetch('/api/wallet/balance', { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = (await res.json()) as { balanceVnd?: number };
+    if (typeof data.balanceVnd !== 'number') return;
+
+    const prev = window.__walletLastBalance;
+    const isInitial = prev === undefined;
+    const delta = isInitial ? 0 : data.balanceVnd - prev;
+
+    if (!isInitial && delta === 0) return;
+
+    window.__walletLastBalance = data.balanceVnd;
+    const reason = isInitial ? 'init' : delta > 0 ? 'topup' : 'charge';
+    window.__walletListeners?.forEach((fn) => {
+      try {
+        fn('balance', { balanceVnd: data.balanceVnd!, delta, reason });
+      } catch {
+        /* ignore */
+      }
+    });
+  } catch {
+    /* network error, retry next tick */
+  }
+}
 
 export function subscribeWallet(fn: WalletListener): () => void {
   if (typeof window === 'undefined') return () => {};
   if (!window.__walletListeners) window.__walletListeners = new Set();
   window.__walletListeners.add(fn);
 
-  if (!window.__walletES) {
-    const es = new EventSource('/api/wallet/stream');
-    window.__walletES = es;
-    for (const evt of EVENTS) {
-      es.addEventListener(evt, (e) => {
-        let data: BalanceEventData | null = null;
-        try {
-          data = JSON.parse((e as MessageEvent).data);
-        } catch {
-          return;
-        }
-        if (!data) return;
-        window.__walletListeners?.forEach((f) => {
-          try {
-            f(evt, data!);
-          } catch {
-            /* ignore */
-          }
-        });
-      });
-    }
+  if (!window.__walletPollTimer) {
+    window.__walletPollTimer = window.setInterval(pollBalance, POLL_INTERVAL_MS);
+    void pollBalance();
   }
 
   return () => {
     window.__walletListeners?.delete(fn);
     if (window.__walletListeners && window.__walletListeners.size === 0) {
-      window.__walletES?.close();
-      window.__walletES = undefined;
+      if (window.__walletPollTimer) {
+        clearInterval(window.__walletPollTimer);
+        window.__walletPollTimer = undefined;
+      }
+      window.__walletLastBalance = undefined;
     }
   };
 }
 
 /**
- * Synthetic dispatch — fire 'balance' event tới mọi listener local mà KHÔNG đợi
- * server SSE. Dùng cho optimistic UI: ngay khi user click submit, drop balance
- * trong header trước, server SSE thực sẽ arrive ~200-500ms sau với cùng số →
- * setBalance idempotent, không flicker.
- *
- * Nếu request 402 INSUFFICIENT_BALANCE → caller phải gọi `useSession().update()`
- * để re-fetch session từ DB, useEffect trong UserMenu/WalletClient sẽ reset
- * balance về giá trị thật.
+ * Synthetic dispatch — fire 'balance' event tới mọi listener ngay tức thì cho
+ * optimistic UI. Update last balance state để lần poll sau không thấy "đổi"
+ * khi server commit cùng giá trị.
  */
 export function emitOptimisticBalance(data: BalanceEventData): void {
   if (typeof window === 'undefined') return;
-  window.__walletListeners?.forEach((f) => {
+  window.__walletLastBalance = data.balanceVnd;
+  window.__walletListeners?.forEach((fn) => {
     try {
-      f('balance', data);
+      fn('balance', data);
     } catch {
       /* ignore */
     }
