@@ -19,19 +19,20 @@ export default function UserMenu() {
     if (session?.user) setBalance(session.user.balanceVnd ?? 0);
   }, [session?.user?.balanceVnd]);
 
-  // Subscribe SSE — realtime balance khi admin credit, user nạp, charge.
+  // Subscribe wallet events — cập nhật balance UI ngay lập tức.
+  // update() KHÔNG gọi ở đây vì optimistic emit fire trước khi DB commit
+  // → session refresh sẽ lấy số cũ và revert balance về sai.
+  // update() được gọi riêng sau khi server confirm (xem emitOptimisticBalance
+  // lần 2 trong TuviClient, TuTruClient, TarotClient, LuanGiaiClient).
   useEffect(() => {
     if (!session?.user) return;
     const unsubscribe = subscribeWallet((event, data) => {
       if (event === 'balance' && typeof data.balanceVnd === 'number') {
         setBalance(data.balanceVnd);
       }
-      // Refresh session cookie để các component khác nhận balanceVnd mới khi
-      // reload (auth callback đọc DB tươi).
-      update().catch(() => {});
     });
     return unsubscribe;
-  }, [session?.user?.id, update]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {

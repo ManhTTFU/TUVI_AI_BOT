@@ -236,6 +236,10 @@ export default function TuTruClient() {
       setChart(c);
       setChartId(body.chartId);
       setChartMeta({ name: body.name, gender: body.gender });
+      if (typeof body.balanceVnd === "number") {
+        emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: "charge", service: "tu-tru" });
+        updateSession().catch(() => {});
+      }
       toast.success(
         typeof body.chargedVnd === "number"
           ? `Đã lập Tứ Trụ — trừ ${formatVnd(body.chargedVnd)}, còn lại ${formatVnd(body.balanceVnd ?? 0)}`

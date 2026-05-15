@@ -225,6 +225,10 @@ export default function TarotClient() {
       }
       setResult(body as unknown as TarotApiResponse);
       setStep('result');
+      if (typeof body.balanceVnd === 'number') {
+        emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd), delta: -Number(body.chargedVnd ?? PRICE), reason: 'charge', service: 'tarot' });
+        updateSession().catch(() => {});
+      }
       toast.success(
         typeof body.chargedVnd === 'number'
           ? `Luận giải xong — trừ ${formatVnd(body.chargedVnd)}, còn lại ${formatVnd(Number(body.balanceVnd ?? 0))}`

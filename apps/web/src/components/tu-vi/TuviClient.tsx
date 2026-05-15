@@ -334,6 +334,10 @@ export default function TuviClient() {
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
       setChart(data.chart as ChartData);
+      if (typeof data.balanceVnd === 'number') {
+        emitOptimisticBalance({ balanceVnd: data.balanceVnd, delta: -(data.chargedVnd ?? PRICE), reason: 'charge', service: 'tu-vi' });
+        updateSession().catch(() => {});
+      }
       toast.success(
         typeof data.chargedVnd === 'number'
           ? `Đã lập lá số — trừ ${formatVnd(data.chargedVnd)}, còn lại ${formatVnd(data.balanceVnd ?? 0)}`

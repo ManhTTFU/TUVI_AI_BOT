@@ -128,6 +128,10 @@ export default function LuanGiaiClient() {
           throw new Error(body?.error ?? `HTTP ${res.status}`);
         }
         setReading(body.reading as PersonalizedReading);
+        if (typeof body.balanceVnd === 'number') {
+          emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: 'charge', service: 'hoang-dao' });
+          updateSession().catch(() => {});
+        }
         toast.success(
           typeof body.chargedVnd === 'number'
             ? `Đã luận giải xong — trừ ${formatVnd(body.chargedVnd)}`
