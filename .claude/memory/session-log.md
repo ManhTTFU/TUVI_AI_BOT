@@ -23,6 +23,77 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-15 (tối — debug AI route + persist env vars + OpenAI SDK fetch)
+
+**Đang làm:** Sau khi deploy CF Workers buổi chiều, debug runtime issues:
+1. Auth.js 500 trên Workers → fix bằng JWT strategy.
+2. Env vars "biến mất" sau mỗi deploy → fix bằng declare trong wrangler.jsonc.
+3. DEEPSEEK_API_KEY runtime MISSING dù Dashboard có → escalate Secret qua wrangler CLI.
+4. OpenAI SDK "Connection error" trên Workers → force globalThis.fetch.
+
+**Đến đâu rồi:**
+
+*Auth.js JWT strategy (commit `8ded6af`):*
+- `apps/web/src/auth.ts` đổi `session.strategy: 'database'` → `'jwt'`. Adapter DrizzleAdapter vẫn dùng cho OAuth (createUser, linkAccount, 1 lần lúc sign-up), nhưng session validation KHÔNG đụng DB mỗi request → tránh crash trên Workers isolate.
+- `callbacks.jwt({ token, user, trigger })` — fetch role + balanceVnd từ DB CHỈ khi `user` defined (sign-in) hoặc `trigger === 'update'`.
+- `callbacks.session({ session, token })` — đọc từ token, không đụng DB.
+- Cast type `(token as any)` để bypass next-auth/jwt augmentation issue trong v5 beta.
+- Trade-off: balanceVnd snapshot lúc sign-in / `session.update()`, không fresh per request. Khớp pattern A (commit `eb1f9df`).
+- Existing user database session sẽ invalid sau deploy → phải login lại.
+
+*Env vars persist trong wrangler.jsonc (commit `f1c3143`):*
+- ROOT CAUSE: `wrangler deploy` (chạy bởi CF Workers Builds từ Git push) WIPE Plain text vars KHÔNG được declare trong `wrangler.toml/jsonc`. Secrets persist (encrypted store riêng).
+- `apps/web/wrangler.jsonc` add `vars` section với public-safe values: `NEXTAUTH_URL`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`, `AI_CONCURRENCY=8`, `GOOGLE_CLIENT_ID`, `FACEBOOK_CLIENT_ID`, `CASSO_ENABLED=false`.
+- Secrets (DATABASE_URL, AUTH_SECRET, DEEPSEEK_API_KEY, GOOGLE_CLIENT_SECRET, FACEBOOK_CLIENT_SECRET, EMAIL_*, CASSO_*) vẫn add qua Dashboard hoặc `wrangler secret put` — persist.
+- `AI_CONCURRENCY` giảm 64 → 8 cho CF Workers (tránh CPU spike, free tier 30s wall time).
+
+*Debug endpoint `/api/debug-env` (commit `50f2ab1` + `0a493a8` rename):*
+- `apps/web/src/app/api/debug-env/route.ts` trả JSON status các env var (`"SET (len=N)"` / `"MISSING"`).
+- Bug đầu: tạo ở `_debug/env/route.ts` → Next.js App Router treat folder prefix `_` là **private folder** (không route, 404). Rename sang `debug-env/route.ts`.
+- Phát hiện qua endpoint này: `DEEPSEEK_API_KEY` MISSING mặc dù Dashboard show row Secret tồn tại. CF UX bug: Secret add qua Dashboard không tự apply cho deployment đang chạy (cần click "Deploy" modal hoặc rebuild). Workaround: `wrangler secret put DEEPSEEK_API_KEY --name tuvi-web` từ local — tự tạo new deployment với secret active ngay.
+
+*Debug log trong deep-readings route (commit `609ef35`):*
+- `apps/web/src/app/api/tuvi/[chartId]/deep-readings/route.ts` wrap toàn bộ handler trong top-level try-catch + `console.log` từng step (auth, DB query, AI call). Khi crash, response 500 trả message + stack thay vì HTML.
+- Giúp xác định crash xảy ra ở step nào: log Observability hiển thị step cuối trước khi exception fire.
+
+*OpenAI SDK fetch fix (commit `3256d91`):*
+- `packages/ai/src/client.ts` pass `fetch: globalThis.fetch.bind(globalThis) as any` vào OpenAI constructor. OpenAI SDK v4 tự detect environment → trên Workers OpenNext + nodejs_compat polyfill, SDK có thể nhận diện nhầm là Node và dùng node http qua shim → "Connection error" khi gọi api.deepseek.com.
+- Force native Workers fetch để bypass.
+
+*FE bỏ polling balance (đã commit `eb1f9df` đầu session):*
+- `apps/web/src/lib/wallet-sse.ts` rewrite 97 → 41 dòng. Pub/sub only, KHÔNG poll.
+- `wallet.ts` update comment outdated.
+
+**Files đã sửa (session 2026-05-15 tổng cộng):**
+- `apps/web/wrangler.jsonc` (mới + vars section)
+- `apps/web/open-next.config.ts` (mới)
+- `apps/web/package.json` (scripts cf:build, dep @opennextjs/cloudflare@0.6.6, vercel/next-on-pages removed)
+- `apps/web/src/auth.ts` (JWT strategy + lazy factory)
+- `apps/web/src/lib/wallet-sse.ts` (bỏ polling)
+- `apps/web/src/lib/wallet.ts` (update comment)
+- `apps/web/src/app/api/debug-env/route.ts` (mới, temp debug)
+- `apps/web/src/app/api/tuvi/[chartId]/deep-readings/route.ts` (top-level try-catch + console.log)
+- `packages/ai/src/client.ts` (force globalThis.fetch)
+- `.nvmrc` (Node 22)
+- `pnpm-lock.yaml`
+
+**Blocker:**
+- Sau commit `3256d91`, chưa biết AI route work hay vẫn "Connection error" / timeout 30s. User chưa paste log mới.
+- Nếu vẫn fail: 2 hướng (1) timeout — upgrade Workers Paid Plan \$5/tháng (5min wall time), (2) lib compat — chuyển sang direct fetch tay không qua OpenAI SDK.
+- **`/api/debug-env` route đang public — INFO DISCLOSURE rủi ro.** Phải xóa sau khi xong debug.
+- **Secrets ĐÃ LEAK** trong chat history Anthropic: DEEPSEEK_API_KEY, AUTH_SECRET, DATABASE_URL (Neon password), GOOGLE_CLIENT_SECRET, FACEBOOK_CLIENT_SECRET, TELEGRAM_BOT_TOKEN. User cần ROTATE TẤT CẢ + update CF Worker Secrets + `.env` local. Hiện chưa rotate.
+- Workers Free tier 30s wall time có thể timeout AI parallel 6 sections — chưa observe nhưng nguy cơ.
+
+**Việc tiếp theo:**
+1. User confirm AI route work sau commit `3256d91`. Nếu vẫn fail, paste log Observability để debug bước tiếp.
+2. **XÓA `/api/debug-env` route** sau khi xong debug (security).
+3. **Rotate tất cả secrets đã leak** + cập nhật CF Worker + `.env` local.
+4. Test các route chưa migrate edge-compat: PDF (`/api/tuvi/[chartId]/pdf`), Nodemailer (email magic link), upload-qr (`fs.writeFile`). Quyết định bỏ hay tách service.
+5. Test E2E login Google → submit chart → AI luận giải → balance trừ → admin approve topup → balance update khi navigate.
+6. Upgrade Workers Paid Plan nếu thấy 30s wall time chặn AI parallel.
+
+---
+
 ### 2026-05-15 (deploy Cloudflare Workers + bỏ polling balance)
 
 **Đang làm:** Deploy production lên Cloudflare Workers qua OpenNext adapter. Setup hạ tầng từ đầu — connect domain `luangiaivanmenh.com`, env vars, OAuth callback. Đầu session vẫn còn dirty từ 2026-05-14 (60+ file billing redesign chưa commit).
