@@ -23,6 +23,38 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-16 (khuya — CF Workers I/O isolation + pLimit + session polling)
+
+**Đang làm:** Tiếp tục debug production CF Workers — analyze vẫn lỗi sau fix singleton OpenAI client từ session trước.
+
+**Đến đâu rồi:** Đã fix code 3 lớp, chưa verify production chạy OK.
+
+**Bug 3 — DB Pool singleton (WebSocket = Native I/O):**
+`getDb()` dùng module-level `_pool` (Neon Pool dùng WebSocket). Request A tạo Pool → request B gọi `getDb()` trả về cùng Pool (đã tạo trong context A) → CF Workers throw `"Cannot perform I/O on behalf of a different request. (I/O type: Native)"`.
+Fix: bỏ `_db`/`_pool` singleton, mỗi `getDb()` tạo `new Pool(...)` mới trong context request hiện tại.
+
+**Bug 4 — pLimit module-level singleton gây "Promise will never complete":**
+`aiLimit = pLimit(64)` ở module scope. CF Workers cancel cross-request promise continuation → wrapper promise của pLimit treo vĩnh viễn → CF Workers kill request với `"Promise will never complete"`.
+Fix: bỏ pLimit hoàn toàn khỏi `aiCall`. Dùng `withRetry(fn)` trực tiếp — đủ để handle 429/5xx, không cần semaphore (64 >> 13 calls thực tế).
+
+**Bug phụ — `no_handle_cross_request_promise_resolution` flag làm tệ hơn:**
+Flag này cho phép cross-request continuation chạy nhưng chúng treo thay vì fail nhanh → đổi từ "I/O error" sang "Promise hang" — tệ hơn. Đã remove flag.
+
+**Bonus fix — session polling:**
+`AuthProvider` có `refetchInterval={60}` — auto gọi `/api/auth/session` mỗi 60s. Với database session, mỗi call là 1 Neon DB query. SSE + `updateSession()` sau submit đã đủ. Bỏ `refetchInterval`, giữ `refetchOnWindowFocus`.
+
+**Files đã sửa:**
+- `packages/db/src/client.ts` — bỏ `_db`/`_pool` singleton, tạo Pool mới mỗi call
+- `packages/ai/src/limit.ts` — bỏ pLimit, `aiCall` = `withRetry` + timing log
+- `apps/web/wrangler.jsonc` — bỏ flag `no_handle_cross_request_promise_resolution`
+- `apps/web/src/components/providers/AuthProvider.tsx` — bỏ `refetchInterval={60}`
+
+**Blocker:** Chưa test production sau deploy. Cần verify `/analyze` + `/deep-readings` thực sự pass.
+
+**Việc tiếp theo:** Deploy, test toàn bộ flow submit → analyze → deep-readings → balance update. Nếu còn lỗi: `wrangler tail` để xem error mới.
+
+---
+
 ### 2026-05-16 (tối — debug production AI routes)
 
 **Đang làm:** Debug 2 route `/api/tuvi/[chartId]/analyze` và `/api/tuvi/[chartId]/deep-readings` bị lỗi trên CF Workers production nhưng local chạy bình thường.
