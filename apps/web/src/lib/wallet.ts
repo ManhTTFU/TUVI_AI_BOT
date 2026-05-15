@@ -140,7 +140,7 @@ export interface CreditResult {
  *     refund tự động).
  *
  * Đều atomic với UPDATE users.balance_vnd trong cùng tx. FE pickup balance mới
- * qua polling `/api/wallet/balance`.
+ * khi user navigate / F5 (session callback đọc DB fresh mỗi request).
  */
 export async function creditBalance(
   userId: string,
