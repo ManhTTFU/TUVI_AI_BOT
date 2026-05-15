@@ -16,7 +16,13 @@ export function getDeepseekClient(): DeepseekClient {
   if (!apiKey) {
     throw new Error('DEEPSEEK_API_KEY chưa được cấu hình trong .env');
   }
-  _client = new OpenAI({ apiKey, baseURL });
+  // Force fetch global của runtime (Workers / Node 22+) — tránh OpenAI SDK
+  // detect Node http qua nodejs_compat polyfill rồi fail trên CF Workers.
+  _client = new OpenAI({
+    apiKey,
+    baseURL,
+    fetch: globalThis.fetch.bind(globalThis) as any,
+  });
   return _client;
 }
 
