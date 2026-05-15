@@ -11,7 +11,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       role: 'user' | 'admin';
-      /** Số dư ví VND realtime. Đọc DB mỗi request. */
+      /** Số dư ví VND. Snapshot lúc sign-in / update() — không fresh per request. */
       balanceVnd: number;
     } & DefaultSession['user'];
   }
@@ -72,24 +72,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
       verifyRequest: '/dang-nhap/check-email',
     },
     trustHost: true,
-    session: { strategy: 'database' },
+    session: { strategy: 'jwt' },
     callbacks: {
-      async session({ session, user }) {
-        const [u] = await db
-          .select({
-            role: users.role,
-            balanceVnd: users.balanceVnd,
-          })
-          .from(users)
-          .where(eq(users.id, user.id))
-          .limit(1);
-        if (session.user) {
-          session.user.id = user.id;
-          session.user.name = user.name ?? null;
-          session.user.email = user.email ?? '';
-          session.user.image = user.image ?? null;
-          session.user.role = u?.role ?? 'user';
-          session.user.balanceVnd = u?.balanceVnd ?? 0;
+      async jwt({ token, user, trigger }) {
+        if (user) {
+          (token as any).id = user.id;
+        }
+        const tokenId = (token as any).id as string | undefined;
+        const needsRefresh = !!user || trigger === 'update';
+        if (needsRefresh && tokenId) {
+          const [u] = await db
+            .select({ role: users.role, balanceVnd: users.balanceVnd })
+            .from(users)
+            .where(eq(users.id, tokenId))
+            .limit(1);
+          (token as any).role = u?.role ?? 'user';
+          (token as any).balanceVnd = u?.balanceVnd ?? 0;
+        }
+        return token;
+      },
+      async session({ session, token }) {
+        const t = token as any;
+        if (session.user && t.id) {
+          session.user.id = t.id;
+          session.user.role = (t.role as 'user' | 'admin') ?? 'user';
+          session.user.balanceVnd = (t.balanceVnd as number) ?? 0;
         }
         return session;
       },
