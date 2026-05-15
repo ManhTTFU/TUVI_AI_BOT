@@ -23,6 +23,61 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-15 (deploy Cloudflare Workers + bỏ polling balance)
+
+**Đang làm:** Deploy production lên Cloudflare Workers qua OpenNext adapter. Setup hạ tầng từ đầu — connect domain `luangiaivanmenh.com`, env vars, OAuth callback. Đầu session vẫn còn dirty từ 2026-05-14 (60+ file billing redesign chưa commit).
+
+**Đến đâu rồi:**
+
+*Setup CF Workers:*
+- Tạo `apps/web/wrangler.jsonc` config Worker (`main: .open-next/worker.js`, `compatibility_date: 2025-01-01`, flags `nodejs_compat` + `global_fetch_strictly_public`, ASSETS binding cho `.open-next/assets`).
+- Thử `@cloudflare/next-on-pages@1.13.16` trước → fail vì CF Dashboard MỚI không còn tab Pages riêng (Pages merged vào Workers). Switch sang `@opennextjs/cloudflare`.
+- Pin `@opennextjs/cloudflare@0.6.6` (last 0.x) vì v1.x latest yêu cầu Next 15+, project đang Next 14.2.18.
+- Tạo `apps/web/open-next.config.ts` minimal `defineCloudflareConfig({})`.
+- Đổi scripts package.json: `pages:build` → `cf:build` = `opennextjs-cloudflare build`, `deploy` = `wrangler deploy`.
+- Tạo `.nvmrc` ở root pin Node `22` (wrangler 4.91+ yêu cầu Node 22, bump từ 20).
+- CF Workers Builds Git integration: build command `pnpm install --frozen-lockfile && pnpm --filter @tuvi/web cf:build`, deploy command `pnpm --filter @tuvi/web exec wrangler deploy`, root `/`.
+
+*Fix Next.js build pass trên CF:*
+- `apps/web/src/auth.ts` wrap NextAuth thành factory function `NextAuth(() => ({...}))` — lazy `getDb()` chỉ chạy khi env loaded. Trước đó `const db = getDb()` top-level crash "Collecting page data" stage vì DATABASE_URL chưa set ở build time.
+- Build ~80s xong OK trên CF (Next 14 bundled qua OpenNext → 1 Worker script `.open-next/worker.js` 13.6 MiB, 2.49 MiB gzip).
+- Worker Startup Time: 20ms.
+
+*Domain + Auth setup:*
+- Add custom domain `luangiaivanmenh.com` (apex) + `www.luangiaivanmenh.com` vào Worker.
+- Worker URL `https://tuvi-web.tuanmanh97x.workers.dev` (workers.dev subdomain).
+- Update Google OAuth Console: JS origins + redirect URIs cho cả `localhost:3100` (dev) lẫn `https://luangiaivanmenh.com` (prod).
+- Add env vars CF Worker: DATABASE_URL (Secret), AUTH_SECRET (Secret), DEEPSEEK_API_KEY (Secret), GOOGLE_CLIENT_ID/SECRET, NEXTAUTH_URL=`https://luangiaivanmenh.com`, NEXT_PUBLIC_SITE_URL + NEXT_PUBLIC_API_BASE_URL = domain prod, EMAIL_* (nếu giữ), CASSO_*, NEXT_PUBLIC_*.
+
+*Bỏ polling balance:*
+- `apps/web/src/lib/wallet-sse.ts` rewrite từ 97 → 41 dòng. Bỏ `setInterval` polling 5s `/api/wallet/balance`, bỏ `__walletPollTimer` + `__walletLastBalance` globals. Giữ pub/sub: `subscribeWallet` chỉ register listener, `emitOptimisticBalance` fire event.
+- Flow mới: balance source-of-truth = `session.user.balanceVnd` (Auth.js v5 callback đọc DB fresh mỗi request). Submit form charge → optimistic emit drop ngay. Admin approve topup → user F5/navigate để thấy. Mất realtime cho admin actions nhưng đỡ spam request + đỡ lag khi route 500.
+- `UserMenu.tsx` không sửa — đã đúng pattern: init balance từ session, listen event `'balance'`, call `update()` refetch session sau optimistic.
+- `wallet.ts` update comment outdated reference `/api/wallet/balance` polling.
+
+**Files đã sửa:** Commits của session:
+- `4dfe9f0` ci: add typecheck + build workflow (`.github/workflows/ci.yml`)
+- `fe72322` fix(web): wrap luan-giai page in Suspense for build prerender
+- `7ff7e84`/`134bae9` (untitled "update") — chứa: `wrangler.jsonc`, `open-next.config.ts`, `auth.ts` lazy, `package.json` deps, `pnpm-lock.yaml`, `lich-su/page.tsx`, `admin-stats.ts`, `packages/db/*`, `lib/wallet.ts` (charge cleanup), `api/wallet/balance/route.ts` (mới), `.nvmrc`
+- `a4dfca2` build: bump node to 22 for wrangler 4.91+ (`.nvmrc`)
+- `eb1f9df` fix(web): bỏ polling balance, dùng session value + optimistic UI (`wallet-sse.ts` rewrite, `wallet.ts` comment)
+
+**Blocker:**
+- **`/api/wallet/balance` 500 trên CF Workers** — log Observability chỉ có `outcome: "exception"` không có stack trace. User chưa chạy `wrangler tail tuvi-web --format pretty` từ local để bắt full exception. Sau commit `eb1f9df` không còn ai gọi route này nên không thấy 500 nữa, nhưng root cause Auth.js v5 + DrizzleAdapter crash trên Worker isolate VẪN CÒN — sẽ ảnh hưởng các route khác cũng dùng `auth()`.
+- **Google OAuth login fail** với error FE `Unexpected token '<', "<!DOCTYPE"...` — `/api/auth/callback/google` xử lý code OK (Google redirect về với code), nhưng sau đó client-side fetch `/api/auth/session` nhận HTML 500 thay vì JSON. Cùng nguyên nhân với Wallet 500.
+- **Error rate Metrics**: 43 errors / 257 requests = 17%.
+- Còn 4 route fundamentally không edge-compat dù có nodejs_compat: PDFKit (`/api/tuvi/[chartId]/pdf`), Nodemailer SMTP (Auth.js email magic link), `fs.writeFile` (`/api/admin/bank-config/upload-qr`), node:crypto trong `tarot-server.ts`.
+
+**Việc tiếp theo:**
+1. User chạy `pnpm --filter @tuvi/web exec wrangler tail tuvi-web --format pretty` từ terminal local → trigger login → paste stack trace để xác định root cause Auth.js crash.
+2. Fix Auth.js v5 + DrizzleAdapter để login Google work trên Workers. Có thể cần: chuyển `session.strategy` từ `'database'` → `'jwt'` (đỡ DB call mỗi request, nhưng mất `balanceVnd` realtime — phải refetch qua API), HOẶC patch Drizzle adapter, HOẶC switch sang Hyperdrive/khác driver Neon.
+3. Migrate PDF feature → tách service ngoài (Render/Railway/keep apps/api Express).
+4. Migrate upload-qr → R2 bucket (binding mới trong wrangler.jsonc + thêm code R2 PUT).
+5. Bỏ Nodemailer email magic link (hoặc swap Resend provider edge-compat).
+6. Verify build/deploy CF mới sau commit `eb1f9df` — kiểm tra Network tab không còn `/api/wallet/balance` lặp 5s.
+
+---
+
 ### 2026-05-14 (chiều — full billing redesign + admin dashboard + rebrand)
 
 **Đang làm:** Đại refactor 4 nhánh trong 1 session:
