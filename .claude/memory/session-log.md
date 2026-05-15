@@ -23,6 +23,32 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-16
+
+**Đang làm:** Fix real-time balance deduction — navbar và các client form không cập nhật số dư sau khi charge.
+
+**Đến đâu rồi:** Xong hoàn toàn.
+
+Root cause: `emitOptimisticBalance` fire trước fetch → UserMenu gọi `update()` → JWT refresh từ DB trước khi charge commit → session trả về balance cũ → `useEffect` trong UserMenu overwrite optimistic balance về số cũ. Sau fetch thành công không có emit thứ 2 với real balance.
+
+Fix 2 phần:
+1. Bỏ `update()` khỏi UserMenu SSE subscription handler (gây race condition — refresh session trước khi charge commit).
+2. Sau mỗi fetch submit thành công, emit `emitOptimisticBalance(data.balanceVnd)` + gọi `updateSession()` — lúc này charge đã commit vào DB nên JWT refresh lấy đúng giá trị.
+
+**Files đã sửa:**
+- `apps/web/src/components/layout/UserMenu.tsx` — bỏ `update()` khỏi wallet subscription, chỉ `setBalance` thuần
+- `apps/web/src/components/tu-vi/TuviClient.tsx` — emit real balance + updateSession() sau submit thành công
+- `apps/web/src/components/tu-tru/TuTruClient.tsx` — như trên
+- `apps/web/src/app/xem-tarot/TarotClient.tsx` — như trên
+- `apps/web/src/app/hoang-dao/luan-giai/LuanGiaiClient.tsx` — như trên
+- `apps/web/.env.local` — tạo mới, sync từ root `.env` (Deepseek, DB, Auth, Google/Facebook OAuth)
+
+**Blocker:** Không.
+
+**Việc tiếp theo:** Test thực tế — chạy app, thử submit lá số, kiểm tra navbar trừ tiền đúng real-time. Fix nếu còn edge case.
+
+---
+
 ### 2026-05-15 (tối — debug AI route + persist env vars + OpenAI SDK fetch)
 
 **Đang làm:** Sau khi deploy CF Workers buổi chiều, debug runtime issues:

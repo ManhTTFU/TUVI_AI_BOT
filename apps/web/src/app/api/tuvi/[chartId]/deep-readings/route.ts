@@ -71,9 +71,9 @@ export async function POST(_req: Request, ctx: { params: { chartId: string } }) 
 
       return NextResponse.json({ ok: true, deep: data, cached: false });
     } catch (e) {
-      const msg = (e as Error).message ?? 'Lỗi không xác định khi sinh luận giải';
-      console.error(`[deep-readings] AI error: ${msg}`, e);
-      return NextResponse.json({ ok: false, error: msg }, { status: 502 });
+      const err = e as Error & { status?: number };
+      console.error(`[deep-readings] AI error status=${err.status} msg=${err.message}`, err);
+      return NextResponse.json({ ok: false, error: err.message ?? 'Lỗi AI' }, { status: 502 });
     }
   } catch (topErr) {
     const e = topErr as Error;
