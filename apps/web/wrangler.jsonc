@@ -7,5 +7,17 @@
   "assets": {
     "binding": "ASSETS",
     "directory": ".open-next/assets"
+  },
+  "vars": {
+    "NEXTAUTH_URL": "https://luangiaivanmenh.com",
+    "NEXT_PUBLIC_SITE_URL": "https://luangiaivanmenh.com",
+    "NEXT_PUBLIC_API_BASE_URL": "https://luangiaivanmenh.com",
+    "NEXT_PUBLIC_TELEGRAM_BOT_USERNAME": "TeleTuViBot",
+    "DEEPSEEK_BASE_URL": "https://api.deepseek.com",
+    "DEEPSEEK_MODEL": "deepseek-chat",
+    "AI_CONCURRENCY": "8",
+    "GOOGLE_CLIENT_ID": "741527513075-j1cr1f03p28n8d192a2095055bvbc81k.apps.googleusercontent.com",
+    "FACEBOOK_CLIENT_ID": "2024527571833655",
+    "CASSO_ENABLED": "false"
   }
 }
