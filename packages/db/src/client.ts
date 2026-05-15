@@ -10,9 +10,10 @@ if (typeof globalThis.WebSocket === 'undefined') {
   neonConfig.webSocketConstructor = ws as unknown as typeof WebSocket;
 }
 
-let _db: ReturnType<typeof drizzle<typeof schema>> | null = null;
-let _pool: Pool | null = null;
-
+// Không dùng singleton Pool — CF Workers chạy nhiều request cùng isolate, WebSocket
+// (I/O type: Native) không thể share giữa các request context khác nhau. Tạo Pool
+// mới mỗi call — Neon serverless Pool là lazy (WebSocket mở khi query đầu tiên),
+// constructor rẻ, phù hợp serverless request-per-connection model.
 function getConnectionString(): string {
   const url = process.env.DATABASE_URL;
   if (!url) {
@@ -24,18 +25,12 @@ function getConnectionString(): string {
 }
 
 export function getDb() {
-  if (_db) return _db;
-  _pool = new Pool({ connectionString: getConnectionString() });
-  _db = drizzle(_pool, { schema });
-  return _db;
+  const pool = new Pool({ connectionString: getConnectionString() });
+  return drizzle(pool, { schema });
 }
 
 export async function closeDb(): Promise<void> {
-  if (_pool) {
-    await _pool.end();
-    _pool = null;
-    _db = null;
-  }
+  // No-op trong serverless model — Pool garbage collected sau mỗi request.
 }
 
 export type DB = ReturnType<typeof getDb>;
