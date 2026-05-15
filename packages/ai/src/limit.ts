@@ -1,35 +1,11 @@
-import pLimit from 'p-limit';
-
 /**
  * Map birthHash (16 hex) → integer seed cho Deepseek `seed` parameter.
  * Lấy 7 hex đầu (max 0xFFFFFFF ≈ 268M) — fit safe trong int32 signed, tránh
  * edge case API reject seed quá lớn.
- *
- * Mục đích: cùng input → cùng seed → output deterministic (~95-98%, best-effort
- * theo Deepseek doc). Cho phép cache share-cross-user có ý nghĩa logic chứ
- * không chỉ "đông cứng output random".
  */
 export function seedFromHash(hash: string): number {
   return parseInt(hash.slice(0, 7), 16);
 }
-
-/**
- * Global concurrency limit cho mọi call Deepseek từ process này.
- *
- * Default 64 — chọn cho Deepseek paid tier (không hard cap concurrent, chỉ
- * rate-limit RPM ~5000). 64 đủ để:
- *  - 1 user submit Tu-Vi full (11 calls) chạy hoàn toàn song song.
- *  - 5-6 user submit cùng lúc vẫn không queue (60+ calls).
- *  - Còn buffer cho daily/personalize background.
- *
- * Limit thực tế ở mức cao hơn = Node single-thread + memory per pending HTTP
- * request (~10MB × 64 ≈ 640MB). Vượt 128 dễ nghẽn event loop.
- *
- * Có thể override qua env `AI_CONCURRENCY` (vd: AI_CONCURRENCY=128 cho server
- * mạnh, hoặc =16 trên free tier để tránh 429).
- */
-const concurrency = Number(process.env.AI_CONCURRENCY) || 64;
-export const aiLimit = pLimit(concurrency);
 
 interface RetryOptions {
   retries?: number;
@@ -67,19 +43,21 @@ export async function withRetry<T>(
   throw lastErr;
 }
 
-/** Wrap 1 call AI: limit + retry + timing log. Dùng cho mọi entry điểm Deepseek. */
+// Không dùng pLimit module-level — CF Workers chạy nhiều request cùng isolate,
+// pLimit singleton tạo cross-request promise continuation bị CF Workers cancel/hang.
+// withRetry đã handle 429/5xx; Deepseek paid tier không cần global semaphore
+// (mỗi request gọi ≤13 calls, thấp hơn nhiều so với rate limit 5000 RPM).
+/** Wrap 1 call AI: retry + timing log. Dùng cho mọi entry điểm Deepseek. */
 export function aiCall<T>(fn: () => Promise<T>, label = 'ai'): Promise<T> {
-  return aiLimit(async () => {
-    const start = Date.now();
-    try {
-      const result = await withRetry(fn, { label });
-      const ms = Date.now() - start;
-      console.log(`[ai:${label}] ${ms}ms`);
+  const start = Date.now();
+  return withRetry(fn, { label }).then(
+    (result) => {
+      console.log(`[ai:${label}] ${Date.now() - start}ms`);
       return result;
-    } catch (e) {
-      const ms = Date.now() - start;
-      console.error(`[ai:${label}] FAILED after ${ms}ms — ${(e as Error).message}`);
+    },
+    (e) => {
+      console.error(`[ai:${label}] FAILED after ${Date.now() - start}ms — ${(e as Error).message}`);
       throw e;
-    }
-  });
+    },
+  );
 }
