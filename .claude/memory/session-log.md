@@ -23,6 +23,32 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-16 (tối — debug production AI routes)
+
+**Đang làm:** Debug 2 route `/api/tuvi/[chartId]/analyze` và `/api/tuvi/[chartId]/deep-readings` bị lỗi trên CF Workers production nhưng local chạy bình thường.
+
+**Đến đâu rồi:** Đã fix 2 bug, chưa test lại trên production sau fix cuối cùng.
+
+**Bug 1 — DEEPSEEK_API_KEY len=1:**
+`wrangler secret put` trước đó chỉ lưu 1 ký tự. Deepseek nhận key không hợp lệ → trả 400 với body rỗng tại CDN layer. Fix: re-run `wrangler secret put DEEPSEEK_API_KEY` với full key (len=35).
+
+**Bug 2 — OpenAI client singleton bị share giữa request contexts:**
+`getDeepseekClient()` dùng module-level `_client` singleton. CF Workers chạy nhiều request trong cùng 1 isolate — request `analyze` và `deep-readings` kích hoạt song song → request sau dùng `_client` từ context request trước → CF Workers throw `"Cannot perform I/O on behalf of a different request"` → route hung → runtime cancel.
+Fix: bỏ singleton, tạo `new OpenAI(...)` mới mỗi call. Dùng arrow function `(...args) => globalThis.fetch(...args)` thay vì `.bind(globalThis)` để `fetch` được lookup lúc gọi, không bị capture vào context cũ.
+
+**Files đã sửa:**
+- `packages/ai/src/client.ts` — bỏ singleton `_client`, factory function mỗi call
+- `apps/web/src/app/api/tuvi/[chartId]/analyze/route.ts` — thêm outer try-catch + log `status=` cụ thể
+- `apps/web/src/app/api/tuvi/[chartId]/deep-readings/route.ts` — log `status=` cụ thể
+- `apps/web/src/app/api/debug-env/route.ts` — thêm raw fetch test tới Deepseek
+- `apps/web/wrangler.jsonc` — bỏ flag `global_fetch_strictly_public` (không cần cho server-side Workers)
+
+**Blocker:** Chưa test lại sau fix singleton (`client.ts`). Cần deploy + submit lá số để xác nhận.
+
+**Việc tiếp theo:** Deploy, test toàn bộ luồng production: submit → analyze → deep-readings → balance deduction realtime.
+
+---
+
 ### 2026-05-16
 
 **Đang làm:** Fix real-time balance deduction — navbar và các client form không cập nhật số dư sau khi charge.
