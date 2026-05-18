@@ -131,7 +131,7 @@ export default function PrivacyPolicy() {
           6. Liên hệ
         </h2>
         <p>
-          Email: <strong>support@vanmenh.vn</strong> (sẽ cập nhật khi launch).
+          Email: <strong>tuanmanh97x@gmail.com</strong>
         </p>
       </section>
     </article>

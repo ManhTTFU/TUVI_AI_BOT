@@ -5,6 +5,7 @@ import Nodemailer from 'next-auth/providers/nodemailer';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { getDb, users, accounts, sessions, verificationTokens } from '@tuvi/db';
 import { eq } from 'drizzle-orm';
+import { walletChannelFor } from '@/lib/realtime-server';
 
 declare module 'next-auth' {
   interface Session {
@@ -13,6 +14,8 @@ declare module 'next-auth' {
       role: 'user' | 'admin';
       /** Số dư ví VND. Snapshot lúc sign-in / update() — không fresh per request. */
       balanceVnd: number;
+      /** Supabase Realtime channel name (HMAC userId) cho wallet balance push. */
+      walletChannel: string;
     } & DefaultSession['user'];
   }
 }
@@ -97,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
           session.user.id = t.id;
           session.user.role = (t.role as 'user' | 'admin') ?? 'user';
           session.user.balanceVnd = (t.balanceVnd as number) ?? 0;
+          session.user.walletChannel = walletChannelFor(t.id);
         }
         return session;
       },

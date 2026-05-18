@@ -44,7 +44,7 @@ export default function DataDeletion() {
         >
           Yêu cầu xóa qua email
         </h2>
-        <p>Gửi email tới <strong>support@vanmenh.vn</strong> với nội dung:</p>
+        <p>Gửi email tới <strong>tuanmanh97x@gmail.com</strong> với nội dung:</p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>Tiêu đề: <strong>Yêu cầu xóa dữ liệu cá nhân</strong></li>
           <li>Email đăng ký tài khoản</li>

@@ -65,8 +65,8 @@ export default function Footer() {
             Liên hệ
           </div>
           <ul className="space-y-2 text-sm text-[#e8d8b8]/80">
-            <li>Email · lienhe@vanmenh.vn</li>
-            <li>Hotline · 1900 1881</li>
+            <li>Email · tuanmanh97x@gmail.com</li>
+            <li>Hotline · 0963 590 255</li>
           </ul>
         </div>
       </div>

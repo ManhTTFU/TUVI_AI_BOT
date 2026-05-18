@@ -51,7 +51,7 @@ const VALID_GOAL: Goal[] = ['career', 'love', 'wealth', 'health', 'study', 'fami
 export default function LuanGiaiClient() {
   const router = useRouter();
   const params = useSearchParams();
-  const { data: session, update: updateSession } = useSession();
+  const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [reading, setReading] = useState<PersonalizedReading | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ export default function LuanGiaiClient() {
         const body = await res.json();
         if (aborted) return;
         if (res.status === 402 && body?.code === 'INSUFFICIENT_BALANCE') {
-          await updateSession();
+          emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd ?? 0), delta: 0, reason: 'charge', service: 'hoang-dao' });
           setInsufficient({
             balance: Number(body.balanceVnd ?? 0),
             required: Number(body.requiredVnd ?? 5000),
@@ -124,13 +124,11 @@ export default function LuanGiaiClient() {
           return;
         }
         if (!res.ok || !body?.ok) {
-          await updateSession();
           throw new Error(body?.error ?? `HTTP ${res.status}`);
         }
         setReading(body.reading as PersonalizedReading);
         if (typeof body.balanceVnd === 'number') {
           emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: 'charge', service: 'hoang-dao' });
-          updateSession().catch(() => {});
         }
         toast.success(
           typeof body.chargedVnd === 'number'

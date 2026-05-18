@@ -11,6 +11,7 @@
  */
 import { getDb, users, transactions, prices } from '@tuvi/db';
 import { eq, and, gte, sql } from 'drizzle-orm';
+import { publishWalletEvent } from './realtime-server';
 
 /** Mức nạp tối thiểu (VND). */
 export const MIN_TOPUP_VND = 20_000;
@@ -115,6 +116,13 @@ export async function chargeReading(
     return { txId: txn.id, balanceAfter: updated.balanceVnd, amountCharged: price };
   });
 
+  await publishWalletEvent(userId, {
+    balanceVnd: result.balanceAfter,
+    delta: -result.amountCharged,
+    reason: 'charge',
+    service: opts.service,
+  });
+
   return result;
 }
 
@@ -190,6 +198,12 @@ export async function creditBalance(
     return { txId, balanceAfter: updated.balanceVnd };
   });
 
+  await publishWalletEvent(userId, {
+    balanceVnd: result.balanceAfter,
+    delta: opts.amountVnd,
+    reason: opts.type,
+  });
+
   return result;
 }
 
@@ -241,6 +255,12 @@ export async function debitBalance(
       .returning({ id: transactions.id });
 
     return { txId: txn.id, balanceAfter: updated.balanceVnd };
+  });
+
+  await publishWalletEvent(userId, {
+    balanceVnd: result.balanceAfter,
+    delta: -amountVnd,
+    reason: 'admin_debit',
   });
 
   return result;

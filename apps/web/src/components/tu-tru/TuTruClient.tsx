@@ -144,7 +144,7 @@ function TruIntroCards() {
 
 export default function TuTruClient() {
   const router = useRouter();
-  const { data: session, update: updateSession } = useSession();
+  const { data: session } = useSession();
   const [form, setForm] = useState<FormState>({
     name: "",
     gender: "male",
@@ -220,7 +220,7 @@ export default function TuTruClient() {
       });
       const body = await res.json();
       if (res.status === 402 && body?.code === "INSUFFICIENT_BALANCE") {
-        await updateSession();
+        emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd ?? 0), delta: 0, reason: "charge", service: "tu-tru" });
         setInsufficient({
           balance: Number(body.balanceVnd ?? 0),
           required: Number(body.requiredVnd ?? 5000),
@@ -229,7 +229,6 @@ export default function TuTruClient() {
         return;
       }
       if (!res.ok || !body?.ok) {
-        await updateSession();
         throw new Error(body?.error ?? `HTTP ${res.status}`);
       }
       const c = body.chart as BatTuChart;
@@ -238,7 +237,6 @@ export default function TuTruClient() {
       setChartMeta({ name: body.name, gender: body.gender });
       if (typeof body.balanceVnd === "number") {
         emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: "charge", service: "tu-tru" });
-        updateSession().catch(() => {});
       }
       toast.success(
         typeof body.chargedVnd === "number"

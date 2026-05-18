@@ -23,6 +23,87 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-18 (chiều) — Fix realtime sync ví của tôi + giảm /api/auth/session calls
+
+**Đang làm:** 2 bug nối tiếp sau session sáng:
+1. Bug: nav balance update OK nhưng /vi-cua-toi page không cập nhật realtime.
+2. Bug: login fire nhiều /api/auth/session call (3-5 call mỗi lần OAuth redirect).
+
+**Đến đâu rồi:** Đã fix cả 2. Test charge → nav balance đúng, không còn POST /api/auth/session trên mỗi charge.
+
+**Root cause + fix:**
+
+**Bug 1 (WalletClient không cập nhật):**
+- Scenario: user charge ở /xem-tu-vi → emit local cập nhật UserMenu (nav). Sau đó nav sang /vi-cua-toi → Next.js client router cache có thể serve RSC payload cũ → `initialBalance` prop stale. Không có supabase event nào fire để bù vì charge xảy ra trước khi WalletClient mount.
+- Fix: WalletClient thêm useEffect gọi `/api/wallet/balance` trên mount + visibilitychange. Không phụ thuộc SSR snapshot, luôn fresh từ DB.
+
+**Bug 2 (login nhiều /api/auth/session):**
+- Root cause: `<SessionProvider>` mặc định `refetchOnWindowFocus=true` → mỗi focus event fire 1 call. OAuth redirect (Google → callback → home) trigger nhiều focus event. Cộng React Strict Mode dev mode double effects → 3-5 call. Đồng thời `<SessionProvider>` không nhận initial session từ server → phải fetch lần đầu khi mount.
+- Fix:
+  - `RootLayout` chuyển sang `async`, gọi `await auth()` server-side, pass `session` prop vào `<AuthProvider session={...}>`.
+  - `AuthProvider` set `<SessionProvider session={session} refetchOnWindowFocus={false}>` — supabase realtime đã handle balance push, không cần focus refetch.
+  - Gỡ hết `await updateSession()` / `updateSession().catch(...)` ở 4 client (TuviClient, TuTruClient, TarotClient, LuanGiaiClient) — trước fire 2-3 POST /api/auth/session per charge. Thay 402 case bằng `emitOptimisticBalance({balanceVnd: server, delta: 0, reason: 'charge'})` để push balance thật vào local bus.
+  - UserMenu bỏ destructure `update` không dùng + comment 4 dòng cũ về update().
+
+**Files đã sửa:**
+- `apps/web/src/app/vi-cua-toi/WalletClient.tsx` — thêm useEffect fetch /api/wallet/balance trên mount + visibilitychange listener.
+- `apps/web/src/app/layout.tsx` — chuyển `RootLayout` thành `async`, gọi `auth()`, pass `session` prop.
+- `apps/web/src/components/providers/AuthProvider.tsx` — nhận `session` prop, set `refetchOnWindowFocus={false}`.
+- `apps/web/src/components/tu-vi/TuviClient.tsx` — gỡ 3 updateSession() + destructure `update`.
+- `apps/web/src/components/tu-tru/TuTruClient.tsx` — gỡ 3 updateSession() + destructure `update`.
+- `apps/web/src/app/xem-tarot/TarotClient.tsx` — gỡ 3 updateSession() + destructure `update`.
+- `apps/web/src/app/hoang-dao/luan-giai/LuanGiaiClient.tsx` — gỡ 3 updateSession() + destructure `update`.
+- `apps/web/src/components/layout/UserMenu.tsx` — bỏ destructure `update` không dùng + cleanup comment.
+- `apps/web/.env.local` — thêm `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `WALLET_REALTIME_SECRET` (redundant vì `next.config.js:3` đã dotenv load root .env, nhưng giữ để explicit cho người đọc file).
+
+**Phát hiện phụ:**
+- CLAUDE.md mục "Env loading" ghi sai: "Next.js không đọc root .env" — thực tế `next.config.js:3` đã `require('dotenv').config({ path: '../../.env' })` từ trước. Root .env ĐƯỢC load vào Next.js process. Có thể update CLAUDE.md sau.
+- `jwt callback trong auth.ts` còn nhánh `trigger === 'update'` — code path không bao giờ fire nữa sau khi gỡ updateSession. Dead code nhưng không hại, không gỡ ngay.
+
+**Blocker:** Không.
+
+**Việc tiếp theo:**
+- Test cross-tab/cross-device thực tế: tab A login + ở /vi-cua-toi, tab B (browser khác) admin approve topup → tab A phải update <500ms (verify Supabase publish thật sự fire trong web app, không chỉ qua test-realtime.ts CLI).
+- Optional cleanup: update CLAUDE.md Env loading section + gỡ `trigger === 'update'` branch trong jwt callback.
+
+---
+
+### 2026-05-18 — Supabase Realtime thay SSE cho wallet balance push
+
+**Đang làm:** Thêm push realtime cho balance cross-tab + cross-device. SSE cũ broken trên Cloudflare Workers vì in-process pub/sub không share state giữa isolate. Đã thảo luận DO vs polling vs Supabase → chọn Supabase free tier + giữ Neon nguyên (rủi ro thấp nhất, không migrate DB).
+
+**Đến đâu rồi:** Hoạt động end-to-end. User confirm browser WS connect OK, publish event hiển thị ở client (Test 2 chạy được).
+
+**Architecture chốt:**
+- Supabase Broadcast (KHÔNG dùng Postgres / Storage / Auth của Supabase) — chỉ làm pub/sub bus stateless.
+- Channel name `wallet:<HMAC(userId, WALLET_REALTIME_SECRET)>` 16 hex — không enumerate được dù anon key public. HMAC compute server-side, expose qua `session.user.walletChannel`.
+- Publish auto trong `chargeReading`/`creditBalance`/`debitBalance` — KHÔNG add publish call vào route. Mọi mutation future tự động có push.
+- 1 bridge component `WalletRealtimeBridge` mount inside `SessionProvider` → subscribe channel → dispatch vào local `wallet-sse.ts` bus → UserMenu/WalletClient nhận qua subscribeWallet hiện có (không sửa).
+- Anon key dùng format mới `sb_publishable_*` (Supabase đang migrate từ legacy JWT `anon`).
+
+**Files đã sửa:**
+- `apps/web/src/lib/realtime-server.ts` (mới) — `publishWalletEvent` + `walletChannelFor` HMAC
+- `apps/web/src/lib/realtime-client.ts` (mới) — Supabase browser singleton
+- `apps/web/src/components/providers/WalletRealtimeBridge.tsx` (mới) — subscribe + bridge
+- `apps/web/src/lib/wallet.ts` — auto publish trong 3 hàm
+- `apps/web/src/auth.ts` — add `walletChannel` vào session
+- `apps/web/src/components/providers/AuthProvider.tsx` — mount bridge
+- `apps/web/scripts/test-realtime.ts` (mới) — tool test publish thủ công
+- `.env`, `apps/web/.env.local`, `apps/web/wrangler.jsonc` — Supabase vars + HMAC secret
+- `apps/web/package.json` — thêm `@supabase/supabase-js`
+- `CLAUDE.md`, `decisions.md`, `backlog.md` — sync docs
+
+**Việc cần làm hậu setup (ngoài code):**
+- `SUPABASE_SERVICE_ROLE_KEY` đã rotate (key cũ leak qua chat) — key mới `sb_secret_yGcNsM78...` ở `.env` + Cloudflare secret. Key cũ trên Supabase Dashboard vẫn còn — user phải vào ⋮ ở hàng `default` cũ → Delete để revoke hoàn toàn.
+- `WALLET_REALTIME_SECRET` random hex 32 bytes dùng chung dev + prod.
+- Cloudflare secrets verified bằng `wrangler secret list` — không còn duplicate.
+
+**Blocker:** Không.
+
+**Việc tiếp theo:** Khi deploy CF Worker với code Realtime → verify prod publish hoạt động (browser tab prod nhận event). Nếu fail → check `wrangler tail` xem có `[realtime] publish failed` log không, lý do thường là missing env var hoặc Supabase down.
+
+---
+
 ### 2026-05-16 (khuya — CF Workers I/O isolation + pLimit + session polling)
 
 **Đang làm:** Tiếp tục debug production CF Workers — analyze vẫn lỗi sau fix singleton OpenAI client từ session trước.

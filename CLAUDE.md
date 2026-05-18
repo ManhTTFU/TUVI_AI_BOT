@@ -33,7 +33,7 @@ There is no test suite and no linter wired into CI. `next lint` exists in `apps/
 
 - **API**: `tsx --env-file=../../.env` — loads the **root** `.env` only. Don't add `dotenv` calls; update `.env` at repo root.
 - **Web (Next.js)**: Next auto-loads `apps/web/.env.local` from its own cwd; it does **not** read the root `.env`. When adding a new `NEXT_PUBLIC_*` var, update both `.env` (for reference/consistency) and `apps/web/.env.local`.
-- Required vars: `DEEPSEEK_API_KEY` (+ optional `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`, `AI_CONCURRENCY`), `API_PORT`, `OUTPUT_DIR`, plus the `NEXT_PUBLIC_*` trio. **Auth/DB block:** `DATABASE_URL` (Postgres / Neon), `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (or email SMTP block). Casso (optional): `CASSO_ENABLED=false` by default, `CASSO_API_KEY`, `CASSO_WEBHOOK_SECRET` khi bật.
+- Required vars: `DEEPSEEK_API_KEY` (+ optional `DEEPSEEK_BASE_URL`, `DEEPSEEK_MODEL`, `AI_CONCURRENCY`), `API_PORT`, `OUTPUT_DIR`, plus the `NEXT_PUBLIC_*` trio. **Auth/DB block:** `DATABASE_URL` (Postgres / Neon), `AUTH_SECRET`, `NEXTAUTH_URL`, `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` (or email SMTP block). **Supabase Realtime block:** `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `WALLET_REALTIME_SECRET` (HMAC kênh wallet). Casso (optional): `CASSO_ENABLED=false` by default, `CASSO_API_KEY`, `CASSO_WEBHOOK_SECRET` khi bật.
 
 ## Monorepo layout
 
@@ -43,7 +43,7 @@ apps/
   web/    Next.js 14 App Router, SSR, TailwindCSS — ALL user-facing routes:
           - /api/auth/*       (Auth.js v5)
           - /api/tuvi/*       (chart submit + AI analyze/deep, auth-gated, charge balance)
-          - /api/wallet/*     (topup request, balance, SSE stream)
+          - /api/wallet/*     (topup request, balance, transactions)
           - /api/admin/*      (credit, transactions approve/reject, bank config)
           - /api/casso/*      (webhook for auto-reconcile, off by default)
 packages/
@@ -72,13 +72,13 @@ Tự off provider nếu env thiếu. Promote admin: `pnpm --filter @tuvi/db exec
 Payment flow:
 1. User vào `/vi-cua-toi` → bấm "Tạo lệnh nạp" → POST `/api/wallet/topup-request` sinh `bankRef` unique → hiển thị QR + thông tin bank + ref code.
 2. User chuyển khoản với nội dung CK = bankRef.
-3. Admin vào `/admin/transactions` duyệt giao dịch pending → POST `/api/admin/transactions/approve` → atomic update balance + insert log + **publish SSE** event tới user.
-4. User trang ví subscribe `/api/wallet/stream` (EventSource) → nhận event `balance` realtime → update UI ngay.
+3. Admin vào `/admin/transactions` duyệt giao dịch pending → POST `/api/admin/transactions/approve` → atomic update balance + insert log + **publish Supabase Realtime broadcast** event tới channel của user.
+4. User browser tab nhận event qua `WalletRealtimeBridge` (mount trong `AuthProvider`), dispatch vào local `wallet-sse.ts` bus → `UserMenu` + `WalletClient` update UI ngay (cross-device + cross-tab).
 5. Casso webhook `/api/casso/webhook` reconcile tự động khi bật `CASSO_ENABLED=true` (backup path).
 
 Charge flow (lập lá số):
 1. User submit form `/xem-tu-vi` → POST `/api/tuvi/submit` → auth check + atomic deduct combo price (default 40k, đọc từ bảng `prices`) + insert tx log + calculate chart (iztro) + save chart vào DB.
-2. Trả về `{chartId, slug, chart}` + push SSE balance.
+2. Trả về `{chartId, slug, chart}` + publish Supabase Realtime balance event (gọi tự động bên trong `chargeReading`).
 3. FE fire parallel: POST `/api/tuvi/<chartId>/analyze` + POST `/api/tuvi/<chartId>/deep-readings`. Mỗi endpoint check cache theo `birthHash` trước (share giữa user cùng ngày sinh), miss thì gọi AI + save cache.
 
 402 INSUFFICIENT_BALANCE: FE hiển thị banner + link `/vi-cua-toi`.
@@ -113,17 +113,17 @@ Wallet:
 - `POST /api/wallet/topup-request` — sinh bankRef + insert pending tx
 - `GET  /api/wallet/balance` — số dư hiện tại
 - `GET  /api/wallet/transactions` — lịch sử 50 giao dịch gần nhất
-- `GET  /api/wallet/stream` — SSE channel (in-process pub/sub via `lib/sse-bus.ts`)
+- (Realtime push: **Supabase Realtime Broadcast**, KHÔNG còn SSE endpoint. Channel name expose qua `session.user.walletChannel`. Publish auto trong `wallet.ts` mutation; subscribe qua `WalletRealtimeBridge`.)
 
 Admin (role=admin required):
-- `POST /api/admin/credit` — cộng/trừ tiền user, publish SSE
-- `POST /api/admin/transactions/approve` — duyệt topup, publish SSE
+- `POST /api/admin/credit` — cộng/trừ tiền user (publish Realtime tự động qua wallet.ts)
+- `POST /api/admin/transactions/approve` — duyệt topup (publish Realtime tự động qua wallet.ts)
 - `POST /api/admin/transactions/reject`
 - `POST /api/admin/bank-config` — lưu thông tin bank
 - `POST /api/admin/bank-config/upload-qr` — upload QR PNG/JPG/WebP <500KB vào `public/uploads/`
 
 Casso (off by default, `CASSO_ENABLED=true` để bật):
-- `POST /api/casso/webhook` — Casso gửi danh sách giao dịch ngân hàng → `reconcileCassoTransactions` match bankRef → auto credit + SSE
+- `POST /api/casso/webhook` — Casso gửi danh sách giao dịch ngân hàng → `reconcileCassoTransactions` match bankRef → auto credit (publish Realtime tự động qua wallet.ts)
 
 ### Express endpoints (`apps/api/src/routes/tuvi.ts` — legacy, frontend không gọi nữa)
 

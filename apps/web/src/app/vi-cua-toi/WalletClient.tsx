@@ -78,6 +78,29 @@ export default function WalletClient({
     } catch {}
   }, [page, size]);
 
+  // Fresh balance trên mount + khi tab trở lại foreground — chống Next.js router
+  // cache serve RSC payload cũ + chống case Supabase WS dropped khi tab nền.
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      fetch('/api/wallet/balance')
+        .then((r) => r.json())
+        .then((d) => {
+          if (!cancelled && typeof d?.balanceVnd === 'number') setBalance(d.balanceVnd);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, []);
+
   useEffect(() => {
     const unsubscribe = subscribeWallet((event, data) => {
       if (event === 'balance') {

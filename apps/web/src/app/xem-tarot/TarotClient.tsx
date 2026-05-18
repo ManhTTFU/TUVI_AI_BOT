@@ -82,7 +82,7 @@ function shuffleDeck(deck: TarotCard[]): TarotCard[] {
 
 export default function TarotClient() {
   const router = useRouter();
-  const { data: session, status, update: updateSession } = useSession();
+  const { data: session, status } = useSession();
 
   const [step, setStep] = useState<Step>('form');
 
@@ -205,9 +205,8 @@ export default function TarotClient() {
         return;
       }
       if (res.status === 402 && body?.code === 'INSUFFICIENT_BALANCE') {
-        // Server từ chối charge — revert optimistic bằng cách refresh session
-        // từ DB. useEffect [session.user.balanceVnd] trong UserMenu sẽ reset.
-        await updateSession();
+        // Server từ chối charge — push balance thật từ server qua bus để UserMenu sync.
+        emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd ?? 0), delta: 0, reason: 'charge', service: 'tarot' });
         setLiveCharge(null);
         setInsufficient({
           balance: Number(body.balanceVnd ?? 0),
@@ -218,8 +217,6 @@ export default function TarotClient() {
         return;
       }
       if (!res.ok || !body?.ok) {
-        // Lỗi server khác — server có thể đã hoặc chưa charge. Refresh để đồng bộ.
-        await updateSession();
         setLiveCharge(null);
         throw new Error((body?.error as string) ?? `HTTP ${res.status}`);
       }
@@ -227,7 +224,6 @@ export default function TarotClient() {
       setStep('result');
       if (typeof body.balanceVnd === 'number') {
         emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd), delta: -Number(body.chargedVnd ?? PRICE), reason: 'charge', service: 'tarot' });
-        updateSession().catch(() => {});
       }
       toast.success(
         typeof body.chargedVnd === 'number'

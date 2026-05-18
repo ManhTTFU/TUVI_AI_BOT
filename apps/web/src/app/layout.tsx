@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/env';
+import { auth } from '@/auth';
 import { BodyBackground, Header, Footer } from '@/components/layout';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { Toaster } from '@/components/ui/toast';
@@ -42,11 +43,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Lấy session ở server → pass vào SessionProvider, tránh /api/auth/session
+  // fetch lại ở client lúc mount. JWT cookie decode local, không hit DB.
+  const session = await auth();
   return (
     <html lang="vi">
       <body className="min-h-screen text-[#0f0a08]">
-        <AuthProvider>
+        <AuthProvider session={session}>
           <BodyBackground />
           <Header />
           <main>{children}</main>

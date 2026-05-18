@@ -168,7 +168,7 @@ export default function TuviClient() {
     birthPlace: '',
   });
   const router = useRouter();
-  const { data: session, update: updateSession } = useSession();
+  const { data: session } = useSession();
   const [chart, setChart] = useState<ChartData | null>(null);
   const [iztroSnap, setIztroSnap] = useState<IztroSnap | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisSections | null>(null);
@@ -320,7 +320,7 @@ export default function TuviClient() {
       });
       const data = await res.json();
       if (res.status === 402 && data?.code === 'INSUFFICIENT_BALANCE') {
-        await updateSession();
+        emitOptimisticBalance({ balanceVnd: Number(data.balanceVnd ?? 0), delta: 0, reason: 'charge', service: 'tu-vi' });
         setInsufficient({
           balance: Number(data.balanceVnd ?? 0),
           required: Number(data.requiredVnd ?? 5000),
@@ -330,13 +330,11 @@ export default function TuviClient() {
         return;
       }
       if (!res.ok || !data?.ok) {
-        await updateSession();
         throw new Error(data?.error ?? `HTTP ${res.status}`);
       }
       setChart(data.chart as ChartData);
       if (typeof data.balanceVnd === 'number') {
         emitOptimisticBalance({ balanceVnd: data.balanceVnd, delta: -(data.chargedVnd ?? PRICE), reason: 'charge', service: 'tu-vi' });
-        updateSession().catch(() => {});
       }
       toast.success(
         typeof data.chargedVnd === 'number'

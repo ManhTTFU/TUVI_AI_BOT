@@ -20,6 +20,32 @@
 
 <!-- Entry mới thêm ở TRÊN cùng (mới nhất đầu tiên) -->
 
+**Date:** 2026-05-18
+**Module:** web (realtime push)
+**File:** apps/web/src/lib/realtime-server.ts (mới), apps/web/src/lib/realtime-client.ts (mới), apps/web/src/components/providers/WalletRealtimeBridge.tsx (mới), apps/web/src/lib/wallet.ts, apps/web/src/auth.ts, apps/web/src/components/providers/AuthProvider.tsx, .env, apps/web/.env.local, apps/web/wrangler.jsonc
+**Decision:** Thay polling/optimistic-only bằng **Supabase Realtime Broadcast** làm pub/sub bus push balance cross-tab + cross-device. Neon vẫn là source of truth duy nhất; Supabase KHÔNG lưu data, chỉ làm WebSocket fan-out stateless.
+**Reason:** (1) SSE thật KHÔNG hoạt động trên Cloudflare Workers (mỗi request có thể vào isolate khác, in-process pub/sub `Map<userId, Set<Response>>` không share state). Đã thử + xoá `/api/wallet/stream` từ trước. (2) Polling `/api/wallet/balance` không tiện cho admin approve topup khi user đang mở trang khác — user không biết để F5. (3) Durable Objects giải pháp native nhưng tăng chi phí $5 base + DO complexity; Supabase free tier (200 concurrent, 2M msg/tháng) phủ MVP miễn phí. (4) Migrate Neon → Supabase Postgres tốn migration step + lock-in DB; chỉ thêm Supabase Realtime giữ Neon nguyên = risk thấp nhất.
+
+Architecture:
+- Server: `publishWalletEvent(userId, payload)` ở `realtime-server.ts` gọi `supabase.channel(name).send({type:'broadcast'})`. Wire vào trong `chargeReading`/`creditBalance`/`debitBalance` (wallet.ts) — KHÔNG add publish call thủ công vào route. Mọi tương lai route gọi 3 hàm này tự động có push.
+- Client: 1 bridge component `WalletRealtimeBridge` mount inside `SessionProvider`, subscribe channel từ `session.user.walletChannel`, dispatch event vào local `wallet-sse.ts` bus → `UserMenu`/`WalletClient` (đã subscribe) update UI mà không phải thay đổi.
+- Channel name = `wallet:` + HMAC-SHA256(userId, WALLET_REALTIME_SECRET).slice(0,16) — không enumerate được dù anon key public. HMAC compute trong `walletChannelFor()` ở `realtime-server.ts`, expose qua session callback (`session.user.walletChannel`) để client nhận sẵn.
+- Failure mode: publish lỗi → swallow log. Source-of-truth ở Neon, F5 / navigate / `GET /api/wallet/balance` đều correct. Realtime chỉ là UX layer.
+
+**Rejected alternatives:**
+1. **Cloudflare Durable Objects:** native nhất, không phụ thuộc service ngoài, nhưng +$5/tháng + DO class + binding + deploy flow phức tạp hơn. Để dành cho khi có feature cần persistent state (chat, live collab).
+2. **Polling `/api/wallet/balance` mỗi 10s khi tab focus:** cheap nhưng tốn DB hit + không catch event sub-10s. Chấp nhận được nhưng UX không "tức thời" như push.
+3. **Migrate Neon → Supabase Postgres + dùng "Postgres Changes" listener:** đập tốn migration nhiều bảng, vendor lock-in DB. Không có lợi ích đáng kể so với Broadcast.
+4. **Channel name = plain userId:** anon key public → ai có anon key + user id có thể subscribe balance event. HMAC + secret server giải được mà chỉ 5 dòng code.
+5. **Publish call thủ công ở từng route (5+ chỗ):** dễ quên khi thêm flow mới (vd: admin tool, batch credit). Wrap vào wallet.ts = 1 điểm thay đổi cho mọi mutation tương lai.
+6. **Bỏ in-tab optimistic `emitOptimisticBalance` (chỉ dùng Supabase):** trade-off 200-500ms delay sau action vì roundtrip server→Supabase→browser. Giữ optimistic + Supabase chồng lên (state idempotent, setState same value không re-render).
+
+Cost: free tier Supabase Pro (200 concurrent connection, 2M message/tháng) thừa cho MVP. Risk: prod cần > 200 user online cùng lúc — bump $25/tháng Pro = 500 concurrent.
+
+Key rò rỉ: `SUPABASE_SERVICE_ROLE_KEY` đã paste qua chat → backlog P0 rotate trước khi deploy prod (xem `backlog.md`).
+
+---
+
 **Date:** 2026-05-14
 **Module:** db + web (full-stack billing refactor)
 **File:** packages/db/migrations/0008_wallet_pay_per_use.sql, packages/db/src/schema.ts, packages/db/src/migrate.ts, apps/web/src/lib/wallet.ts (mới), apps/web/src/auth.ts, apps/web/src/app/api/wallet/topup-request/route.ts, apps/web/src/app/api/admin/transactions/approve/route.ts, apps/web/src/app/api/{tuvi,tu-tru,tarot}/submit/route.ts, apps/web/src/app/api/horoscope/personalize/route.ts, apps/web/src/app/vi-cua-toi/*, apps/web/src/components/layout/UserMenu.tsx, apps/web/src/components/{tu-vi,tu-tru,hoang-dao}/*Client.tsx, apps/web/src/app/{xem-tarot,hoang-dao/luan-giai}/*Client.tsx, apps/web/src/app/admin/users/*, apps/web/src/lib/casso.ts, apps/web/src/lib/wallet-sse.ts; **xoá** apps/web/src/lib/tier.ts

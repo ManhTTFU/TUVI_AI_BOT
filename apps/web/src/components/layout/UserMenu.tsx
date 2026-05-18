@@ -9,21 +9,16 @@ import { formatVnd } from '@/lib/money';
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
 export default function UserMenu() {
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const [balance, setBalance] = useState<number>(0);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  // Init balance từ session.
+  // Init balance từ session (snapshot lúc login). Sau đó updates đến qua
+  // subscribeWallet (local emit + Supabase Realtime push).
   useEffect(() => {
     if (session?.user) setBalance(session.user.balanceVnd ?? 0);
   }, [session?.user?.balanceVnd]);
-
-  // Subscribe wallet events — cập nhật balance UI ngay lập tức.
-  // update() KHÔNG gọi ở đây vì optimistic emit fire trước khi DB commit
-  // → session refresh sẽ lấy số cũ và revert balance về sai.
-  // update() được gọi riêng sau khi server confirm (xem emitOptimisticBalance
-  // lần 2 trong TuviClient, TuTruClient, TarotClient, LuanGiaiClient).
   useEffect(() => {
     if (!session?.user) return;
     const unsubscribe = subscribeWallet((event, data) => {

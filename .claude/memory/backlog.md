@@ -26,7 +26,9 @@ Priority levels:
 
 ## P0 — Chặn / production-critical
 
-(Không có. Hệ thống đang stable.)
+(Đã rotate `SUPABASE_SERVICE_ROLE_KEY` 2026-05-18. Key cũ `sb_secret_stwqM2G9...` đã revoke / sẽ revoke qua Supabase Dashboard. Key mới `sb_secret_yGcNsM78...` push lên cả `.env` local + Cloudflare prod secret. `WALLET_REALTIME_SECRET` gen fresh random + push prod. Còn 1 việc nhỏ: vào Supabase Dashboard → Secret keys → bấm ⋮ ở hàng `default` cũ → Delete để key cũ vô hiệu hoàn toàn.)
+
+---
 
 ---
 

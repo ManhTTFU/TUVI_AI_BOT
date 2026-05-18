@@ -1,56 +1,50 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { useSession, signOut } from 'next-auth/react';
-import UserMenu from './UserMenu';
-
-const SERIF_FONT = "'Cormorant Garamond',serif";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useSession, signOut } from "next-auth/react";
+import UserMenu from "./UserMenu";
 
 type NavLink = { label: string; href: string };
 
 const NAV_LINKS: NavLink[] = [
-  { label: 'Trang Chủ', href: '/#top' },
-  { label: 'Xem Tử Vi', href: '/xem-tu-vi' },
-  { label: 'Tứ Trụ', href: '/tu-tru-bat-tu' },
-  { label: 'Xem Ngày Tốt', href: '/ngay-tot' },
-  { label: 'Hoàng Đạo', href: '/hoang-dao' },
-  { label: 'Tarot', href: '/xem-tarot' },
-  { label: 'Lục Diệu', href: '/#lucdieu' },
+  { label: "Trang Chủ", href: "/#top" },
+  { label: "Xem Tử Vi", href: "/xem-tu-vi" },
+  { label: "Tứ Trụ", href: "/tu-tru-bat-tu" },
+  { label: "Xem Ngày Tốt", href: "/ngay-tot" },
+  { label: "Hoàng Đạo", href: "/hoang-dao" },
+  { label: "Tarot", href: "/xem-tarot" },
+  { label: "Lục Diệu", href: "/#lucdieu" },
 ];
 
 function isActive(href: string, pathname: string): boolean {
-  const base = href.split('#')[0] || '/';
-  if (base === '/') return false;
+  const base = href.split("#")[0] || "/";
+  if (base === "/") return false;
   return pathname === base || pathname.startsWith(`${base}/`);
 }
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname() ?? '/';
+  const pathname = usePathname() ?? "/";
   const { data: session } = useSession();
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-[#fbf3e2]/92 border-b border-[#c89146]/45">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-full bg-[#5a3a1a] text-[#d4af6a] flex items-center justify-center font-serif italic text-xl shadow-md"
-            style={{ fontFamily: SERIF_FONT }}
-          >
-            命
-          </div>
-          <div>
-            <div className="text-[11px] tracking-[0.35em] text-[#4a6c7a] font-semibold uppercase leading-none">
-              Mệnh Lý
-            </div>
-            <div
-              className="text-base font-serif italic text-[#0f0a08] leading-tight"
-              style={{ fontFamily: SERIF_FONT }}
-            >
-              Vận Mệnh
-            </div>
-          </div>
+        <Link
+          href="/"
+          className="flex items-center shrink-0"
+          aria-label="Luận Giải Vận Mệnh · Trang chủ"
+        >
+          <Image
+            src="/images/brand-logo.png"
+            alt="Luận Giải Vận Mệnh"
+            width={300}
+            height={110}
+            priority
+            className="h-12 w-auto object-contain"
+          />
         </Link>
         <nav className="hidden lg:flex items-center gap-7 text-[13px] text-[#0f0a08] tracking-wide">
           {NAV_LINKS.map((link) => {
@@ -60,9 +54,9 @@ export default function Header() {
                 key={link.label}
                 href={link.href}
                 className={`hover:text-[#4a6c7a] transition relative ${
-                  active ? 'text-[#4a6c7a] font-medium' : ''
+                  active ? "text-[#4a6c7a] font-medium" : ""
                 } after:content-[''] after:absolute after:left-0 after:bottom-[-6px] after:h-px after:bg-[#4a6c7a] after:transition-all ${
-                  active ? 'after:w-full' : 'after:w-0 hover:after:w-full'
+                  active ? "after:w-full" : "after:w-0 hover:after:w-full"
                 }`}
               >
                 {link.label}
@@ -112,7 +106,7 @@ export default function Header() {
               >
                 📜 Lịch sử của tôi
               </Link>
-              {session.user.role === 'admin' && (
+              {session.user.role === "admin" && (
                 <>
                   <Link
                     href="/admin/users"
@@ -141,7 +135,7 @@ export default function Header() {
                 type="button"
                 onClick={() => {
                   setOpen(false);
-                  signOut({ callbackUrl: '/' });
+                  signOut({ callbackUrl: "/" });
                 }}
                 className="text-left text-[#4a3a30] hover:text-[#5a3a1a]"
               >
