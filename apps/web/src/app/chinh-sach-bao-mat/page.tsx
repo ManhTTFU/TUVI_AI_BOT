@@ -41,7 +41,7 @@ export default function PrivacyPolicy() {
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
             <strong>Thông tin tài khoản:</strong> email, tên, ảnh đại diện (qua
-            Google / Facebook OAuth).
+            Google OAuth hoặc email magic link).
           </li>
           <li>
             <strong>Thông tin lá số:</strong> họ tên, giới tính, ngày tháng năm
@@ -85,7 +85,7 @@ export default function PrivacyPolicy() {
             (KHÔNG kèm email/tên) để sinh văn luận giải.
           </li>
           <li>
-            <strong>Google / Facebook:</strong> chỉ trong quá trình xác thực
+            <strong>Google:</strong> chỉ trong quá trình xác thực
             đăng nhập, nhận về email + tên + avatar.
           </li>
           <li>

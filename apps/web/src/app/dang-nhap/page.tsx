@@ -19,7 +19,6 @@ export default async function LoginPage({
 
   const callbackUrl = searchParams.callbackUrl ?? '/';
   const hasGoogle = !!process.env.GOOGLE_CLIENT_ID;
-  const hasFacebook = !!process.env.FACEBOOK_CLIENT_ID;
   const hasEmail = !!process.env.EMAIL_SERVER_HOST;
 
   return (
@@ -46,7 +45,6 @@ export default async function LoginPage({
         <LoginClient
           callbackUrl={callbackUrl}
           hasGoogle={hasGoogle}
-          hasFacebook={hasFacebook}
           hasEmail={hasEmail}
           errorParam={searchParams.error}
         />

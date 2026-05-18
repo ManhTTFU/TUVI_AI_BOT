@@ -19,7 +19,6 @@ Hệ thống xem Tử Vi Đẩu Số bằng AI cá nhân hoá, kèm ví/đăng k
 - pnpm (`corepack enable`)
 - Tài khoản Neon (Postgres free) — https://neon.tech
 - Tài khoản Google Cloud (OAuth) — https://console.cloud.google.com
-- Tài khoản Facebook Developer (OAuth) — https://developers.facebook.com (tuỳ chọn)
 - API key Deepseek — https://platform.deepseek.com
 
 ---
@@ -34,7 +33,7 @@ pnpm --filter @tuvi/db migrate   # tạo schema + seed 4 gói PRO
 pnpm dev                   # chạy api (4100) + web (3100)
 ```
 
-Sau khi đăng nhập lần đầu qua Google/Facebook, promote tài khoản đầu tiên thành admin:
+Sau khi đăng nhập lần đầu qua Google, promote tài khoản đầu tiên thành admin:
 
 ```bash
 cd packages/db
@@ -138,84 +137,7 @@ Khi deploy lên domain thật (vd `https://diencam.vn`):
 
 ---
 
-## 5. Setup Facebook OAuth login (tuỳ chọn)
-
-### 5.1 Dev (localhost)
-
-1. Vào https://developers.facebook.com/apps → **Create App**.
-
-2. **Use case**: chọn **"Authenticate and request data from users with Facebook Login"** → **Next**.
-
-3. **App type**: **Consumer** → **Next**.
-
-4. **App details**:
-   - Name: `Diễn Cầm Tam Thế`
-   - Contact email: email Facebook của bạn
-   - → **Create app** (có thể yêu cầu xác nhận password FB)
-
-5. **Bỏ qua các yêu cầu production** (Xác minh doanh nghiệp, Xét duyệt ứng dụng, App Review) — chỉ cần cho production, không bắt buộc lúc dev.
-
-6. **Lấy App credentials**:
-   - Sidebar trái → **App settings** → **Basic**
-   - Copy **App ID** (~16 chữ số)
-   - **App secret**: bấm **Show** → nhập lại password FB → copy
-
-7. **Set OAuth redirect URI**:
-   - Sidebar trái → **Use cases** → click vào use case "Authenticate and request data..." → **Customize**
-   - Tab/section **Settings** trong use case → tìm field **"Valid OAuth Redirect URIs"**
-   - **Lưu ý**: Trong dev mode, Facebook tự động cho phép `http://localhost` mà không cần thêm. Có thể paste:
-     ```
-     http://localhost:3100/api/auth/callback/facebook
-     ```
-   - Đảm bảo các toggle ON:
-     - ✓ **Client OAuth Login**
-     - ✓ **Web OAuth Login**
-     - ✗ Force HTTPS (OFF cho localhost)
-   - **Save Changes**
-
-8. **Lưu credentials vào `.env`**:
-   ```env
-   FACEBOOK_CLIENT_ID=<App ID>
-   FACEBOOK_CLIENT_SECRET=<App Secret>
-   ```
-
-9. Restart web.
-
-10. **Test login** với tài khoản Facebook chính chủ developer (owner của app). Account khác phải được add vào **App roles** (admin/dev/tester) mới login được trong dev mode.
-
-### 5.2 Production
-
-Khi deploy lên domain thật, để **bất kỳ user Facebook nào** cũng login được, phải switch app sang **Live mode**. Yêu cầu:
-
-1. **Thêm production redirect URI** vào use case Xác thực → Settings → Valid OAuth Redirect URIs (giữ cả localhost):
-   ```
-   https://diencam.vn/api/auth/callback/facebook
-   ```
-
-2. **App settings → Basic** điền 4 field bắt buộc cho Live mode:
-   - **App Icon**: upload file PNG 1024×1024
-   - **Privacy Policy URL**: `https://diencam.vn/chinh-sach-bao-mat` (đã có sẵn route trong codebase)
-   - **User Data Deletion**: chọn "Data Deletion Instructions URL" → `https://diencam.vn/xoa-du-lieu` (đã có)
-   - **Category**: chọn 1 (vd "Lifestyle" hoặc "Education")
-
-3. **Switch Live mode**:
-   - Header app dashboard → toggle **"In Development"** → **"Live"** → confirm.
-
-4. **Permissions** (default scopes không cần app review):
-   - `public_profile` + `email` — Standard Access, hoạt động ngay khi Live.
-   - Nếu cần permissions cao cấp hơn (Pages, Ads, Business...) → cần submit App Review + Business Verification (cần giấy phép kinh doanh).
-
-5. **Production env**:
-   ```env
-   FACEBOOK_CLIENT_ID=<giống dev>
-   FACEBOOK_CLIENT_SECRET=<giống dev>
-   ```
-
-**Note**: Auth.js v5 trong `apps/web/src/auth.ts` đã set explicit `scope: 'public_profile,email'`. KHÔNG đổi sang advanced scopes nếu chưa có Business Verification.
-
----
-
-## 6. Setup Auth.js (NextAuth v5)
+## 5. Setup Auth.js (NextAuth v5)
 
 Sinh `AUTH_SECRET` (random 32 bytes base64):
 
@@ -234,7 +156,7 @@ NEXTAUTH_URL=http://localhost:3100         # production: https://diencam.vn
 
 ---
 
-## 7. Cấu hình env đầy đủ
+## 6. Cấu hình env đầy đủ
 
 Xem `.env.example` cho template đầy đủ. Tóm tắt nhóm env:
 
@@ -244,7 +166,6 @@ Xem `.env.example` cho template đầy đủ. Tóm tắt nhóm env:
 | Database | `DATABASE_URL`, `DB_POOL_MAX` |
 | Auth | `AUTH_SECRET`, `NEXTAUTH_URL` |
 | Google OAuth | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
-| Facebook OAuth | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` |
 | Email magic link (tuỳ chọn) | `EMAIL_SERVER_HOST`, `EMAIL_SERVER_PORT`, `EMAIL_SERVER_USER`, `EMAIL_SERVER_PASSWORD`, `EMAIL_FROM` |
 | Casso (off mặc định) | `CASSO_ENABLED`, `CASSO_API_KEY`, `CASSO_WEBHOOK_SECRET` |
 | API + Web | `API_PORT`, `API_BASE_URL`, `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_SITE_URL`, `OUTPUT_DIR` |
@@ -253,7 +174,7 @@ Xem `.env.example` cho template đầy đủ. Tóm tắt nhóm env:
 
 ---
 
-## 8. Chạy dev
+## 7. Chạy dev
 
 ```bash
 pnpm dev          # api + web parallel
@@ -266,7 +187,7 @@ Mỗi lần đổi `.env`, phải Ctrl+C + restart (tsx + Next.js không hot-rel
 
 ---
 
-## 9. Gói PRO và payment flow
+## 8. Gói PRO và payment flow
 
 ### Gói (seeded sẵn trong DB)
 
@@ -289,9 +210,9 @@ Admin có thể **tặng gói** miễn phí qua `/admin/users` → "Tặng gói"
 
 ---
 
-## 10. Admin setup lần đầu
+## 9. Admin setup lần đầu
 
-1. **Login** lần đầu qua Google/Facebook trên `/dang-nhap`.
+1. **Login** lần đầu qua Google trên `/dang-nhap`.
 
 2. **Promote admin** qua CLI:
    ```bash
@@ -323,7 +244,6 @@ Admin có thể **tặng gói** miễn phí qua `/admin/users` → "Tặng gói"
 Sau deploy, cập nhật:
 - `NEXTAUTH_URL` → URL production
 - Google OAuth → add production redirect URI
-- Facebook → switch Live mode (xem section 5.2)
 - Vercel env vars (giống `.env` nhưng KHÔNG check vào git)
 
 ---
@@ -390,9 +310,8 @@ TUVIAI/
 
 | Vấn đề | Cách fix |
 |---|---|
-| `MissingCSRF` khi click Google/Facebook | Đã dùng client-side `signIn()` từ `next-auth/react` — không gọi từ server action |
+| `MissingCSRF` khi click Google | Đã dùng client-side `signIn()` từ `next-auth/react` — không gọi từ server action |
 | Google `OAuth client was not found` 401 | Client ID bị cắt cụt trong `.env`. Phải là 72 ký tự, kết thúc `.apps.googleusercontent.com` |
-| Facebook "Invalid Scopes: email" | Warning chỉ với developer, không block. Đã set explicit `scope: 'public_profile,email'` trong auth.ts |
 | Web không load env mới | Restart `pnpm dev:web` — Next.js không hot-reload env |
 | Realtime balance không update | Đã có SSE + refetchInterval 60s + refetchOnWindowFocus. Nếu vẫn không update → check `/api/wallet/stream` connection trong DevTools Network |
 | `EADDRINUSE` port 3100/4100 | `taskkill /F /PID <pid>` (Windows) — find PID qua `netstat -ano \| findstr :3100` |

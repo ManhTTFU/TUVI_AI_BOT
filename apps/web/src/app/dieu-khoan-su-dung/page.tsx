@@ -58,7 +58,7 @@ export default function TermsOfService() {
         </h2>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            Bạn cần đăng nhập qua Google, Facebook hoặc email magic link để sử
+            Bạn cần đăng nhập qua Google hoặc email magic link để sử
             dụng dịch vụ trả phí.
           </li>
           <li>

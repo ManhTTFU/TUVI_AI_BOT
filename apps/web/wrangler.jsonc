@@ -17,7 +17,6 @@
     "DEEPSEEK_MODEL": "deepseek-chat",
     "AI_CONCURRENCY": "8",
     "GOOGLE_CLIENT_ID": "741527513075-j1cr1f03p28n8d192a2095055bvbc81k.apps.googleusercontent.com",
-    "FACEBOOK_CLIENT_ID": "2024527571833655",
     "CASSO_ENABLED": "false",
     "NEXT_PUBLIC_SUPABASE_URL": "https://japatndrfbbxtncieiws.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_a8Nrb8WgfFeWMru3KFkxTQ_jGDyU0Uh"

@@ -55,7 +55,7 @@ export default function DataDeletion() {
           <strong>7 ngày làm việc</strong>:
         </p>
         <ul className="list-disc pl-6 space-y-1.5">
-          <li>Tài khoản đăng nhập (Google / Facebook / Email link)</li>
+          <li>Tài khoản đăng nhập (Google / Email link)</li>
           <li>Tất cả lá số tử vi đã lập</li>
           <li>Lịch sử giao dịch và số dư còn lại (sẽ hoàn lại nếu &gt; 0)</li>
           <li>Session và cookie</li>
@@ -76,18 +76,14 @@ export default function DataDeletion() {
           className="text-2xl font-semibold text-[#5a3a1a] mt-8"
           style={{ fontFamily: SERIF_FONT }}
         >
-          Yêu cầu xóa từ Facebook / Google
+          Yêu cầu xóa quyền truy cập từ Google
         </h2>
         <p>
-          Nếu bạn đăng nhập bằng Facebook hoặc Google và muốn xóa quyền truy cập
-          của Vận Mệnh:
+          Nếu bạn đăng nhập bằng Google và muốn xóa quyền truy cập của Vận Mệnh:
         </p>
         <ul className="list-disc pl-6 space-y-1.5">
           <li>
-            <strong>Facebook:</strong> Settings → Business Integrations → Vận Mệnh → Remove
-          </li>
-          <li>
-            <strong>Google:</strong>{' '}
+            Vào{' '}
             <a
               href="https://myaccount.google.com/permissions"
               target="_blank"
@@ -96,12 +92,12 @@ export default function DataDeletion() {
             >
               myaccount.google.com/permissions
             </a>{' '}
-            → Vận Mệnh → Remove access
+            → chọn Vận Mệnh → Remove access.
           </li>
         </ul>
         <p>
-          Việc xoá ở mạng xã hội chỉ rút quyền OAuth — KHÔNG xoá dữ liệu trong
-          hệ thống của chúng tôi. Phải gửi email để xoá hoàn toàn.
+          Việc xoá ở Google chỉ rút quyền OAuth — KHÔNG xoá dữ liệu trong hệ
+          thống của chúng tôi. Phải gửi email để xoá hoàn toàn.
         </p>
       </section>
     </article>

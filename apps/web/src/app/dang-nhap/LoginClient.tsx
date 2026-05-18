@@ -8,13 +8,11 @@ const SERIF_FONT = "'Cormorant Garamond',serif";
 export default function LoginClient({
   callbackUrl,
   hasGoogle,
-  hasFacebook,
   hasEmail,
   errorParam,
 }: {
   callbackUrl: string;
   hasGoogle: boolean;
-  hasFacebook: boolean;
   hasEmail: boolean;
   errorParam?: string;
 }) {
@@ -64,31 +62,9 @@ export default function LoginClient({
           </button>
         )}
 
-        {hasFacebook && (
-          <button
-            type="button"
-            disabled={busy !== null}
-            onClick={() => {
-              setBusy('facebook');
-              signIn('facebook', { callbackUrl });
-            }}
-            className="w-full h-12 rounded-full bg-[#1877F2] hover:bg-[#0e63d6] flex items-center justify-center gap-3 transition disabled:opacity-60"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="#fff"
-                d="M24 12.073C24 5.404 18.627 0 12 0S0 5.404 0 12.073c0 6.025 4.388 11.022 10.125 11.927v-8.437H7.078v-3.49h3.047V9.412c0-3.017 1.792-4.683 4.533-4.683 1.312 0 2.686.235 2.686.235v2.969h-1.514c-1.49 0-1.953.93-1.953 1.882v2.258h3.328l-.532 3.49h-2.796V24C19.612 23.095 24 18.098 24 12.073z"
-              />
-            </svg>
-            <span className="text-[14px] font-semibold text-white">
-              {busy === 'facebook' ? 'Đang chuyển hướng…' : 'Đăng nhập với Facebook'}
-            </span>
-          </button>
-        )}
-
         {hasEmail && (
           <>
-            {(hasGoogle || hasFacebook) && (
+            {hasGoogle && (
               <div className="relative my-2 text-center">
                 <div className="absolute left-0 right-0 top-1/2 border-t border-[#4a6c7a]/25" />
                 <span className="relative bg-[#fbf3e2] px-3 text-[11px] tracking-[0.25em] uppercase text-[#4a3a30]">
@@ -124,11 +100,10 @@ export default function LoginClient({
           </>
         )}
 
-        {!hasGoogle && !hasFacebook && !hasEmail && (
+        {!hasGoogle && !hasEmail && (
           <div className="rounded-xl border border-[#c89146]/45 bg-[#f5e3c0]/40 px-4 py-3 text-[#5a3a1a] text-[13.5px]">
             ⚠ Chưa cấu hình provider. Cần set{' '}
-            <code className="font-mono">GOOGLE_CLIENT_ID</code>,{' '}
-            <code className="font-mono">FACEBOOK_CLIENT_ID</code> hoặc{' '}
+            <code className="font-mono">GOOGLE_CLIENT_ID</code> hoặc{' '}
             <code className="font-mono">EMAIL_SERVER_HOST</code> trong{' '}
             <code className="font-mono">.env</code>.
           </div>
