@@ -8,6 +8,7 @@ import { toast } from '@/components/ui/toast';
 import { formatVnd } from '@/lib/money';
 import { useSession } from 'next-auth/react';
 import { emitOptimisticBalance } from '@/lib/wallet-sse';
+import { trackPurchase } from '@/lib/track-purchase';
 
 interface PersonalizedReading {
   personality: { strengths: string[]; weaknesses: string[]; thinkingStyle: string };
@@ -130,6 +131,7 @@ export default function LuanGiaiClient() {
         if (typeof body.balanceVnd === 'number') {
           emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: 'charge', service: 'hoang-dao' });
         }
+        trackPurchase('horoscope', body.id as string);
         toast.success(
           typeof body.chargedVnd === 'number'
             ? `Đã luận giải xong — trừ ${formatVnd(body.chargedVnd)}`

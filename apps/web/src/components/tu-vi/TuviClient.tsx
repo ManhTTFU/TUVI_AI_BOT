@@ -13,6 +13,7 @@ import type {
 } from '@tuvi/core';
 import { formatVnd } from '@/lib/money';
 import { emitOptimisticBalance } from '@/lib/wallet-sse';
+import { trackPurchase } from '@/lib/track-purchase';
 import DeepReadings, { BasicInfo } from './DeepReadings';
 import VietnameseCenter from './VietnameseCenter';
 import { toast } from '@/components/ui/toast';
@@ -336,6 +337,7 @@ export default function TuviClient() {
       if (typeof data.balanceVnd === 'number') {
         emitOptimisticBalance({ balanceVnd: data.balanceVnd, delta: -(data.chargedVnd ?? PRICE), reason: 'charge', service: 'tu-vi' });
       }
+      trackPurchase('tu-vi', data.chartId as string);
       toast.success(
         typeof data.chargedVnd === 'number'
           ? `Đã lập lá số — trừ ${formatVnd(data.chargedVnd)}, còn lại ${formatVnd(data.balanceVnd ?? 0)}`

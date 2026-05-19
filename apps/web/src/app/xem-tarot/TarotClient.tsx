@@ -14,6 +14,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { formatVnd } from '@/lib/money';
 import { subscribeWallet, emitOptimisticBalance } from '@/lib/wallet-sse';
+import { trackPurchase } from '@/lib/track-purchase';
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -222,6 +223,7 @@ export default function TarotClient() {
       }
       setResult(body as unknown as TarotApiResponse);
       setStep('result');
+      trackPurchase('tarot', body.chartId as string);
       if (typeof body.balanceVnd === 'number') {
         emitOptimisticBalance({ balanceVnd: Number(body.balanceVnd), delta: -Number(body.chargedVnd ?? PRICE), reason: 'charge', service: 'tarot' });
       }

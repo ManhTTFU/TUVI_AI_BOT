@@ -9,6 +9,7 @@ import TuTruResultView from "./TuTruResultView";
 import { toast } from "@/components/ui/toast";
 import { formatVnd } from "@/lib/money";
 import { emitOptimisticBalance } from "@/lib/wallet-sse";
+import { trackPurchase } from "@/lib/track-purchase";
 
 const SERIF_FONT = "'Cormorant Garamond',serif";
 
@@ -238,6 +239,7 @@ export default function TuTruClient() {
       if (typeof body.balanceVnd === "number") {
         emitOptimisticBalance({ balanceVnd: body.balanceVnd, delta: -(body.chargedVnd ?? PRICE), reason: "charge", service: "tu-tru" });
       }
+      trackPurchase('tu-tru', body.chartId as string);
       toast.success(
         typeof body.chargedVnd === "number"
           ? `Đã lập Tứ Trụ — trừ ${formatVnd(body.chargedVnd)}, còn lại ${formatVnd(body.balanceVnd ?? 0)}`
