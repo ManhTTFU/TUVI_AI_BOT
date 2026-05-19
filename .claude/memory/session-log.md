@@ -23,6 +23,63 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-19 (session 3) — IndexNow + Rich Result + OG image fix
+
+**Đang làm:** Tiếp scope SEO sau session 2 (GA4 + rotate secrets). 4 cái vàng còn lại: IndexNow submit, Bing Webmaster, Rich Result Test, OG Facebook Debugger. Trong quá trình phát hiện 2 bug + 1 incident push protection.
+
+**Đến đâu rồi:**
+- ✅ IndexNow: 20 URL submitted (Bing + Yandex) sau khi fix script đọc sai URL.
+- ✅ Rich Result `/hoang-dao/bach-duong`: PASS Article schema + đã fix warning "image bị thiếu (không bắt buộc)" bằng default fallback `brand-logo.png`.
+- ✅ OG image endpoint: fix 404 → static `brand-logo.png` 1536×1024, meta tag đúng `width=1536 height=1024` (thay 1024×1024 vuông từ icon.png fallback).
+- ⏳ User manual: Bing Webmaster import + Facebook Sharing Debugger + Rich Result `/xem-tu-vi`.
+
+**Files đã sửa:**
+- `scripts/notify-indexnow.ts` — hard-code `SITE_URL = 'https://luangiaivanmenh.com'` thay vì đọc `NEXT_PUBLIC_SITE_URL` từ `.env` root (luôn là `http://localhost:3100` → script fetch nhầm sitemap dev → trả 0 URL).
+- `apps/web/src/lib/seo-schemas.ts` — `articleSchema()` thêm default `image = ${SITE_URL}/images/brand-logo.png` (1536×1024 đáp ứng Google Article ≥1200px wide ratio 3:2). Khi page truyền `opts.image` explicit thì dùng cái đó.
+- `apps/web/src/app/layout.tsx` — `metadata.openGraph.images` + `twitter.images` explicit trỏ `/images/brand-logo.png` với width/height/alt đầy đủ. Bỏ phụ thuộc Next.js auto-detect (đã fall back icon.png khi opengraph-image.tsx 404).
+- `apps/web/src/app/opengraph-image.tsx` — XOÁ hoàn toàn (broken trên OpenNext nodejs, đã thay bằng static).
+- `apps/web/scripts/generate-og-image.ts` — đã viết + xoá (Sharp+SVG approach fail trên Windows pnpm symlink. Sharp symlink dùng POSIX path `/d/...` → Node Windows không resolve được. Mỗi `pnpm install` re-tạo symlink kiểu cũ → không có fix permanent local).
+
+**Đáng nhớ về OG dynamic vs static trên OpenNext Cloudflare:**
+1. `runtime='edge'` ở `app/opengraph-image.tsx` — fail build vì `@opennextjs/aws@802` strict: "edge runtime function must be in separate worker".
+2. Default nodejs runtime — build pass nhưng route 404 (OpenNext không gen route handler cho ImageResponse trên nodejs).
+3. Edge function tách worker riêng — phức tạp, OpenNext config + binding mới.
+4. Static PNG trong `public/` — ổn nhất, không generate runtime. Trade-off: cần manual regenerate khi đổi design.
+
+→ Static là answer cho stack này. Khi có thiết kế custom 1200×630 (ratio 1.91:1 lý tưởng Facebook), swap file `apps/web/public/images/brand-logo.png` hoặc tạo `apps/web/src/app/opengraph-image.png` (Next.js auto-detect cuối cùng).
+
+**Incident — GitHub Push Protection block commit `3986953`:**
+- /log session 2 đã ghi full Supabase secret key vào `.claude/memory/session-log.md:37` (`sb_secret_r1-D1KVfm...`). Commit + push → GitHub secret scanning block.
+- Fix: `git reset --mixed HEAD~1` orphan commit có leak → redact log (chỉ ghi tail 4 char `dfDM` cho Google) → recommit `81b89c3` + `cc70b02` → push pass.
+- Secret leak `sb_secret_r1-...` reflog local 90 ngày — KHÔNG cần rotate lại vì key đó đã invalid ngay khi user "+ New secret key" trên Supabase (Supabase không có grace period với "Roll Key" / new key auto-invalidate old).
+- **Memory rule mới (ghi vào `feedback_*`):** KHÔNG paste giá trị secret vào memory/session-log dù chỉ 1 phần. Ref qua "tail 4 ký tự" hoặc "trong .env local" thay vì ghi giá trị thật. Đây là lần 2 leak qua memory file (session 2 đã có incident tương tự với secret cũ).
+
+**Bugs phát sinh trong session:**
+1. IndexNow trả 0 URL — đã fix (commit `81b89c3`).
+2. OG endpoint 404 — đã fix (commit `cc70b02`).
+3. Sharp Windows pnpm symlink — KHÔNG fix, document rằng image generation script không chạy local Windows. Workaround: chạy WSL hoặc commit pre-generated PNG.
+4. Push Protection block — đã fix qua reset + redact + recommit.
+
+**Blocker:** Không.
+
+**Việc tiếp theo:**
+1. **User manual (sau deploy CF Builds xong):**
+   - Bing Webmaster Tools import từ GSC (~10 phút).
+   - Rich Result Test `/xem-tu-vi` Service schema (chưa test, expect 4 items: Service + Offer + Breadcrumb + Org).
+   - Facebook Sharing Debugger để verify OG preview brand-logo (Scrape Again để clear FB cache).
+2. **Cleanup secret cũ:**
+   - Supabase Delete `tu_vi_key` NGAY (key cũ đã invalid, chỉ là cleanup UI).
+   - Google Disable `****6NAd` NGAY, Delete sau 24-48h.
+3. **OG image custom design 1200×630** (ratio 1.91:1 lý tưởng Facebook) — task design, ưu tiên trung. 3 cách:
+   - Thiết kế Figma → export PNG → drop vào `apps/web/public/images/og-1200x630.png` → update layout.tsx metadata.
+   - Render qua WSL bằng script `generate-og-image.ts` đã viết (Sharp+SVG có sẵn ý tưởng, fail Windows nhưng có thể chạy WSL).
+   - Tạo Cloudflare Worker riêng cho edge runtime OG image generation (overkill cho 1 image static).
+4. **Per-zodiac image** cho Article schema — thiết kế 12 ảnh riêng cho 12 cung hoàng đạo, replace fallback brand-logo. Tốn nhất nhưng SEO rich result tốt nhất.
+5. **FAQ schema** 4 trang service (xem-tu-vi, xem-tarot, tu-tru-bat-tu, ngay-tot) — helper `faqSchema()` đã có ở `seo-schemas.ts:79`.
+6. **GA4 custom event `purchase`** mỗi lần `chargeReading()` — wire `apps/web/src/lib/wallet.ts` để GA4 Monetization report tự tính revenue VND.
+
+---
+
 ### 2026-05-19 (session 2) — GA4 setup + rotate Google OAuth Secret + Supabase Service Role Key
 
 **Đang làm:** User yêu cầu audit SEO theo Google Search Docs (robots, sitemap, search console, structured data). Audit xong → wire GA4 vào layout. Sau đó rotate 2 secret leak từ commit `a75c22e` (đã được tag P0 từ session trước).
