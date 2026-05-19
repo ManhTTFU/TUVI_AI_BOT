@@ -1,11 +1,14 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { SITE_URL } from '@/lib/env';
 import { sfProDisplay } from '@/lib/fonts';
 import { auth } from '@/auth';
 import { BodyBackground, Header, Footer } from '@/components/layout';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { Toaster } from '@/components/ui/toast';
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -90,6 +93,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <Footer />
           <Toaster />
         </AuthProvider>
+        {GA_ID && <GoogleAnalytics gaId={GA_ID} />}
       </body>
     </html>
   );

@@ -23,6 +23,67 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-19 — SEO Google setup full-stack cho luangiaivanmenh.com + upgrade Workers Paid
+
+**Đang làm:** Đưa site lên Google: cài Search Console, robots/sitemap/structured-data, OG image, IndexNow, self-host font. Đụng nhiều việc infra rẽ ngang khi deploy fail vì Cloudflare Workers Free 3 MiB không đủ cho bundle 8.8 MiB gzip.
+
+**Đến đâu rồi:** Phase 1 + Phase 2 SEO technical xong. Search Console verify domain qua Cloudflare DNS connect, sitemap submitted 20 URLs đã accept. Site đang live trên Cloudflare Workers Paid ($5/tháng) với toàn bộ JSON-LD + dynamic OG image + self-host SF Pro Display.
+
+**Việc đã làm:**
+
+**SEO infrastructure (apps/web/src/app/):**
+- `robots.ts` — allow `/`, disallow private routes (/api/, /admin/, /vi-cua-toi, /lich-su, /dang-nhap, /tu-vi/, /tu-tru/, /xem-tarot/[chartId], /hoang-dao/luan-giai, /xoa-du-lieu, /_next/).
+- `sitemap.ts` — 20 URLs = 8 static landing + 12 cung hoàng đạo (import `ZODIAC_DETAILS`).
+- `layout.tsx` — JSON-LD `WebSite` + `Organization` schema, preconnect Google Fonts, áp `sfProDisplay.variable` vào `<html>`.
+- `opengraph-image.tsx` (mới) — Next.js dynamic OG 1200×630 brand sumi gradient, ~286 KB (thay PNG 2 MB).
+- `page.tsx` các landing thêm `Service + BreadcrumbList` JSON-LD (xem-tu-vi 40k, xem-tarot 5k, tu-tru-bat-tu 5k, ngay-tot).
+- `hoang-dao/page.tsx` thêm `CollectionPage + BreadcrumbList`.
+- `hoang-dao/[slug]/page.tsx` thêm `Article + BreadcrumbList`.
+
+**Helpers:**
+- `lib/seo-schemas.ts` — factory functions `serviceSchema/breadcrumbSchema/articleSchema/faqSchema/collectionPageSchema`.
+- `components/seo/JsonLd.tsx` — reusable component.
+
+**Font self-host (next/font/local):**
+- `lib/fonts.ts` — `sfProDisplay` localFont 4 variants (Regular/Medium/Bold/Semibold Italic).
+- `src/fonts/SFProDisplay-*.woff` (4 file, ~475 KB tổng) — download từ cdnfonts.com.
+- `globals.css` — bỏ `@import https://fonts.cdnfonts.com/...`, dùng `var(--font-sf-pro)`.
+- `tailwind.config.ts` — `sans/serif` map về `var(--font-sf-pro)`.
+
+**IndexNow (Bing + Yandex):**
+- `public/b2c4b113d010f28af75742592373bdcc82ce67ce19aacad3253f7119f0b4dce0.txt` — key verification file.
+- `scripts/notify-indexnow.ts` — fetch sitemap → POST `https://api.indexnow.org/IndexNow`.
+- `package.json` root — npm script `pnpm indexnow`.
+
+**Infra fixes:**
+- `apps/web/package.json` — rename pnpm script `deploy` → `cf:deploy` (vì `deploy` là pnpm builtin reserved name, fail `ERR_PNPM_INVALID_DEPLOY_TARGET`).
+- `.gitignore` — thêm `.open-next` + `apps/*/.open-next` (build output chứa env secrets injected, suýt push lên GitHub).
+- `.claude/skills/run-dev/SKILL.md` — cập nhật phản ánh thực tế: chỉ còn `pnpm dev:web`, Express API đã thành legacy.
+
+**Cloudflare upgrade:** Workers Free 3 MiB không fit bundle 8.8 MiB gzipped → upgrade Paid Plan $5/tháng (10 MiB limit). Phân tích bundle: `recharts` 8.4 MB (admin/thong-ke), `pdfkit` 4.5 MB (PDF tu-vi), `iztro` 5 MB (duplicate v2.5.3 + v2.5.8), `tsparticles` 1.4 MB, plus next/auth/drizzle/supabase.
+
+**Bugs phát sinh:**
+1. `EPERM symlink` khi build local Windows (Next.js standalone mode + pnpm symlink cần `SeCreateSymbolicLinkPrivilege`) → fix: bật Developer Mode. Ghi vào `bugs-solved.md`.
+2. GitHub Push Protection block commit `a75c22e` vì `.open-next/env/next-env.mjs` chứa Google OAuth Client Secret + Supabase Service Role Key (build inject env vào output) → fix: soft reset HEAD~1 + unstage `.open-next/` + commit lại không có folder build. Push thành công sau khi tạo commit `d1e1e0b`.
+
+**Blocker / việc URGENT cần làm:**
+- **Rotate 2 secrets** (commit `a75c22e` vẫn ở local reflog 90 ngày, có thể leak qua backup):
+  1. Google OAuth Client Secret (`741527513075-j1cr1f03p28n8d192a2095055bvbc81k.apps.googleusercontent.com`) → reset trong Google Cloud Console → update `.env` root + `wrangler secret put GOOGLE_CLIENT_SECRET`.
+  2. Supabase Service Role Key (project `japatndrfbbxtncieiws`) → reset trong Supabase dashboard → update `apps/web/.env.local` + `wrangler secret put SUPABASE_SERVICE_ROLE_KEY`.
+- Decision log đã tag P0 từ 2026-05-18, giờ thêm Google OAuth nữa.
+
+**Việc tiếp theo (session sau):**
+1. **Rotate 2 secrets** (URGENT, làm trước mọi việc khác).
+2. **Bing Webmaster Tools** verify (~10 phút manual, import từ Search Console).
+3. **GA4 setup**: tạo property → lấy `G-XXXXXXXXXX` → tao add `<GoogleAnalytics>` component vào layout.
+4. **Test rich result** sau khi deploy: [search.google.com/test/rich-results](https://search.google.com/test/rich-results) cho `/hoang-dao/bach-duong` (Article schema), `/xem-tu-vi` (Service schema).
+5. **Test OG image** trên Facebook Sharing Debugger với `https://luangiaivanmenh.com`.
+6. **Submit `pnpm indexnow`** sau khi production deploy xong (verify `https://luangiaivanmenh.com/b2c4b113...0.txt` accessible trước).
+7. **Content strategy long-term**: tạo route `/kien-thuc/[slug]` cho blog, viết 5-10 bài 1500+ từ target keyword VN (tử vi 2026, bói tarot, ý nghĩa Major Arcana...) — ROI cao nhất nhưng cần content effort.
+8. **Optional bundle optimization** để có thể về Workers Free: bỏ admin/thong-ke recharts (-2.5 MiB gzip), externalize pdfkit (-1.5 MiB), dedup iztro (-0.7 MiB), dynamic import tsparticles (-0.4 MiB). Hiện trả $5/tháng nên không gấp.
+
+---
+
 ### 2026-05-18 (chiều) — Fix realtime sync ví của tôi + giảm /api/auth/session calls
 
 **Đang làm:** 2 bug nối tiếp sau session sáng:
