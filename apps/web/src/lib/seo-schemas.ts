@@ -49,6 +49,10 @@ export function breadcrumbSchema(items: { name: string; path: string }[]) {
   };
 }
 
+// Default Article image — brand-logo.png 1536×1024 đáp ứng Google rich result yêu cầu
+// (≥1200px wide, ratio 3:2). Per-zodiac image sẽ thay sau khi có thiết kế riêng cho 12 cung.
+const DEFAULT_ARTICLE_IMAGE = `${SITE_URL}/images/brand-logo.png`;
+
 export function articleSchema(opts: {
   title: string;
   description: string;
@@ -64,7 +68,7 @@ export function articleSchema(opts: {
     headline: opts.title,
     description: opts.description,
     url: `${SITE_URL}${opts.path}`,
-    ...(opts.image && { image: opts.image }),
+    image: opts.image ?? DEFAULT_ARTICLE_IMAGE,
     datePublished: opts.datePublished ?? now,
     dateModified: opts.dateModified ?? opts.datePublished ?? now,
     publisher: {

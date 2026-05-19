@@ -23,6 +23,50 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+### 2026-05-19 (session 2) — GA4 setup + rotate Google OAuth Secret + Supabase Service Role Key
+
+**Đang làm:** User yêu cầu audit SEO theo Google Search Docs (robots, sitemap, search console, structured data). Audit xong → wire GA4 vào layout. Sau đó rotate 2 secret leak từ commit `a75c22e` (đã được tag P0 từ session trước).
+
+**Đến đâu rồi:** Xong toàn bộ scope session. GA4 đang track page_view trên prod (verified qua Network tab + GA4 Realtime). Cả 2 secret Google + Supabase đã rotate + `wrangler secret put` + verify thực tế (login Google OK + wallet realtime push OK).
+
+**Files đã sửa:**
+- `apps/web/src/app/layout.tsx` — import `GoogleAnalytics` từ `@next/third-parties/google`, render conditional `{GA_ID && <GoogleAnalytics gaId={GA_ID} />}` cuối `<body>` (sau `AuthProvider` để không block initial paint).
+- `apps/web/src/app/opengraph-image.tsx` — XOÁ `export const runtime = 'edge'` để fix build error trên CF Workers Builds (preview version `@opennextjs/aws@802` strict hơn, không cho edge runtime trong cùng worker với main bundle). `ImageResponse` vẫn hoạt động bình thường trên default nodejs runtime, cold start chậm hơn ~50-100ms nhưng OG image được social media cache vĩnh viễn nên không matter.
+- `apps/web/wrangler.jsonc` — thêm `"NEXT_PUBLIC_GA_ID": "G-1C36RSE64M"` vào `vars` section (bắt buộc vì CF Workers wipe vars không declare ở đây — bug đã ghi `bugs-solved.md`).
+- `apps/web/package.json` + `pnpm-lock.yaml` — thêm dep `@next/third-parties` (official Next.js package, lazy-load gtag với strategy `afterInteractive`).
+- `.env` root + `apps/web/.env.local` — set `NEXT_PUBLIC_GA_ID=G-1C36RSE64M`; rotate `GOOGLE_CLIENT_SECRET` + `GOOGLE_SECRET` (secret mới đuôi `dfDM`); rotate `SUPABASE_SERVICE_ROLE_KEY` (secret mới, đuôi ẩn — xem trong `.env` local). KHÔNG ghi giá trị secret thật vào file commit lên git.
+- CF Workers encrypted store — `wrangler secret put GOOGLE_CLIENT_SECRET` + `wrangler secret put SUPABASE_SERVICE_ROLE_KEY` (cả 2 secrets confirm có trong store qua `wrangler secret list`).
+
+**Đáng nhớ về GA4:**
+- Measurement ID: `G-1C36RSE64M` (property "Vận Mệnh Web", account "Luận Giải Vận Mệnh", timezone GMT+7, currency VND).
+- Setup goals: 2 cái — "Tăng doanh số" (e-commerce report, sau wire `purchase` event mỗi `chargeReading()`) + "Tìm hiểu lưu lượng truy cập web" (baseline acquisition).
+- Enhanced measurement BẬT mặc định → tự track scroll, click outbound, form submit, file download, page_view, video.
+- KHÔNG dùng raw `<script>` snippet — `@next/third-parties/google` lo lazy-load + Strict Mode dedupe.
+
+**Đáng nhớ về rotate flow:**
+- Google Cloud Console **có grace period 24-48h** (giữ 2 secret cùng valid) → workflow: tạo new → deploy → test → Disable old → đợi 24h → Delete.
+- Supabase Dashboard **KHÔNG có grace period** với "Roll Key" → workflow đúng: bấm "+ New secret key" tạo song song → update env → `wrangler secret put` → deploy → test → vào row key cũ → Delete (không gây downtime).
+- `wrangler secret put <NAME>` + paste khi prompt — secret nằm trong CF encrypted store **độc lập với deploy code**, push code không tự push secret.
+- Worker pickup secret mới tại runtime của isolate kế tiếp (~10-30s), KHÔNG cần `wrangler deploy` lại để secret active.
+
+**Bugs phát sinh:**
+1. `cf:deploy` local Windows fail với `Cannot find module './impl'` (next webpack-build) — known issue OpenNext + pnpm symlink Windows. KHÔNG fix vì CF Workers Builds (Linux) hoạt động OK qua git push. User chỉ cần push commits, không cần build local. WSL là fix proper nhưng overkill cho dev flow hiện tại.
+
+**Blocker:** Không.
+
+**Việc tiếp theo:**
+1. **Cleanup secret cũ:**
+   - Supabase: Delete row `tu_vi_key` (sb_secret_yGcNs...) NGAY — không có grace period, key đã invalid sau khi tạo new.
+   - Google: Disable secret `****6NAd` (May 11) NGAY, đợi 24-48h không có report lỗi login → Delete.
+2. **Bing Webmaster Tools** verify (~10 phút, import từ Google Search Console).
+3. **Submit `pnpm indexnow`** sau khi production ổn — IndexNow notify Bing + Yandex crawl 20 URL sitemap ngay (không phải đợi periodic crawl).
+4. **Test rich result** [search.google.com/test/rich-results](https://search.google.com/test/rich-results) cho `/hoang-dao/bach-duong` (Article) + `/xem-tu-vi` (Service+Offer).
+5. **Test OG image** Facebook Sharing Debugger để verify dimension 1200×630 đúng (hiện meta tag báo 1024×1024 — có thể Next.js fall back sang `icon.png` 1024 thay vì dùng `opengraph-image.tsx` generated).
+6. **GA4 custom event `purchase`** mỗi lần `chargeReading()` thành công — wire vào `apps/web/src/lib/wallet.ts` để GA4 Monetization report tự tính revenue VND.
+7. **FAQ schema** 4 trang service (xem-tu-vi, xem-tarot, tu-tru-bat-tu, ngay-tot) — helper `faqSchema()` đã có sẵn ở `seo-schemas.ts:79` nhưng chưa được dùng.
+
+---
+
 ### 2026-05-19 — SEO Google setup full-stack cho luangiaivanmenh.com + upgrade Workers Paid
 
 **Đang làm:** Đưa site lên Google: cài Search Console, robots/sitemap/structured-data, OG image, IndexNow, self-host font. Đụng nhiều việc infra rẽ ngang khi deploy fail vì Cloudflare Workers Free 3 MiB không đủ cho bundle 8.8 MiB gzip.

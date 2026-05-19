@@ -8,7 +8,9 @@
  */
 
 const INDEXNOW_KEY = 'b2c4b113d010f28af75742592373bdcc82ce67ce19aacad3253f7119f0b4dce0';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://luangiaivanmenh.com';
+// Hard-code prod URL — IndexNow chỉ submit URL public, không có lý do dùng localhost.
+// Trước đây đọc `NEXT_PUBLIC_SITE_URL` từ `.env` root thì lấy phải `http://localhost:3100`.
+const SITE_URL = 'https://luangiaivanmenh.com';
 const KEY_LOCATION = `${SITE_URL}/${INDEXNOW_KEY}.txt`;
 
 async function fetchSitemapUrls(): Promise<string[]> {
