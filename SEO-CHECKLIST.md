@@ -370,6 +370,13 @@ curl -sI https://luangiaivanmenh.com/images/brand-logo.png
 # F12 → Network → filter: google-analytics.com → load page → check request có `tid=G-1C36RSE64M`
 ```
 
+## 📖 Related Docs
+
+- **[SEO-REQUEST-INDEXING.md](./SEO-REQUEST-INDEXING.md)** — Hướng dẫn step-by-step Request indexing trên Google Search Console + Bing Webmaster
+- **`.claude/skills/seo-add-page/SKILL.md`** — Playbook thêm page mới
+- **`.claude/skills/seo-change-price/SKILL.md`** — Đổi giá dịch vụ
+- **`.claude/skills/seo-audit/SKILL.md`** — Audit SEO health
+
 ## 🔗 External Tools
 
 - **Google Search Console:** https://search.google.com/search-console
