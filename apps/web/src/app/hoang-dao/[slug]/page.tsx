@@ -7,6 +7,8 @@ import {
   getRelatedZodiacs,
 } from '@/lib/zodiac-detail';
 import HoangDaoDetail from '@/components/hoang-dao/HoangDaoDetail';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { articleSchema, breadcrumbSchema } from '@/lib/seo-schemas';
 
 export function generateStaticParams() {
   return ZODIAC_DETAILS.map((z) => ({ slug: z.slug }));
@@ -31,5 +33,23 @@ export default function Page({ params }: { params: { slug: string } }) {
   if (!detail) notFound();
   const neighbors = getZodiacNeighbors(params.slug)!;
   const related = getRelatedZodiacs(params.slug, 3);
-  return <HoangDaoDetail detail={detail} neighbors={neighbors} related={related} />;
+  return (
+    <>
+      <JsonLd
+        data={articleSchema({
+          title: `${detail.name} (${detail.en}) — Tính cách, vận trình, tình duyên`,
+          description: detail.overview.slice(0, 200),
+          path: `/hoang-dao/${detail.slug}`,
+        })}
+      />
+      <JsonLd
+        data={breadcrumbSchema([
+          { name: 'Trang chủ', path: '/' },
+          { name: '12 Cung Hoàng Đạo', path: '/hoang-dao' },
+          { name: detail.name, path: `/hoang-dao/${detail.slug}` },
+        ])}
+      />
+      <HoangDaoDetail detail={detail} neighbors={neighbors} related={related} />
+    </>
+  );
 }

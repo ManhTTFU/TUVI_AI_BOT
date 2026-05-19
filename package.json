@@ -10,7 +10,8 @@
     "dev:web": "pnpm --filter @tuvi/web dev",
     "build": "pnpm -r run build",
     "start": "pnpm --filter @tuvi/web start",
-    "download-fonts": "tsx scripts/download-fonts.ts"
+    "download-fonts": "tsx scripts/download-fonts.ts",
+    "indexnow": "tsx --env-file=.env scripts/notify-indexnow.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
