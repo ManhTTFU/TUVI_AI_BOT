@@ -20,8 +20,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
-        serif: ['"SF Pro Display"', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-sf-pro)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-sf-pro)', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         soft: '0 10px 30px -15px rgba(90, 58, 26, 0.25)',

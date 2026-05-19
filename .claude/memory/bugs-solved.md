@@ -17,6 +17,14 @@
 
 <!-- Entry mới thêm ở TRÊN cùng -->
 
+**Bug:** `pnpm cf:deploy` fail với `EPERM: operation not permitted, symlink` trên Windows
+**Symptom:** Next.js build pass `✓ Compiled successfully`, `✓ Generating static pages (53/53)`, nhưng fail ở `writeStandaloneDirectory` với loạt `EPERM: operation not permitted, symlink 'D:\TUVIAI\node_modules\.pnpm\react@18.3.1\...' -> '.next\standalone\apps\web\node_modules\react'`. Cuối cùng `@opennextjs/cloudflare` cũng fail vì depend vào `.next/standalone`.
+**Root cause:** Windows mặc định KHÔNG cho user thường tạo symlink (cần `SeCreateSymbolicLinkPrivilege`). Next.js standalone mode + pnpm workspace dùng symlink để link `node_modules/.pnpm/<pkg>` → `.next/standalone/...`. Build trên Linux/macOS OK vì symlink là default permission.
+**Fix:** Bật **Developer Mode** trên Windows 10/11 (Settings → System → For Developers → Developer Mode ON). Cấp `SeCreateSymbolicLinkPrivilege` cho user thường, không phải mở admin terminal mỗi lần. Restart terminal sau khi bật rồi build lại. Quick fix tạm thời: chạy PowerShell as Administrator.
+**Phòng tránh:** Dev TUVIAI trên Windows phải bật Developer Mode trước lần `cf:deploy` đầu tiên. Linux/macOS không gặp.
+
+---
+
 **Bug:** Daily horoscope 12 cung bị cắt giữa JSON do `max_tokens`
 **Symptom:** `Error: Deepseek bị cắt do max_tokens (daily-horoscope)` — `finish_reason === 'length'` khi gọi Deepseek sinh JSON 12 cung × 2 câu tiếng Việt trong 1 call. Bump 2500 → 4000 vẫn cắt.
 **Root cause:** Tiếng Việt sau BPE tokenize ~2-3 tokens/từ (cao hơn EN). 12 cung × 2 câu × ~30 từ × 2.5 token + JSON overhead có thể vọt lên ~2000-3000 tokens với buffer Deepseek tự thêm. Quan trọng hơn: prompt "tối đa 2 câu" không phải hard constraint — model vẫn có thể viết dài, một câu trượt là cả JSON sau đó bị cắt → unrecoverable.

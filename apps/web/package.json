@@ -9,7 +9,7 @@
     "lint": "next lint",
     "cf:build": "opennextjs-cloudflare build",
     "preview": "pnpm cf:build && wrangler dev",
-    "deploy": "pnpm cf:build && wrangler deploy"
+    "cf:deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

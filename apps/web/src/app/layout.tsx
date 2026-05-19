@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/env';
+import { sfProDisplay } from '@/lib/fonts';
 import { auth } from '@/auth';
 import { BodyBackground, Header, Footer } from '@/components/layout';
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -68,8 +69,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // fetch lại ở client lúc mount. JWT cookie decode local, không hit DB.
   const session = await auth();
   return (
-    <html lang="vi">
+    <html lang="vi" className={sfProDisplay.variable}>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
