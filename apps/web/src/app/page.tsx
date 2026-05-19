@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { SITE_URL } from '@/lib/env';
 import HomeClient from '@/components/home/HomeClient';
 
 export const metadata: Metadata = {
@@ -10,26 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  const jsonLdWebsite = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Vận Mệnh',
-    url: SITE_URL,
-    inLanguage: 'vi-VN',
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${SITE_URL}/xem-tu-vi?name={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
-  };
-
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebsite) }}
-      />
-      <HomeClient />
-    </>
-  );
+  return <HomeClient />;
 }

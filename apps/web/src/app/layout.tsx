@@ -43,12 +43,42 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Luận Giải Vận Mệnh',
+  alternateName: 'Vận Mệnh',
+  url: SITE_URL,
+  inLanguage: 'vi-VN',
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'Luận Giải Vận Mệnh',
+  url: SITE_URL,
+  logo: `${SITE_URL}/icon.png`,
+  description:
+    'Nền tảng luận giải Tử Vi, Tứ Trụ, Tarot, Phong Thủy bằng AI — kết tinh từ khoa Chiêm Tinh và Huyền Học Á Đông.',
+  sameAs: [],
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Lấy session ở server → pass vào SessionProvider, tránh /api/auth/session
   // fetch lại ở client lúc mount. JWT cookie decode local, không hit DB.
   const session = await auth();
   return (
     <html lang="vi">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+      </head>
       <body className="min-h-screen text-[#0f0a08]">
         <AuthProvider session={session}>
           <BodyBackground />

@@ -6,8 +6,20 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/xem-tu-vi'],
-        disallow: [],
+        allow: '/',
+        disallow: [
+          '/api/',
+          '/admin/',
+          '/vi-cua-toi',
+          '/lich-su',
+          '/dang-nhap',
+          '/tu-vi/',
+          '/tu-tru/',
+          '/xem-tarot/',
+          '/hoang-dao/luan-giai',
+          '/xoa-du-lieu',
+          '/_next/',
+        ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

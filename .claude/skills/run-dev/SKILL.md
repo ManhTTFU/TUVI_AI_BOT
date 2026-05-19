@@ -1,9 +1,9 @@
 ---
 name: run-dev
-description: Chạy api + web local cho TUVIAI. Dùng khi user muốn start dev server, hoặc gặp vấn đề khi startup.
+description: Chạy web dev local cho TUVIAI. Dùng khi user muốn start dev server, hoặc gặp vấn đề khi startup.
 ---
 
-# Run dev (api + web)
+# Run dev (web only)
 
 ## Khi dùng skill này
 
@@ -11,36 +11,28 @@ description: Chạy api + web local cho TUVIAI. Dùng khi user muốn start dev 
 - User gặp lỗi startup
 - Sau khi cài dep mới / đổi env, cần restart sạch
 
-## Khuyến nghị: 2 terminal riêng
+## Lệnh chạy
 
 ```bash
-# Terminal 1
-pnpm dev:api
-
-# Terminal 2
-pnpm dev:web
+pnpm dev:web    # hoặc pnpm dev (alias cùng script)
 ```
 
-Lý do: `pnpm dev` chạy `pnpm -r --parallel run dev` sẽ **buffer + interleave log**, dễ tưởng service đã chết khi thật ra đang chờ.
+**Ghi chú:** Express API (`apps/api`) đã thành legacy, KHÔNG còn script `dev:api` ở root package.json. Frontend chỉ dùng Next.js routes dưới `/api/*` trong `apps/web`. Khi nào thực sự cần chạy Express (debug legacy endpoint) → `pnpm --filter @tuvi/api dev` trực tiếp.
 
-## Ready signals (chờ đủ cả 2)
+## Ready signal
 
 | Service | Tín hiệu ready |
 |---|---|
-| API  | `[api] listening on http://localhost:4100` |
-| Web  | `✓ Ready in Xms` (Next.js) — lần đầu mất 10-30s compile |
+| Web  | `✓ Ready in Xms` (Next.js) — lần đầu mất 5-30s compile |
 
 ## Pre-flight check
 
 1. `pnpm install` đã chạy? (postinstall tự download fonts — nếu fonts thiếu, build PDF sẽ throw).
-2. File `.env` root có `DEEPSEEK_API_KEY`?
-3. File `apps/web/.env.local` có `NEXT_PUBLIC_*` trio?
-4. Port 3100 + 4100 không bị chiếm bởi process khác? (check: `netstat -ano | findstr :4100`).
+2. File `.env` root có `DEEPSEEK_API_KEY` + `DATABASE_URL` + `AUTH_SECRET` + Supabase block?
+3. File `apps/web/.env.local` có `NEXT_PUBLIC_*` (Supabase URL + anon key)?
+4. Port 3100 không bị chiếm? (check: `netstat -ano | findstr :3100`).
 
 ## Troubleshooting
-
-### "Chỉ thấy API listening rồi dừng"
-Không dừng — pnpm parallel buffer log, web đang khởi động im lặng. Dùng 2 terminal riêng.
 
 ### Next.js compile chậm / stuck
 Xoá cache rồi chạy lại:
@@ -54,7 +46,7 @@ pnpm download-fonts
 ```
 
 ### Env thay đổi không có hiệu lực
-`tsx --env-file` KHÔNG watch `.env`. Phải Ctrl+C rồi chạy lại. Next.js cũng không hot-reload env ở `.env.local`.
+Next.js không hot-reload env ở `.env.local`. Phải Ctrl+C rồi chạy lại.
 
 ## Clean rebuild (khi nghi ngờ state bẩn)
 
@@ -64,4 +56,4 @@ rm -rf apps/web/.next apps/web/node_modules/.cache node_modules/.cache
 rm -rf packages/*/dist apps/*/dist
 ```
 
-Sau đó chạy lại 2 terminal.
+Sau đó `pnpm dev:web` lại.
