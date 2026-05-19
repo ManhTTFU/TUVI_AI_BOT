@@ -37,11 +37,24 @@ export const metadata: Metadata = {
     siteName: 'Vận Mệnh',
     locale: 'vi_VN',
     type: 'website',
+    // Explicit OG image — fix bug Next.js fall back về icon.png (1024×1024 vuông) khi
+    // opengraph-image.tsx dynamic route trả 404 trên OpenNext Cloudflare nodejs runtime.
+    // brand-logo.png 1536×1024 ratio 3:2 — Facebook crop được, không lý tưởng 1.91:1
+    // nhưng ổn định. Khi có thiết kế 1200×630 custom thì replace.
+    images: [
+      {
+        url: '/images/brand-logo.png',
+        width: 1536,
+        height: 1024,
+        alt: 'Luận Giải Vận Mệnh — Tử Vi, Tứ Trụ, Tarot, Phong Thủy',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Vận Mệnh',
     description: 'Khoa Chiêm Tinh & Huyền Học Á Đông.',
+    images: ['/images/brand-logo.png'],
   },
   alternates: { canonical: '/' },
   robots: { index: true, follow: true },
